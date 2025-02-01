@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CalendarDays, Users, Briefcase, GraduationCap } from "lucide-react";
+import { CalendarDays, Users, Briefcase, GraduationCap, LogIn } from "lucide-react";
 import PayPalButton from "@/components/PayPalButton";
 
 const Index = () => {
@@ -47,20 +47,33 @@ const Index = () => {
       answer: "The subscription fee is $15 monthly, which sustains DreamStream's platform, supporting tools like the Portfolio Builder, compliance tracking, and professional growth resources. It is an investment in your future and helps maintain the quality of the program.",
     },
     {
-      question: "When are the important deadlines?",
-      answer: "Launch Form must be completed by December 16, 2024, and payment can be made up until January 5, 2025.",
-    },
-    {
       question: "Are there any waivers available?",
       answer: "Yes, waiver options include Leadership Waiver, Sweat Equity Waiver, Competition Waiver, and Hardship Waiver. Specific criteria and details will be shared soon.",
+    },
+    {
+      question: "What types of projects will I work on?",
+      answer: "You'll work on both internal CDF projects and collaborative projects with external partners. This includes initiatives like the Green Contractors Platform, Green Connect, and Green Team Academy.",
     },
   ];
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header with Login Button */}
+      <header className="absolute top-0 right-0 p-4">
+        <Button variant="outline" className="gap-2" disabled>
+          <LogIn className="h-4 w-4" />
+          Login (Coming Soon)
+        </Button>
+      </header>
+
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-sidebar-primary text-white">
         <div className="max-w-7xl mx-auto text-center">
+          <img 
+            src="/lovable-uploads/cc37c25a-85ca-4af3-a844-a7f5a90aea97.png" 
+            alt="Community Dreams Foundation" 
+            className="mx-auto mb-8 h-24"
+          />
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
             DreamStream Fellowship
           </h1>
