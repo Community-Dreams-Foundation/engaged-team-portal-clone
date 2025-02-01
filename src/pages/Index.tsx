@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { CalendarDays, Users, Briefcase, GraduationCap } from "lucide-react";
+import PayPalButton from "@/components/PayPalButton";
 
 const Index = () => {
   const benefits = [
@@ -110,9 +111,7 @@ const Index = () => {
                 <li className="flex items-center gap-2">✓ Project Opportunities</li>
                 <li className="flex items-center gap-2">✓ Community Support</li>
               </ul>
-              <Button className="w-full" size="lg">
-                Subscribe Now
-              </Button>
+              <PayPalButton />
             </CardContent>
           </Card>
         </div>
