@@ -67,7 +67,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-sidebar-primary text-white">
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-white text-foreground">
         <div className="max-w-7xl mx-auto text-center">
           <img 
             src="/lovable-uploads/cc37c25a-85ca-4af3-a844-a7f5a90aea97.png" 
@@ -80,7 +80,7 @@ const Index = () => {
           <p className="text-xl sm:text-2xl mb-8 max-w-3xl mx-auto">
             Empowering team members with professional tools, real-world experience, and career growth opportunities.
           </p>
-          <Button size="lg" className="bg-white text-sidebar-primary hover:bg-gray-100">
+          <Button size="lg" className="bg-primary text-white hover:bg-primary/90">
             Join DreamStream Now
           </Button>
         </div>
