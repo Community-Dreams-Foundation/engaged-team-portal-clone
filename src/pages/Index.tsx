@@ -80,7 +80,7 @@ const Index = () => {
           <p className="text-xl sm:text-2xl mb-8 max-w-3xl mx-auto">
             Empowering team members with professional tools, real-world experience, and career growth opportunities.
           </p>
-          <Button size="lg" className="bg-primary text-white hover:bg-primary/90">
+          <Button onClick={() => { window.location.href = 'https://docs.google.com/forms/d/e/1FAIpQLSckENxQeSa_PzKIlbFKcN6Bm-IGASSJWLwLSq4LFPrevaMcOQ/viewform'; }} size="lg" className="bg-primary text-white hover:bg-primary/90">
             Join DreamStream Now
           </Button>
         </div>
