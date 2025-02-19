@@ -8,6 +8,28 @@ A cloned repo of enagaged team portal
 
 **URL**: https://lovable.dev/projects/3636dac9-c109-42c2-a865-fbddbb37ca5a
 
+**Notes from Siddhesh**
+
+<p align="center">
+  <a>
+    <img alt="NodeJS" src="https://img.shields.io/badge/node-22.13.1-important?style=flat-square"/>
+  </a>
+  <a>
+    <img alt="NPM" src="https://img.shields.io/badge/npm-10.9.2-blueviolet?style=flat-square"/>
+  </a>
+  <a href="https://reactjs.org/">
+    <img alt="Made With React" src="https://img.shields.io/badge/made%20with-react-61DAFB?style=flat-square"/>
+  </a>
+  <a>
+    <img alt="Netlify Status" src="https://api.netlify.com/api/v1/badges/abf59f82-3251-4040-b24c-949b86691642/deploy-status?style=flat-square"/>
+  </a>
+</p>
+
+
+Make sure you are using correct node/npm version.
+I use Linux to push/pull/commit git requests. LF are line endings which affect spacing across different OS. Linux -> LF and Windows -> CRLF.
+Please be careful with line endings using windows.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
