@@ -6,10 +6,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CalendarDays, Users, Briefcase, GraduationCap, LogIn } from "lucide-react";
+import { CalendarDays, Users, Briefcase, GraduationCap, LogIn, PlusCircle } from "lucide-react";
 import PayPalButton from "@/components/PayPalButton";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   const benefits = [
     {
       icon: <Users className="h-6 w-6" />,
@@ -59,7 +62,15 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with Login Button */}
-      <header className="absolute top-0 right-0 p-4">
+      <header className="absolute top-0 right-0 p-4 flex gap-4">
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => navigate("/submit-idea")}
+        >
+          <PlusCircle className="h-4 w-4" />
+          Submit Idea
+        </Button>
         <Button variant="outline" className="gap-2" disabled>
           <LogIn className="h-4 w-4" />
           Login (Coming Soon)
