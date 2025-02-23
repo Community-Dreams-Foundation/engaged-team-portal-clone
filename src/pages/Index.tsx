@@ -9,7 +9,7 @@ import {
 import { CalendarDays, Users, Briefcase, GraduationCap, LogIn, PlusCircle } from "lucide-react";
 import PayPalButton from "@/components/PayPalButton";
 import { useNavigate } from "react-router-dom";
-import LoginDialog from "@/components/LoginDialog";
+import { LoginDialog } from "@/components/LoginDialog";
 
 const Index = () => {
   const navigate = useNavigate();
