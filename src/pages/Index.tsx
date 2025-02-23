@@ -9,6 +9,7 @@ import {
 import { CalendarDays, Users, Briefcase, GraduationCap, LogIn, PlusCircle } from "lucide-react";
 import PayPalButton from "@/components/PayPalButton";
 import { useNavigate } from "react-router-dom";
+import LoginDialog from "@/components/LoginDialog";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -71,10 +72,7 @@ const Index = () => {
           <PlusCircle className="h-4 w-4" />
           Submit Idea
         </Button>
-        <Button variant="outline" className="gap-2" disabled>
-          <LogIn className="h-4 w-4" />
-          Login (Coming Soon)
-        </Button>
+        <LoginDialog />
       </header>
 
       {/* Hero Section */}
