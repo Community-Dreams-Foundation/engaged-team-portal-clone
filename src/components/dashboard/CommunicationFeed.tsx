@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { MessageSquare, Filter, Bell, ListChecks } from "lucide-react"
+import { MessageSquare, Filter, Bell, ListChecks, Code, Quote, Bold, Italic } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -19,6 +19,13 @@ import {
   orderByChild 
 } from "firebase/database"
 
+interface MessageFormat {
+  bold?: boolean
+  italic?: boolean
+  code?: boolean
+  quote?: boolean
+}
+
 interface Message {
   id: string
   userId: string
@@ -27,6 +34,7 @@ interface Message {
   timestamp: string
   threadId?: string
   isRead: boolean
+  format?: MessageFormat
 }
 
 const fetchMessages = async (): Promise<Message[]> => {
@@ -55,6 +63,12 @@ const fetchMessages = async (): Promise<Message[]> => {
 export function CommunicationFeed() {
   const [newMessage, setNewMessage] = useState("")
   const [filter, setFilter] = useState<"all" | "unread">("all")
+  const [messageFormat, setMessageFormat] = useState<MessageFormat>({
+    bold: false,
+    italic: false,
+    code: false,
+    quote: false
+  })
   const { toast } = useToast()
   const { currentUser } = useAuth()
   const queryClient = useQueryClient()
@@ -69,13 +83,11 @@ export function CommunicationFeed() {
     const db = getDatabase()
     const messagesRef = ref(db, 'messages')
 
-    // Subscribe to real-time updates
     const unsubscribe = onValue(messagesRef, () => {
       queryClient.invalidateQueries({ queryKey: ["messages"] })
     })
 
     return () => {
-      // Cleanup subscription
       off(messagesRef)
       unsubscribe()
     }
@@ -93,7 +105,8 @@ export function CommunicationFeed() {
         userName: currentUser.displayName || 'Anonymous',
         content: newMessage,
         timestamp: serverTimestamp(),
-        isRead: false
+        isRead: false,
+        format: messageFormat
       })
 
       toast({
@@ -102,6 +115,12 @@ export function CommunicationFeed() {
       })
       
       setNewMessage("")
+      setMessageFormat({
+        bold: false,
+        italic: false,
+        code: false,
+        quote: false
+      })
     } catch (error) {
       console.error("Error sending message:", error)
       toast({
@@ -110,6 +129,39 @@ export function CommunicationFeed() {
         description: "Failed to send message. Please try again."
       })
     }
+  }
+
+  const toggleFormat = (type: keyof MessageFormat) => {
+    setMessageFormat(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }))
+  }
+
+  const renderMessageContent = (message: Message) => {
+    let content = message.content
+
+    if (message.format?.code) {
+      return (
+        <pre className="bg-muted p-2 rounded-md font-mono text-sm overflow-x-auto">
+          <code>{content}</code>
+        </pre>
+      )
+    }
+
+    if (message.format?.quote) {
+      return (
+        <blockquote className="border-l-4 border-primary/50 pl-4 italic">
+          {content}
+        </blockquote>
+      )
+    }
+
+    return (
+      <p className={`text-sm ${message.format?.bold ? 'font-bold' : ''} ${message.format?.italic ? 'italic' : ''}`}>
+        {content}
+      </p>
+    )
   }
 
   const filteredMessages = messages.filter(msg => 
@@ -188,7 +240,7 @@ export function CommunicationFeed() {
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
-                    <p className="text-sm mt-1">{message.content}</p>
+                    {renderMessageContent(message)}
                   </div>
                 </div>
               ))}
@@ -197,16 +249,53 @@ export function CommunicationFeed() {
         ))}
       </div>
 
-      <div className="flex gap-2">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message here..."
-          className="resize-none"
-        />
-        <Button onClick={handleSendMessage} disabled={!currentUser}>
-          Send
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => toggleFormat('bold')}
+            className={messageFormat.bold ? 'bg-primary text-primary-foreground' : ''}
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => toggleFormat('italic')}
+            className={messageFormat.italic ? 'bg-primary text-primary-foreground' : ''}
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => toggleFormat('code')}
+            className={messageFormat.code ? 'bg-primary text-primary-foreground' : ''}
+          >
+            <Code className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => toggleFormat('quote')}
+            className={messageFormat.quote ? 'bg-primary text-primary-foreground' : ''}
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="flex gap-2">
+          <Textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message here..."
+            className="resize-none"
+          />
+          <Button onClick={handleSendMessage} disabled={!currentUser}>
+            Send
+          </Button>
+        </div>
       </div>
     </div>
   )
