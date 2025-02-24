@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { type IntakeFormData } from "@/components/intake/types";
+import { CustomizationForm } from "@/components/customize/CustomizationForm";
 
 const CustomizeCoS = () => {
   const navigate = useNavigate();
@@ -36,12 +37,7 @@ const CustomizeCoS = () => {
             />
           </div>
 
-          {/* CoS customization form will be implemented in the next step */}
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              Customization options coming soon...
-            </p>
-          </div>
+          <CustomizationForm />
         </div>
       </div>
     </div>
