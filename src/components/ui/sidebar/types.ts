@@ -19,12 +19,12 @@ export interface SidebarProps extends React.ComponentProps<"div"> {
   collapsible?: "offcanvas" | "icon" | "none"
 }
 
-// Update the SidebarMenuButtonProps to extend the full buttonVariants type
 export interface SidebarMenuButtonProps
-  extends React.ComponentProps<"button">,
-    VariantProps<typeof buttonVariants> {
+  extends React.ComponentProps<"button"> {
   asChild?: boolean
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  size?: "default" | "sm" | "lg" | "icon"
 }
 
