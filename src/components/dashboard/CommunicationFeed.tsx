@@ -1,0 +1,171 @@
+
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { MessageSquare, Filter, Bell, ListChecks } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+
+interface Message {
+  id: string
+  userId: string
+  userName: string
+  content: string
+  timestamp: string
+  threadId?: string
+  isRead: boolean
+}
+
+// Mock data function - replace with Firebase later
+const fetchMessages = async (): Promise<Message[]> => {
+  return [
+    {
+      id: "1",
+      userId: "user1",
+      userName: "Alice Johnson",
+      content: "Team meeting notes from yesterday have been uploaded.",
+      timestamp: "2024-02-20T10:00:00Z",
+      isRead: true
+    },
+    {
+      id: "2",
+      userId: "user2",
+      userName: "Bob Smith",
+      content: "Can someone review the Q1 presentation?",
+      timestamp: "2024-02-20T11:30:00Z",
+      threadId: "thread1",
+      isRead: false
+    },
+    {
+      id: "3",
+      userId: "user3",
+      userName: "Carol White",
+      content: "I'll take a look at it this afternoon.",
+      timestamp: "2024-02-20T12:00:00Z",
+      threadId: "thread1",
+      isRead: false
+    }
+  ]
+}
+
+export function CommunicationFeed() {
+  const [newMessage, setNewMessage] = useState("")
+  const [filter, setFilter] = useState<"all" | "unread">("all")
+  const { toast } = useToast()
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messages"],
+    queryFn: fetchMessages
+  })
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim()) return
+
+    // This would be replaced with Firebase later
+    toast({
+      title: "Message sent",
+      description: "Your message has been sent successfully."
+    })
+    
+    setNewMessage("")
+  }
+
+  const filteredMessages = messages.filter(msg => 
+    filter === "all" || (filter === "unread" && !msg.isRead)
+  )
+
+  const groupedMessages = filteredMessages.reduce((acc, message) => {
+    if (message.threadId) {
+      if (!acc[message.threadId]) {
+        acc[message.threadId] = []
+      }
+      acc[message.threadId].push(message)
+    } else {
+      if (!acc.standalone) {
+        acc.standalone = []
+      }
+      acc.standalone.push(message)
+    }
+    return acc
+  }, {} as Record<string, Message[]>)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">Internal Communication Feed</h3>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilter(filter === "all" ? "unread" : "all")}
+          >
+            <Filter className="h-4 w-4" />
+            {filter === "all" ? "Show Unread" : "Show All"}
+          </Button>
+          
+          <Button variant="outline" size="sm">
+            <Bell className="h-4 w-4" />
+            <Badge variant="secondary" className="ml-1">
+              {messages.filter(m => !m.isRead).length}
+            </Badge>
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-4 max-h-[400px] overflow-y-auto">
+        {Object.entries(groupedMessages).map(([threadId, threadMessages]) => (
+          <Card key={threadId} className="p-4">
+            {threadId !== "standalone" && (
+              <div className="flex items-center gap-2 mb-2">
+                <ListChecks className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Thread</span>
+              </div>
+            )}
+            
+            <div className="space-y-3">
+              {threadMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${
+                    !message.isRead ? "bg-muted/50 p-2 rounded-lg" : ""
+                  }`}
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    {message.userName[0]}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">
+                        {message.userName}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(message.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="text-sm mt-1">{message.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <Textarea
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type your message here..."
+          className="resize-none"
+        />
+        <Button onClick={handleSendMessage}>Send</Button>
+      </div>
+    </div>
+  )
+}
