@@ -1,5 +1,5 @@
 
-import { getDatabase, ref, onValue, update, push, set } from "firebase/database"
+import { getDatabase, ref, onValue, update, push, set, get } from "firebase/database"
 import { Task, TaskStatus } from "@/types/task"
 
 export const fetchTasks = async (userId: string): Promise<Task[]> => {
@@ -31,7 +31,11 @@ export const createTask = async (userId: string, task: Omit<Task, "id">) => {
   const db = getDatabase()
   const tasksRef = ref(db, `users/${userId}/tasks`)
   const newTaskRef = push(tasksRef)
-  return set(newTaskRef, task)
+  return set(newTaskRef, {
+    ...task,
+    isTimerRunning: false,
+    totalElapsedTime: 0
+  })
 }
 
 export const updateTaskStatus = async (
@@ -53,9 +57,32 @@ export const updateTaskTimer = async (
   totalElapsedTime?: number
 ) => {
   const db = getDatabase()
-  return update(ref(db, `users/${userId}/tasks/${taskId}`), {
+  const updates: Record<string, any> = {
     isTimerRunning,
-    startTime,
-    totalElapsedTime
-  })
+  }
+  
+  if (startTime !== undefined) updates.startTime = startTime
+  if (totalElapsedTime !== undefined) updates.totalElapsedTime = totalElapsedTime
+  
+  return update(ref(db, `users/${userId}/tasks/${taskId}`), updates)
 }
+
+export const checkDependencies = async (userId: string, taskId: string): Promise<boolean> => {
+  const db = getDatabase()
+  const taskRef = ref(db, `users/${userId}/tasks/${taskId}`)
+  const taskSnapshot = await get(taskRef)
+  const task = taskSnapshot.val()
+
+  if (!task.dependencies || task.dependencies.length === 0) {
+    return true
+  }
+
+  const dependenciesRef = ref(db, `users/${userId}/tasks`)
+  const dependenciesSnapshot = await get(dependenciesRef)
+  const dependencies = dependenciesSnapshot.val()
+
+  return task.dependencies.every((depId: string) => 
+    dependencies[depId] && dependencies[depId].status === 'completed'
+  )
+}
+
