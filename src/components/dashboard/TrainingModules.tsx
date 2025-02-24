@@ -3,8 +3,19 @@ import { GraduationCap, BookOpen, CheckCircle, Play, Trophy } from "lucide-react
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/contexts/AuthContext"
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update,
+  query,
+  orderByChild,
+  off
+} from "firebase/database"
+import { useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 type TrainingModule = {
   id: number
@@ -15,54 +26,130 @@ type TrainingModule = {
   completed: boolean
 }
 
-const fetchTrainingModules = async (userId: string) => {
-  // This will be replaced with actual Firebase query
-  return [
-    {
-      id: 1,
-      title: "CoS Fundamentals",
-      description: "Learn the core principles of being an effective Chief of Staff",
-      progress: 100,
-      duration: "45 min",
-      completed: true
-    },
-    {
-      id: 2,
-      title: "Strategic Planning",
-      description: "Master the art of strategic planning and execution",
-      progress: 60,
-      duration: "1h 15min",
-      completed: false
-    },
-    {
-      id: 3,
-      title: "Communication Skills",
-      description: "Develop advanced communication and presentation skills",
-      progress: 30,
-      duration: "1h",
-      completed: false
-    },
-    {
-      id: 4,
-      title: "Time Management",
-      description: "Optimize your productivity and time allocation",
-      progress: 0,
-      duration: "50 min",
-      completed: false
-    }
-  ];
+const fetchTrainingModules = async (userId: string): Promise<TrainingModule[]> => {
+  return new Promise((resolve, reject) => {
+    const db = getDatabase()
+    const modulesRef = query(ref(db, `users/${userId}/trainingModules`), orderByChild('id'))
+
+    onValue(modulesRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        // Initialize default modules for new users
+        const defaultModules = [
+          {
+            id: 1,
+            title: "CoS Fundamentals",
+            description: "Learn the core principles of being an effective Chief of Staff",
+            progress: 0,
+            duration: "45 min",
+            completed: false
+          },
+          {
+            id: 2,
+            title: "Strategic Planning",
+            description: "Master the art of strategic planning and execution",
+            progress: 0,
+            duration: "1h 15min",
+            completed: false
+          },
+          {
+            id: 3,
+            title: "Communication Skills",
+            description: "Develop advanced communication and presentation skills",
+            progress: 0,
+            duration: "1h",
+            completed: false
+          },
+          {
+            id: 4,
+            title: "Time Management",
+            description: "Optimize your productivity and time allocation",
+            progress: 0,
+            duration: "50 min",
+            completed: false
+          }
+        ]
+        
+        update(ref(db, `users/${userId}`), {
+          trainingModules: defaultModules
+        })
+        resolve(defaultModules)
+      } else {
+        const modules: TrainingModule[] = []
+        snapshot.forEach((childSnapshot) => {
+          modules.push({
+            id: childSnapshot.val().id,
+            ...childSnapshot.val()
+          })
+        })
+        resolve(modules)
+      }
+    }, (error) => {
+      console.error("Error fetching training modules:", error)
+      reject(error)
+    })
+  })
 }
 
 export function TrainingModules() {
-  const { currentUser } = useAuth();
+  const { currentUser } = useAuth()
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
   
   const { data: modules = [] } = useQuery({
     queryKey: ['trainingModules', currentUser?.uid],
     queryFn: () => fetchTrainingModules(currentUser?.uid || ''),
     enabled: !!currentUser,
-  });
+  })
 
-  const completedModules = modules.filter(module => module.completed).length;
+  useEffect(() => {
+    if (!currentUser) return
+
+    const db = getDatabase()
+    const modulesRef = ref(db, `users/${currentUser.uid}/trainingModules`)
+
+    const unsubscribe = onValue(modulesRef, () => {
+      queryClient.invalidateQueries({ queryKey: ['trainingModules', currentUser.uid] })
+    })
+
+    return () => {
+      off(modulesRef)
+      unsubscribe()
+    }
+  }, [currentUser, queryClient])
+
+  const handleModuleAction = async (moduleId: number) => {
+    if (!currentUser) return
+
+    const module = modules.find(m => m.id === moduleId)
+    if (!module) return
+
+    const newProgress = module.completed ? module.progress : Math.min(100, module.progress + 20)
+    const completed = newProgress === 100
+
+    try {
+      const db = getDatabase()
+      await update(ref(db, `users/${currentUser.uid}/trainingModules/${moduleId - 1}`), {
+        progress: newProgress,
+        completed
+      })
+
+      toast({
+        title: completed ? "Module Completed!" : "Progress Updated",
+        description: completed 
+          ? `Congratulations on completing ${module.title}!`
+          : `Progress on ${module.title} updated to ${newProgress}%`
+      })
+    } catch (error) {
+      console.error("Error updating module progress:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update module progress. Please try again."
+      })
+    }
+  }
+
+  const completedModules = modules.filter(module => module.completed).length
 
   return (
     <Card className="p-6">
@@ -113,7 +200,13 @@ export function TrainingModules() {
                 <span className="text-sm text-muted-foreground">
                   Progress: {module.progress}%
                 </span>
-                <Button size="sm" variant="ghost" className="h-8 px-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="h-8 px-2"
+                  onClick={() => handleModuleAction(module.id)}
+                  disabled={!currentUser}
+                >
                   <Play className="h-4 w-4 mr-1" />
                   {module.completed ? "Review" : "Continue"}
                 </Button>
@@ -123,5 +216,5 @@ export function TrainingModules() {
         ))}
       </div>
     </Card>
-  );
+  )
 }
