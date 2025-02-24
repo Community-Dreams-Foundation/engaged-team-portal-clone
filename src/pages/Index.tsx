@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { TrainingModules } from "@/components/dashboard/TrainingModules"
 import { CosAgent } from "@/components/dashboard/CosAgent"
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics"
+import { Card } from "@/components/ui/card"
 
 export default function Index() {
   return (
@@ -22,3 +23,4 @@ export default function Index() {
     </DashboardLayout>
   )
 }
+
