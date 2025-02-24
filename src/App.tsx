@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SubmitIdea from "./pages/SubmitIdea";
 import Intake from "./pages/Intake";
+import CustomizeCoS from "./pages/CustomizeCoS";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/submit-idea" element={<SubmitIdea />} />
             <Route path="/intake" element={<Intake />} />
+            <Route path="/customize-cos" element={<CustomizeCoS />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
