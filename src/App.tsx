@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import SubmitIdea from "./pages/SubmitIdea";
 import Intake from "./pages/Intake";
 import CustomizeCoS from "./pages/CustomizeCoS";
+import SimulateCoS from "./pages/SimulateCoS";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/submit-idea" element={<SubmitIdea />} />
             <Route path="/intake" element={<Intake />} />
             <Route path="/customize-cos" element={<CustomizeCoS />} />
+            <Route path="/simulate-cos" element={<SimulateCoS />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

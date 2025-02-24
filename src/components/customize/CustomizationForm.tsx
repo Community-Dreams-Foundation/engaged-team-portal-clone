@@ -2,10 +2,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,12 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
 import { cosCustomizationSchema, type CosCustomizationData } from "./types";
 
-export function CustomizationForm() {
+export const CustomizationForm = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const form = useForm<CosCustomizationData>({
     resolver: zodResolver(cosCustomizationSchema),
     defaultValues: {
@@ -36,26 +37,14 @@ export function CustomizationForm() {
     },
   });
 
-  async function onSubmit(values: CosCustomizationData) {
-    try {
-      // Store customization data in localStorage
-      localStorage.setItem("cosCustomization", JSON.stringify(values));
-      
-      toast({
-        title: "Preferences saved!",
-        description: "Let's proceed to the simulation.",
-      });
-      
-      // Navigate to the next step (simulation page - to be implemented)
-      navigate("/simulation");
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "There was a problem saving your preferences.",
-      });
-    }
-  }
+  const onSubmit = (data: CosCustomizationData) => {
+    localStorage.setItem("cosCustomizationData", JSON.stringify(data));
+    toast({
+      title: "Preferences Saved",
+      description: "Your CoS has been customized successfully.",
+    });
+    navigate("/simulate-cos");
+  };
 
   return (
     <Form {...form}>
@@ -79,9 +68,6 @@ export function CustomizationForm() {
                   <SelectItem value="Analytical">Analytical</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
-                How would you like your AI CoS to communicate with you?
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -107,9 +93,6 @@ export function CustomizationForm() {
                   <SelectItem value="Process Improvement">Process Improvement</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
-                What should be the main focus area for your AI CoS?
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -120,11 +103,11 @@ export function CustomizationForm() {
           name="decisionStyle"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Decision-Making Style</FormLabel>
+              <FormLabel>Decision Making Style</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a decision-making style" />
+                    <SelectValue placeholder="Select a decision making style" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -134,9 +117,6 @@ export function CustomizationForm() {
                   <SelectItem value="Consultative">Consultative</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
-                How should your AI CoS approach decision-making?
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -161,9 +141,6 @@ export function CustomizationForm() {
                   <SelectItem value="Milestone-based">Milestone-based</SelectItem>
                 </SelectContent>
               </Select>
-              <FormDescription>
-                How often would you like to receive feedback?
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -174,17 +151,13 @@ export function CustomizationForm() {
           name="specialInstructions"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Special Instructions</FormLabel>
+              <FormLabel>Special Instructions (Optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Add any specific instructions or preferences for your AI CoS..."
-                  className="h-32 resize-none"
+                  placeholder="Add any specific instructions or preferences..."
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                Optional: Add any additional preferences or instructions (max 500 characters)
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -196,4 +169,4 @@ export function CustomizationForm() {
       </form>
     </Form>
   );
-}
+};
