@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { TaskList } from "@/components/dashboard/TaskList"
 import { Button } from "@/components/ui/button"
-import { UserCog, MessageSquare, Brain, Trophy, TrendingUp, Target, Medal } from "lucide-react"
+import { UserCog, MessageSquare, Brain, Trophy, TrendingUp, Target, Medal, ListChecks, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import {
   BarChart,
   Bar,
@@ -40,31 +41,71 @@ export default function Index() {
             <h3 className="font-semibold">Chief of Staff Agent</h3>
           </div>
           
+          {/* AI Interaction Interface */}
           <div className="space-y-4">
-            <div className="flex items-start gap-3 border-l-2 border-primary/20 pl-4">
-              <Brain className="h-4 w-4 text-primary mt-1" />
-              <div>
-                <p className="text-sm font-medium">AI-Powered Assistance</p>
-                <p className="text-sm text-muted-foreground">
-                  Get personalized guidance and recommendations based on your preferences
-                </p>
+            <div className="bg-muted p-4 rounded-lg max-h-[200px] overflow-y-auto space-y-3">
+              <div className="flex items-start gap-2">
+                <UserCog className="h-4 w-4 mt-1 text-primary" />
+                <p className="text-sm">How can I assist you today?</p>
+              </div>
+              {/* Sample conversation history */}
+              <div className="flex items-start gap-2">
+                <MessageSquare className="h-4 w-4 mt-1 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Please help me prioritize my tasks.</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <UserCog className="h-4 w-4 mt-1 text-primary" />
+                <p className="text-sm">Based on urgency and impact, I recommend...</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 border-l-2 border-primary/20 pl-4">
-              <MessageSquare className="h-4 w-4 text-primary mt-1" />
-              <div>
-                <p className="text-sm font-medium">Real-Time Communication</p>
-                <p className="text-sm text-muted-foreground">
-                  Chat with your AI CoS for instant support and advice
-                </p>
-              </div>
-            </div>
+            <Textarea 
+              placeholder="Type your message here..."
+              className="resize-none"
+            />
 
-            <Button className="w-full mt-4" size="sm">
+            <Button className="w-full" size="sm">
               <MessageSquare className="mr-2 h-4 w-4" />
-              Start Conversation
+              Send Message
             </Button>
+
+            {/* Recommendations */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowUpDown className="h-4 w-4 text-primary" />
+                <h4 className="font-medium text-sm">Recommendations</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="bg-secondary/50 p-2 rounded-md text-sm">
+                  Prioritize the quarterly review meeting
+                </div>
+                <div className="bg-secondary/50 p-2 rounded-md text-sm">
+                  Schedule team sync for project updates
+                </div>
+              </div>
+            </div>
+
+            {/* Action Items */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ListChecks className="h-4 w-4 text-primary" />
+                <h4 className="font-medium text-sm">Action Items</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded" />
+                  <span>Review Q4 strategy document</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded" />
+                  <span>Prepare meeting agenda</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="rounded" />
+                  <span>Follow up with team leads</span>
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
         <Card className="p-6 md:col-start-2 lg:col-start-3">
