@@ -80,7 +80,7 @@ export const updateModuleProgress = async (
   completed: boolean
 ) => {
   const db = getDatabase()
-  return update(ref(db, `users/${currentUser.uid}/trainingModules/${moduleId - 1}`), {
+  return update(ref(db, `users/${userId}/trainingModules/${moduleId - 1}`), {
     progress: newProgress,
     completed
   })
