@@ -7,7 +7,18 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
-import { Timer, AlertCircle, Lock, Play, Pause } from "lucide-react"
+import { 
+  Timer, 
+  AlertCircle, 
+  Lock, 
+  Play, 
+  Pause, 
+  Clock, 
+  Tag, 
+  Link2, 
+  AlertTriangle 
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 
 export function KanbanBoard() {
@@ -38,7 +49,6 @@ export function KanbanBoard() {
     loadTasks()
   }, [currentUser?.uid, toast])
 
-  // Timer update interval
   useEffect(() => {
     const interval = setInterval(() => {
       setTasks(currentTasks => 
@@ -82,17 +92,14 @@ export function KanbanBoard() {
     if (!currentUser?.uid || !taskId) return
 
     try {
-      // Check dependencies before updating status
-      if (newStatus === 'in-progress') {
-        const canStart = await checkDependencies(currentUser.uid, taskId)
-        if (!canStart) {
-          toast({
-            variant: "destructive",
-            title: "Cannot start task",
-            description: "Not all dependencies are completed."
-          })
-          return
-        }
+      const canStart = await checkDependencies(currentUser.uid, taskId)
+      if (newStatus === 'in-progress' && !canStart) {
+        toast({
+          variant: "destructive",
+          title: "Cannot start task",
+          description: "Not all dependencies are completed."
+        })
+        return
       }
 
       await updateTaskStatus(currentUser.uid, taskId, newStatus)
@@ -157,6 +164,19 @@ export function KanbanBoard() {
     return `${hours}h ${remainingMinutes}m`
   }
 
+  const getPriorityBadge = (priority?: string) => {
+    const colors = {
+      high: "text-red-500 border-red-500",
+      medium: "text-yellow-500 border-yellow-500",
+      low: "text-green-500 border-green-500"
+    }
+    return priority ? (
+      <Badge variant="outline" className={colors[priority.toLowerCase()]}>
+        {priority}
+      </Badge>
+    ) : null
+  }
+
   const columns: { title: string, status: TaskStatus }[] = [
     { title: "To Do", status: "todo" },
     { title: "In Progress", status: "in-progress" },
@@ -188,45 +208,82 @@ export function KanbanBoard() {
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, column.status)}
         >
-          <h3 className="font-semibold mb-4">{column.title}</h3>
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            {column.title}
+            <Badge variant="secondary" className="ml-auto">
+              {tasks.filter(t => t.status === column.status).length}
+            </Badge>
+          </h3>
+          
           <div className="space-y-4">
             {tasks
               .filter(task => task.status === column.status)
               .map(task => (
                 <Card
                   key={task.id}
-                  className="p-3 cursor-move"
+                  className="p-3 cursor-move hover:shadow-md transition-shadow"
                   draggable
                   onDragStart={(e) => handleDragStart(e, task.id)}
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="space-y-1">
                         <h4 className="font-medium">{task.title}</h4>
                         <p className="text-sm text-muted-foreground">{task.description}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {task.dependencies?.length > 0 && !checkDependencies(currentUser?.uid || '', task.id) && (
-                          <Lock className="h-4 w-4 text-yellow-500" />
-                        )}
-                        {task.isTimerRunning && (
-                          <Timer className="h-4 w-4 text-green-500 animate-pulse" />
-                        )}
-                        {(task.actualDuration > task.estimatedDuration || 
-                          ((task.totalElapsedTime || 0) > task.estimatedDuration * 60 * 1000)) && (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
+                        
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {getPriorityBadge(task.priority)}
+                          {task.tags?.map(tag => (
+                            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                              <Tag className="h-3 w-3" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        {formatDuration(task.totalElapsedTime || 0)} / {task.estimatedDuration}m
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        Est: {task.estimatedDuration}m
                       </span>
+                      {task.dependencies?.length > 0 && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <Link2 className="h-4 w-4" />
+                          <span>{task.dependencies.length} dependencies</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {formatDuration(task.totalElapsedTime || 0)}
+                        </span>
+                        {task.dependencies?.length > 0 && !checkDependencies(currentUser?.uid || '', task.id) && (
+                          <span className="flex items-center gap-1 text-yellow-500">
+                            <Lock className="h-4 w-4" />
+                          </span>
+                        )}
+                        {task.isTimerRunning && (
+                          <span className="flex items-center gap-1 text-green-500">
+                            <Timer className="h-4 w-4 animate-pulse" />
+                          </span>
+                        )}
+                        {(task.totalElapsedTime || 0) > task.estimatedDuration * 60 * 1000 && (
+                          <span className="flex items-center gap-1 text-red-500">
+                            <AlertTriangle className="h-4 w-4" />
+                          </span>
+                        )}
+                      </div>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0"
                         onClick={() => toggleTimer(task.id)}
+                        disabled={task.status === 'completed'}
                       >
                         {task.isTimerRunning ? (
                           <Pause className="h-4 w-4" />
@@ -244,4 +301,3 @@ export function KanbanBoard() {
     </div>
   )
 }
-
