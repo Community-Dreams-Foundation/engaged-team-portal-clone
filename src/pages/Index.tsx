@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { TaskList } from "@/components/dashboard/TaskList"
@@ -5,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { UserCog, MessageSquare, Brain, Trophy, TrendingUp, Target, Medal, ListChecks, ArrowUpDown, GraduationCap, BookOpen, CheckCircle, Play } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { useQuery } from "@tanstack/react-query"
+import { auth } from "@/lib/firebase"
+import { useAuth } from "@/contexts/AuthContext"
 import {
   BarChart,
   Bar,
@@ -15,7 +19,7 @@ import {
   ResponsiveContainer
 } from 'recharts'
 
-// Sample data - in a real app, this would come from your backend
+// Mock data with Firebase-like structure
 const performanceData = [
   { name: 'Mon', tasks: 12 },
   { name: 'Tue', tasks: 19 },
@@ -59,7 +63,64 @@ const trainingModules = [
   }
 ]
 
+// Mock Firebase query functions - to be replaced with real Firebase calls
+const fetchTrainingModules = async (userId: string) => {
+  // This will be replaced with actual Firebase query
+  return trainingModules;
+}
+
+const fetchPerformanceData = async (userId: string) => {
+  // This will be replaced with actual Firebase query
+  return performanceData;
+}
+
+const fetchRecommendations = async (userId: string) => {
+  // This will be replaced with actual Firebase query
+  return [
+    "Prioritize the quarterly review meeting",
+    "Schedule team sync for project updates"
+  ];
+}
+
+const fetchActionItems = async (userId: string) => {
+  // This will be replaced with actual Firebase query
+  return [
+    { id: 1, text: "Review Q4 strategy document", completed: false },
+    { id: 2, text: "Prepare meeting agenda", completed: false },
+    { id: 3, text: "Follow up with team leads", completed: false }
+  ];
+}
+
 export default function Index() {
+  const { currentUser } = useAuth();
+  
+  // Set up React Query hooks with Firebase-like structure
+  const { data: modules = trainingModules } = useQuery({
+    queryKey: ['trainingModules', currentUser?.uid],
+    queryFn: () => fetchTrainingModules(currentUser?.uid || ''),
+    enabled: !!currentUser,
+  });
+
+  const { data: performance = performanceData } = useQuery({
+    queryKey: ['performanceData', currentUser?.uid],
+    queryFn: () => fetchPerformanceData(currentUser?.uid || ''),
+    enabled: !!currentUser,
+  });
+
+  const { data: recommendations = [] } = useQuery({
+    queryKey: ['recommendations', currentUser?.uid],
+    queryFn: () => fetchRecommendations(currentUser?.uid || ''),
+    enabled: !!currentUser,
+  });
+
+  const { data: actionItems = [] } = useQuery({
+    queryKey: ['actionItems', currentUser?.uid],
+    queryFn: () => fetchActionItems(currentUser?.uid || ''),
+    enabled: !!currentUser,
+  });
+
+  const completedModules = modules.filter(module => module.completed).length;
+
   return (
     <DashboardLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -73,12 +134,12 @@ export default function Index() {
               </div>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <Trophy className="h-3 w-3" />
-                2/4 Completed
+                {completedModules}/{modules.length} Completed
               </Badge>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              {trainingModules.map((module) => (
+              {modules.map((module) => (
                 <div
                   key={module.id}
                   className="relative group rounded-lg border p-4 hover:border-primary/50 transition-colors"
@@ -138,7 +199,6 @@ export default function Index() {
                 <UserCog className="h-4 w-4 mt-1 text-primary" />
                 <p className="text-sm">How can I assist you today?</p>
               </div>
-              {/* Sample conversation history */}
               <div className="flex items-start gap-2">
                 <MessageSquare className="h-4 w-4 mt-1 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Please help me prioritize my tasks.</p>
@@ -166,12 +226,11 @@ export default function Index() {
                 <h4 className="font-medium text-sm">Recommendations</h4>
               </div>
               <div className="space-y-2">
-                <div className="bg-secondary/50 p-2 rounded-md text-sm">
-                  Prioritize the quarterly review meeting
-                </div>
-                <div className="bg-secondary/50 p-2 rounded-md text-sm">
-                  Schedule team sync for project updates
-                </div>
+                {recommendations.map((recommendation, index) => (
+                  <div key={index} className="bg-secondary/50 p-2 rounded-md text-sm">
+                    {recommendation}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -182,22 +241,17 @@ export default function Index() {
                 <h4 className="font-medium text-sm">Action Items</h4>
               </div>
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="rounded" />
-                  <span>Review Q4 strategy document</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="rounded" />
-                  <span>Prepare meeting agenda</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" className="rounded" />
-                  <span>Follow up with team leads</span>
-                </div>
+                {actionItems.map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" className="rounded" checked={item.completed} />
+                    <span>{item.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </Card>
+
         <Card className="p-6 md:col-start-2 lg:col-start-3">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -231,7 +285,7 @@ export default function Index() {
             {/* Progress Chart */}
             <div className="h-[200px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={performanceData}>
+                <BarChart data={performance}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" fontSize={12} />
                   <YAxis fontSize={12} />
@@ -265,3 +319,4 @@ export default function Index() {
     </DashboardLayout>
   )
 }
+
