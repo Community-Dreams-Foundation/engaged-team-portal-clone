@@ -1,14 +1,19 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { CosCustomizationData } from "@/components/customize/types";
 import type { IntakeFormData } from "@/components/intake/types";
+import { Card } from "@/components/ui/card";
 
 const SimulateCoS = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [userData, setUserData] = useState<IntakeFormData | null>(null);
+  const [cosData, setCosData] = useState<CosCustomizationData | null>(null);
+  const [isScenarioActive, setIsScenarioActive] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     // Check if user completed previous steps
@@ -25,10 +30,62 @@ const SimulateCoS = () => {
       return;
     }
 
-    const userData: IntakeFormData = JSON.parse(intakeData);
-    const cosData: CosCustomizationData = JSON.parse(customizationData);
-    console.log("User data for simulation:", { userData, cosData });
+    const parsedUserData: IntakeFormData = JSON.parse(intakeData);
+    const parsedCosData: CosCustomizationData = JSON.parse(customizationData);
+    setUserData(parsedUserData);
+    setCosData(parsedCosData);
+    console.log("User data for simulation:", { parsedUserData, parsedCosData });
   }, [navigate, toast]);
+
+  const handleStartScenario = () => {
+    setIsScenarioActive(true);
+    toast({
+      title: "Scenario Started",
+      description: "Welcome to your morning briefing with your AI Chief of Staff.",
+    });
+  };
+
+  const generateMorningBrief = () => {
+    if (!userData || !cosData) return null;
+
+    const briefingStyle = {
+      Direct: "Here's your morning brief:",
+      Collaborative: "Let's review your morning priorities together:",
+      Diplomatic: "I've prepared your morning overview:",
+      Analytical: "Based on the current data, here's your morning analysis:",
+    }[cosData.communicationStyle];
+
+    const focusArea = {
+      "Strategic Planning": "strategic initiatives",
+      "Project Management": "project milestones",
+      "Team Coordination": "team activities",
+      "Resource Optimization": "resource allocation",
+      "Process Improvement": "process efficiency",
+    }[cosData.primaryFocus];
+
+    const steps = [
+      {
+        title: "Introduction",
+        content: `${briefingStyle}\nGood morning ${userData.fullName}. As your ${cosData.communicationStyle} Chief of Staff, I'll be focusing on ${focusArea} today.`,
+      },
+      {
+        title: "Daily Overview",
+        content: "I've analyzed your calendar and priorities for today. Here's what needs your attention:",
+      },
+      {
+        title: "Priority Tasks",
+        content: "1. Review and approve the quarterly strategy document\n2. Team standup at 10 AM\n3. Client presentation preparation\n4. Budget review for Q2",
+      },
+      {
+        title: "Recommendations",
+        content: "Based on your workload, I recommend focusing on the client presentation first, as it has the highest impact on this week's objectives.",
+      },
+    ];
+
+    return steps[currentStep];
+  };
+
+  const currentBrief = generateMorningBrief();
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,9 +122,40 @@ const SimulateCoS = () => {
                   Your AI Chief of Staff prepares your daily brief, highlighting key priorities 
                   and upcoming commitments.
                 </p>
-                <Button variant="secondary" className="w-full">
-                  Start Scenario
-                </Button>
+                {!isScenarioActive ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={handleStartScenario}
+                  >
+                    Start Scenario
+                  </Button>
+                ) : (
+                  <Card className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">{currentBrief?.title}</h4>
+                      <p className="whitespace-pre-line">{currentBrief?.content}</p>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => {
+                          if (currentStep < 3) {
+                            setCurrentStep(prev => prev + 1);
+                          } else {
+                            setIsScenarioActive(false);
+                            setCurrentStep(0);
+                            toast({
+                              title: "Scenario Completed",
+                              description: "You've completed the morning briefing scenario!",
+                            });
+                          }
+                        }}
+                      >
+                        {currentStep < 3 ? "Continue" : "Complete Scenario"}
+                      </Button>
+                    </div>
+                  </Card>
+                )}
               </div>
 
               <div className="bg-muted/50 p-4 rounded-md opacity-70">
