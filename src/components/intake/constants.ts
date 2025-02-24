@@ -1,15 +1,51 @@
 
 export const positions = [
-  "Chief of Staff",
-  "Executive Assistant",
-  "Operations Manager",
-  "Project Manager",
-  "Business Development Manager",
-  "Strategic Planning Director",
-  "Operations Director",
-  "Program Manager",
-  "Executive Operations Lead",
-  "Business Operations Manager",
+  // Strategy & Leadership
+  "Chief Technology Officer",
+  "Chief Product Officer",
+  "Chief Strategy Officer",
+  "VP of Engineering",
+  "VP of Product",
+  "Director of Operations",
+  "Finance Manager",
+  "Compliance Officer",
+  "Administrative Director",
+  
+  // Product & Design
+  "Product Manager",
+  "Product Designer",
+  "UX Researcher",
+  "UI Designer",
+  "Design Systems Engineer",
+  "Information Architect",
+  "Product Strategy Lead",
+  
+  // Data Engineering
+  "Data Architect",
+  "Data Engineer",
+  "Machine Learning Engineer",
+  "Data Scientist",
+  "Analytics Engineer",
+  "Business Intelligence Developer",
+  "Database Administrator",
+  
+  // Software Development
+  "Full Stack Developer",
+  "Frontend Developer",
+  "Backend Developer",
+  "DevOps Engineer",
+  "Site Reliability Engineer",
+  "Cloud Solutions Architect",
+  "Software Architect",
+  
+  // Engagement
+  "Growth Manager",
+  "Marketing Strategist",
+  "User Research Lead",
+  "Community Manager",
+  "Sales Engineer",
+  "Customer Success Manager",
+  "Developer Relations Engineer",
 ] as const;
 
 export const availabilityOptions = [
