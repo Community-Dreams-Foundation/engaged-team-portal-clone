@@ -28,6 +28,7 @@ export function PerformanceMetrics() {
   const [newGoal, setNewGoal] = useState({
     title: "",
     target: 0,
+    current: 0, // Add this line to fix the TypeScript error
     type: "tasks" as const,
     deadline: Date.now() + 7 * 24 * 60 * 60 * 1000 // 1 week from now
   })
