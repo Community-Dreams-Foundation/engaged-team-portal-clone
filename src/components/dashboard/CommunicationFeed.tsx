@@ -1,12 +1,23 @@
 
-import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useState, useEffect } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { MessageSquare, Filter, Bell, ListChecks } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
+import { 
+  getDatabase, 
+  ref, 
+  push, 
+  onValue, 
+  off,
+  serverTimestamp,
+  query,
+  orderByChild 
+} from "firebase/database"
 
 interface Message {
   id: string
@@ -18,58 +29,87 @@ interface Message {
   isRead: boolean
 }
 
-// Mock data function - replace with Firebase later
 const fetchMessages = async (): Promise<Message[]> => {
-  return [
-    {
-      id: "1",
-      userId: "user1",
-      userName: "Alice Johnson",
-      content: "Team meeting notes from yesterday have been uploaded.",
-      timestamp: "2024-02-20T10:00:00Z",
-      isRead: true
-    },
-    {
-      id: "2",
-      userId: "user2",
-      userName: "Bob Smith",
-      content: "Can someone review the Q1 presentation?",
-      timestamp: "2024-02-20T11:30:00Z",
-      threadId: "thread1",
-      isRead: false
-    },
-    {
-      id: "3",
-      userId: "user3",
-      userName: "Carol White",
-      content: "I'll take a look at it this afternoon.",
-      timestamp: "2024-02-20T12:00:00Z",
-      threadId: "thread1",
-      isRead: false
-    }
-  ]
+  return new Promise((resolve, reject) => {
+    const db = getDatabase()
+    const messagesRef = query(ref(db, 'messages'), orderByChild('timestamp'))
+
+    onValue(messagesRef, (snapshot) => {
+      const messages: Message[] = []
+      snapshot.forEach((childSnapshot) => {
+        const message = childSnapshot.val()
+        messages.push({
+          id: childSnapshot.key || '',
+          ...message,
+          timestamp: message.timestamp || new Date().toISOString()
+        })
+      })
+      resolve(messages.reverse())
+    }, (error) => {
+      console.error("Error fetching messages:", error)
+      reject(error)
+    })
+  })
 }
 
 export function CommunicationFeed() {
   const [newMessage, setNewMessage] = useState("")
   const [filter, setFilter] = useState<"all" | "unread">("all")
   const { toast } = useToast()
+  const { currentUser } = useAuth()
+  const queryClient = useQueryClient()
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages"],
-    queryFn: fetchMessages
+    queryFn: fetchMessages,
+    refetchOnWindowFocus: false
   })
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return
+  useEffect(() => {
+    const db = getDatabase()
+    const messagesRef = ref(db, 'messages')
 
-    // This would be replaced with Firebase later
-    toast({
-      title: "Message sent",
-      description: "Your message has been sent successfully."
+    // Subscribe to real-time updates
+    const unsubscribe = onValue(messagesRef, () => {
+      queryClient.invalidateQueries({ queryKey: ["messages"] })
     })
-    
-    setNewMessage("")
+
+    return () => {
+      // Cleanup subscription
+      off(messagesRef)
+      unsubscribe()
+    }
+  }, [queryClient])
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !currentUser) return
+
+    const db = getDatabase()
+    const messagesRef = ref(db, 'messages')
+
+    try {
+      await push(messagesRef, {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Anonymous',
+        content: newMessage,
+        timestamp: serverTimestamp(),
+        isRead: false
+      })
+
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent successfully."
+      })
+      
+      setNewMessage("")
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again."
+      })
+    }
   }
 
   const filteredMessages = messages.filter(msg => 
@@ -164,7 +204,9 @@ export function CommunicationFeed() {
           placeholder="Type your message here..."
           className="resize-none"
         />
-        <Button onClick={handleSendMessage}>Send</Button>
+        <Button onClick={handleSendMessage} disabled={!currentUser}>
+          Send
+        </Button>
       </div>
     </div>
   )
