@@ -1,6 +1,6 @@
 
-import { useState } from "react"
-import { UserCog, MessageSquare, ArrowUpDown, ListChecks, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { UserCog, MessageSquare, ArrowUpDown, ListChecks, Loader2, Settings, AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -20,7 +20,9 @@ interface Recommendation {
   id: string
   text: string
   priority: "high" | "medium" | "low"
-  category: "task" | "meeting" | "reminder"
+  category: "task" | "meeting" | "reminder" | "agent_creation"
+  agentType?: string
+  workload?: number
 }
 
 interface ActionItem {
@@ -28,13 +30,21 @@ interface ActionItem {
   text: string
   completed: boolean
   dueDate?: string
+  priority: "high" | "medium" | "low"
 }
 
-// Mock API calls that would normally interact with Gemini
+interface AgentPreferences {
+  communicationStyle: "formal" | "casual"
+  taskPrioritization: "deadline" | "importance"
+  notificationFrequency: "high" | "medium" | "low"
+}
+
+// Mock API calls
 const fetchRecommendations = async (userId: string): Promise<Recommendation[]> => {
-  // Simulating API delay
   await new Promise(resolve => setTimeout(resolve, 1000))
-  return [
+  const workload = Math.random() * 100 // Simulate workload percentage
+  
+  const recommendations: Recommendation[] = [
     {
       id: "1",
       text: "Review the quarterly performance metrics",
@@ -46,14 +56,22 @@ const fetchRecommendations = async (userId: string): Promise<Recommendation[]> =
       text: "Schedule team sync for project updates",
       priority: "medium",
       category: "meeting"
-    },
-    {
-      id: "3",
-      text: "Update project timeline documentation",
-      priority: "low",
-      category: "task"
     }
   ]
+
+  // Add agent creation recommendation if workload is high
+  if (workload > 75) {
+    recommendations.push({
+      id: "3",
+      text: `Current workload is at ${Math.round(workload)}%. Consider creating a Data Analysis Agent to help manage the increasing task load.`,
+      priority: "high",
+      category: "agent_creation",
+      agentType: "data_analysis",
+      workload
+    })
+  }
+
+  return recommendations
 }
 
 const fetchActionItems = async (userId: string): Promise<ActionItem[]> => {
@@ -63,26 +81,37 @@ const fetchActionItems = async (userId: string): Promise<ActionItem[]> => {
       id: "1",
       text: "Review Q4 strategy document",
       completed: false,
-      dueDate: "2024-03-20"
+      dueDate: "2024-03-20",
+      priority: "high"
     },
     {
       id: "2",
       text: "Prepare meeting agenda",
       completed: false,
-      dueDate: "2024-03-18"
-    },
-    {
-      id: "3",
-      text: "Follow up with team leads",
-      completed: false,
-      dueDate: "2024-03-19"
+      dueDate: "2024-03-18",
+      priority: "medium"
     }
   ]
 }
 
-const simulateAIResponse = async (message: string): Promise<string> => {
+const simulateAIResponse = async (message: string, preferences: AgentPreferences): Promise<string> => {
   await new Promise(resolve => setTimeout(resolve, 1500))
-  return "Based on your request, I recommend prioritizing the quarterly review meeting. This aligns with our current focus on performance analysis and will help inform our strategic planning for the next quarter."
+  
+  // Adapt response based on communication style preference
+  const style = preferences.communicationStyle === "formal" 
+    ? "Based on the current analysis," 
+    : "Hey! Looking at things,"
+
+  return `${style} I recommend prioritizing the quarterly review meeting. This aligns with our focus on performance analysis and will help inform our strategic planning for the next quarter.`
+}
+
+const fetchAgentPreferences = async (userId: string): Promise<AgentPreferences> => {
+  await new Promise(resolve => setTimeout(resolve, 500))
+  return {
+    communicationStyle: "formal",
+    taskPrioritization: "deadline",
+    notificationFrequency: "medium"
+  }
 }
 
 export function CosAgent() {
@@ -96,11 +125,17 @@ export function CosAgent() {
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [preferences, setPreferences] = useState<AgentPreferences>({
+    communicationStyle: "formal",
+    taskPrioritization: "deadline",
+    notificationFrequency: "medium"
+  })
 
   const { data: recommendations = [] } = useQuery({
     queryKey: ["recommendations", currentUser?.uid],
     queryFn: () => fetchRecommendations(currentUser?.uid || ""),
-    enabled: !!currentUser
+    enabled: !!currentUser,
+    refetchInterval: 30000 // Refresh every 30 seconds to check workload
   })
 
   const { data: actionItems = [], refetch: refetchActionItems } = useQuery({
@@ -108,6 +143,12 @@ export function CosAgent() {
     queryFn: () => fetchActionItems(currentUser?.uid || ""),
     enabled: !!currentUser
   })
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+      fetchAgentPreferences(currentUser.uid).then(prefs => setPreferences(prefs))
+    }
+  }, [currentUser?.uid])
 
   const createTaskMutation = useMutation({
     mutationFn: (recommendation: Recommendation) => {
@@ -117,7 +158,7 @@ export function CosAgent() {
         description: `Priority: ${recommendation.priority}`,
         status: "todo",
         estimatedDuration: 60,
-        actualDuration: 0, // Added the missing required property
+        actualDuration: 0,
         dependencies: [],
         isTimerRunning: false,
         startTime: undefined,
@@ -154,7 +195,7 @@ export function CosAgent() {
     setIsProcessing(true)
 
     try {
-      const response = await simulateAIResponse(inputMessage)
+      const response = await simulateAIResponse(inputMessage, preferences)
       const assistantMessage: Message = {
         role: "assistant",
         content: response,
@@ -177,8 +218,15 @@ export function CosAgent() {
     createTaskMutation.mutate(recommendation)
   }
 
+  const handleCreateAgent = (agentType: string, workload: number) => {
+    toast({
+      title: "New Agent Requested",
+      description: `Creating a new ${agentType} agent to handle ${Math.round(workload)}% workload.`
+    })
+    // In real implementation, this would call the API to create a new agent
+  }
+
   const toggleActionItem = async (itemId: string) => {
-    // In a real implementation, this would update the status in your backend
     await new Promise(resolve => setTimeout(resolve, 500))
     refetchActionItems()
     toast({
@@ -189,9 +237,14 @@ export function CosAgent() {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <UserCog className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">Chief of Staff Agent</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <UserCog className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">Chief of Staff Agent</h3>
+        </div>
+        <Button variant="ghost" size="sm">
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
       
       <div className="space-y-4">
@@ -245,15 +298,26 @@ export function CosAgent() {
             {recommendations.map((recommendation) => (
               <div
                 key={recommendation.id}
-                className="bg-secondary/50 p-2 rounded-md text-sm flex items-center justify-between"
+                className={`bg-secondary/50 p-2 rounded-md text-sm flex items-center justify-between ${
+                  recommendation.priority === "high" ? "border-l-4 border-red-500" : ""
+                }`}
               >
-                <span>{recommendation.text}</span>
+                <div className="flex items-center gap-2">
+                  {recommendation.category === "agent_creation" && (
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  )}
+                  <span>{recommendation.text}</span>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleCreateTask(recommendation)}
+                  onClick={() => 
+                    recommendation.category === "agent_creation" && recommendation.agentType && recommendation.workload
+                      ? handleCreateAgent(recommendation.agentType, recommendation.workload)
+                      : handleCreateTask(recommendation)
+                  }
                 >
-                  Add as Task
+                  {recommendation.category === "agent_creation" ? "Create Agent" : "Add as Task"}
                 </Button>
               </div>
             ))}
@@ -272,14 +336,21 @@ export function CosAgent() {
                   checked={item.completed}
                   onCheckedChange={() => toggleActionItem(item.id)}
                 />
-                <span className={item.completed ? "line-through text-muted-foreground" : ""}>
-                  {item.text}
-                </span>
-                {item.dueDate && (
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    Due: {new Date(item.dueDate).toLocaleDateString()}
+                <div className="flex-1">
+                  <span className={`${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                    {item.text}
                   </span>
-                )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Due: {new Date(item.dueDate || "").toLocaleDateString()}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full ${
+                      item.priority === "high" 
+                        ? "bg-red-100 text-red-700" 
+                        : "bg-secondary text-secondary-foreground"
+                    }`}>
+                      {item.priority}
+                    </span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
