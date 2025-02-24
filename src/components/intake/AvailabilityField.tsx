@@ -1,8 +1,9 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { IntakeFormData } from "./types";
+import { availabilityOptions } from "./constants";
 
 interface AvailabilityFieldProps {
   form: UseFormReturn<IntakeFormData>;
@@ -15,16 +16,24 @@ export function AvailabilityField({ form }: AvailabilityFieldProps) {
       name="availability"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Total Hours of Availability per Week</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              min={1}
-              max={168}
-              {...field}
-              onChange={(e) => field.onChange(Number(e.target.value))}
-            />
-          </FormControl>
+          <FormLabel>Weekly Availability</FormLabel>
+          <Select 
+            onValueChange={(value) => field.onChange(Number(value))} 
+            value={field.value?.toString()}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select your availability" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {availabilityOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value.toString()}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <FormMessage />
         </FormItem>
       )}
