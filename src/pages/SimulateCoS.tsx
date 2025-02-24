@@ -1,10 +1,12 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { CosCustomizationData } from "@/components/customize/types";
 import type { IntakeFormData } from "@/components/intake/types";
-import { Card } from "@/components/ui/card";
+import { ScenarioCard } from "@/components/simulate/ScenarioCard";
+import { MorningBriefingScenario } from "@/components/simulate/MorningBriefingScenario";
+import { ProjectPlanningScenario } from "@/components/simulate/ProjectPlanningScenario";
 
 const SimulateCoS = () => {
   const navigate = useNavigate();
@@ -48,92 +50,21 @@ const SimulateCoS = () => {
     });
   };
 
-  const generateMorningBrief = () => {
-    if (!userData || !cosData) return null;
-
-    const briefingStyle = {
-      Direct: "Here's your morning brief:",
-      Collaborative: "Let's review your morning priorities together:",
-      Diplomatic: "I've prepared your morning overview:",
-      Analytical: "Based on the current data, here's your morning analysis:",
-    }[cosData.communicationStyle];
-
-    const focusArea = {
-      "Strategic Planning": "strategic initiatives",
-      "Project Management": "project milestones",
-      "Team Coordination": "team activities",
-      "Resource Optimization": "resource allocation",
-      "Process Improvement": "process efficiency",
-    }[cosData.primaryFocus];
-
-    const steps = [
-      {
-        title: "Introduction",
-        content: `${briefingStyle}\nGood morning ${userData.fullName}. As your ${cosData.communicationStyle} Chief of Staff, I'll be focusing on ${focusArea} today.`,
-      },
-      {
-        title: "Daily Overview",
-        content: "I've analyzed your calendar and priorities for today. Here's what needs your attention:",
-      },
-      {
-        title: "Priority Tasks",
-        content: "1. Review and approve the quarterly strategy document\n2. Team standup at 10 AM\n3. Client presentation preparation\n4. Budget review for Q2",
-      },
-      {
-        title: "Recommendations",
-        content: "Based on your workload, I recommend focusing on the client presentation first, as it has the highest impact on this week's objectives.",
-      },
-    ];
-
-    return steps[currentStep];
+  const handleStepComplete = () => {
+    if (currentStep < 3) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      setIsScenarioActive(false);
+      setCurrentStep(0);
+      setCurrentScenario(null);
+      toast({
+        title: "Scenario Completed",
+        description: currentScenario === "morning"
+          ? "You've completed the morning briefing scenario!"
+          : "You've completed the project planning scenario!",
+      });
+    }
   };
-
-  const generateProjectPlan = () => {
-    if (!userData || !cosData) return null;
-
-    const planningStyle = {
-      Direct: "Let's create a structured project plan following our task management system:",
-      Collaborative: "I'll guide you through our task management process. Let's start with:",
-      Diplomatic: "I suggest we follow our established task management workflow:",
-      Analytical: "Based on our task management system, here's my analysis:",
-    }[cosData.communicationStyle];
-
-    const focusEmphasis = {
-      "Strategic Planning": "strategic alignment and project scope",
-      "Project Management": "comprehensive documentation and task breakdown",
-      "Team Coordination": "team roles and task distribution",
-      "Resource Optimization": "resource allocation and time estimation",
-      "Process Improvement": "workflow optimization and task automation",
-    }[cosData.primaryFocus];
-
-    const steps = [
-      {
-        title: "Input Phase",
-        content: `${planningStyle}\n${userData.fullName}, let's begin with the project input phase. I'll help ensure we capture all the essential details with a focus on ${focusEmphasis}.\n\nPlease provide:\n1. Project Title\n2. Description/Context\n3. Priority Level\n4. Initial Documentation\n5. Expected Deadline`,
-      },
-      {
-        title: "Documentation Parsing",
-        content: "Based on the input, I'll help generate comprehensive documentation:\n\n1. Project Charter\n2. Product Requirements Document (PRD)\n3. 6-Week Calendar\n4. 2-Week Sprint Plan\n\nI'll also ensure we have domain-specific documentation for design, engineering, and operational requirements.",
-      },
-      {
-        title: "Task Breakdown",
-        content: "Now, I'll help break down the project into micro-tasks:\n\n1. Each task will be time-bound (max 3 hours)\n2. Tasks will be structured with clear objectives\n3. Dependencies will be mapped\n4. Success criteria will be defined\n\nWould you like me to start with the high-level task breakdown?",
-      },
-      {
-        title: "Task Verification & Deployment",
-        content: "Let's review and deploy the tasks:\n\n1. Verify task accuracy and alignment\n2. Confirm time estimates\n3. Set up task monitoring\n4. Deploy to the task marketplace\n\nOnce verified, we can begin assigning tasks based on team member skills and availability.",
-      },
-    ];
-
-    return steps[currentStep];
-  };
-
-  const getCurrentContent = () => {
-    if (!isScenarioActive || !currentScenario) return null;
-    return currentScenario === "morning" ? generateMorningBrief() : generateProjectPlan();
-  };
-
-  const currentContent = getCurrentContent();
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,102 +95,49 @@ const SimulateCoS = () => {
             </div>
 
             <div className="grid gap-6">
-              <div className="bg-muted/50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">Scenario 1: Morning Briefing</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Your AI Chief of Staff prepares your daily brief, highlighting key priorities 
-                  and upcoming commitments.
-                </p>
-                {(!isScenarioActive || currentScenario !== "morning") ? (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => handleStartScenario("morning")}
-                    disabled={isScenarioActive && currentScenario !== "morning"}
-                  >
-                    {isScenarioActive ? "In Progress" : "Start Scenario"}
-                  </Button>
-                ) : (
-                  <Card className="p-4 space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium">{currentContent?.title}</h4>
-                      <p className="whitespace-pre-line">{currentContent?.content}</p>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() => {
-                          if (currentStep < 3) {
-                            setCurrentStep(prev => prev + 1);
-                          } else {
-                            setIsScenarioActive(false);
-                            setCurrentStep(0);
-                            setCurrentScenario(null);
-                            toast({
-                              title: "Scenario Completed",
-                              description: "You've completed the morning briefing scenario!",
-                            });
-                          }
-                        }}
-                      >
-                        {currentStep < 3 ? "Continue" : "Complete Scenario"}
-                      </Button>
-                    </div>
-                  </Card>
+              <ScenarioCard
+                title="Scenario 1: Morning Briefing"
+                description="Your AI Chief of Staff prepares your daily brief, highlighting key priorities 
+                and upcoming commitments."
+                onStart={() => handleStartScenario("morning")}
+                disabled={isScenarioActive && currentScenario !== "morning"}
+                isInProgress={isScenarioActive && currentScenario === "morning"}
+              >
+                {isScenarioActive && currentScenario === "morning" && userData && cosData && (
+                  <MorningBriefingScenario
+                    userData={userData}
+                    cosData={cosData}
+                    currentStep={currentStep}
+                    onStepComplete={handleStepComplete}
+                    isLastStep={currentStep === 3}
+                  />
                 )}
-              </div>
+              </ScenarioCard>
 
-              <div className="bg-muted/50 p-4 rounded-md">
-                <h3 className="font-medium mb-2">Scenario 2: Project Planning</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Work with your CoS to plan and organize a new project initiative.
-                </p>
-                {(!isScenarioActive || currentScenario !== "project") ? (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => handleStartScenario("project")}
-                    disabled={isScenarioActive && currentScenario !== "project"}
-                  >
-                    {isScenarioActive ? "In Progress" : "Start Scenario"}
-                  </Button>
-                ) : (
-                  <Card className="p-4 space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium">{currentContent?.title}</h4>
-                      <p className="whitespace-pre-line">{currentContent?.content}</p>
-                    </div>
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={() => {
-                          if (currentStep < 3) {
-                            setCurrentStep(prev => prev + 1);
-                          } else {
-                            setIsScenarioActive(false);
-                            setCurrentStep(0);
-                            setCurrentScenario(null);
-                            toast({
-                              title: "Scenario Completed",
-                              description: "You've completed the project planning scenario!",
-                            });
-                          }
-                        }}
-                      >
-                        {currentStep < 3 ? "Continue" : "Complete Scenario"}
-                      </Button>
-                    </div>
-                  </Card>
+              <ScenarioCard
+                title="Scenario 2: Project Planning"
+                description="Work with your CoS to plan and organize a new project initiative."
+                onStart={() => handleStartScenario("project")}
+                disabled={isScenarioActive && currentScenario !== "project"}
+                isInProgress={isScenarioActive && currentScenario === "project"}
+              >
+                {isScenarioActive && currentScenario === "project" && userData && cosData && (
+                  <ProjectPlanningScenario
+                    userData={userData}
+                    cosData={cosData}
+                    currentStep={currentStep}
+                    onStepComplete={handleStepComplete}
+                    isLastStep={currentStep === 3}
+                  />
                 )}
-              </div>
+              </ScenarioCard>
 
-              <div className="bg-muted/50 p-4 rounded-md opacity-70">
-                <h3 className="font-medium mb-2">Scenario 3: Team Coordination</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  See how your CoS helps manage team communications and assignments.
-                </p>
-                <Button variant="secondary" className="w-full" disabled>
-                  Coming Soon
-                </Button>
-              </div>
+              <ScenarioCard
+                title="Scenario 3: Team Coordination"
+                description="See how your CoS helps manage team communications and assignments."
+                onStart={() => {}}
+                disabled={true}
+              />
             </div>
           </div>
         </div>
