@@ -19,6 +19,7 @@ export interface SidebarProps extends React.ComponentProps<"div"> {
   collapsible?: "offcanvas" | "icon" | "none"
 }
 
+// Update the SidebarMenuButtonProps to extend the full buttonVariants type
 export interface SidebarMenuButtonProps
   extends React.ComponentProps<"button">,
     VariantProps<typeof buttonVariants> {
@@ -26,3 +27,4 @@ export interface SidebarMenuButtonProps
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
 }
+
