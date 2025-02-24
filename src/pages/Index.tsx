@@ -1,33 +1,30 @@
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { LoginDialog } from "@/components/LoginDialog";
-import { WelcomeModal } from "@/components/WelcomeModal";
+import { Card } from "@/components/ui/card"
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 
-const Index = () => {
-  const { currentUser } = useAuth();
-  const [showWelcome, setShowWelcome] = useState(false);
-
-  useEffect(() => {
-    // Show welcome modal when user logs in
-    if (currentUser && !localStorage.getItem("welcomeSeen")) {
-      setShowWelcome(true);
-      localStorage.setItem("welcomeSeen", "true");
-    }
-  }, [currentUser]);
-
+export default function Index() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-6">Welcome to DreamStream</h1>
-      
-      {!currentUser && <LoginDialog />}
-      
-      <WelcomeModal 
-        open={showWelcome} 
-        onOpenChange={setShowWelcome} 
-      />
-    </div>
-  );
-};
-
-export default Index;
+    <DashboardLayout>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="p-6">
+          <h3 className="font-semibold mb-2">Real-Time Task List</h3>
+          <p className="text-sm text-muted-foreground">
+            Coming soon: View and manage your tasks in real-time
+          </p>
+        </Card>
+        <Card className="p-6">
+          <h3 className="font-semibold mb-2">Chief of Staff Agent</h3>
+          <p className="text-sm text-muted-foreground">
+            Coming soon: Get personalized guidance and recommendations
+          </p>
+        </Card>
+        <Card className="p-6">
+          <h3 className="font-semibold mb-2">Performance Metrics</h3>
+          <p className="text-sm text-muted-foreground">
+            Coming soon: Track your performance and progress
+          </p>
+        </Card>
+      </div>
+    </DashboardLayout>
+  )
+}
