@@ -117,7 +117,6 @@ export function CosAgent() {
         description: `Priority: ${recommendation.priority}`,
         status: "todo",
         estimatedDuration: 60,
-        actualDuration: 0, // Added the missing required property
         dependencies: [],
         isTimerRunning: false,
         startTime: undefined,
