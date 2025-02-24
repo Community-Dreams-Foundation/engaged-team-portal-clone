@@ -13,6 +13,7 @@ const SimulateCoS = () => {
   const [userData, setUserData] = useState<IntakeFormData | null>(null);
   const [cosData, setCosData] = useState<CosCustomizationData | null>(null);
   const [isScenarioActive, setIsScenarioActive] = useState(false);
+  const [currentScenario, setCurrentScenario] = useState<"morning" | "project" | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
@@ -37,11 +38,15 @@ const SimulateCoS = () => {
     console.log("User data for simulation:", { parsedUserData, parsedCosData });
   }, [navigate, toast]);
 
-  const handleStartScenario = () => {
+  const handleStartScenario = (scenario: "morning" | "project") => {
     setIsScenarioActive(true);
+    setCurrentScenario(scenario);
+    setCurrentStep(0);
     toast({
       title: "Scenario Started",
-      description: "Welcome to your morning briefing with your AI Chief of Staff.",
+      description: scenario === "morning" 
+        ? "Welcome to your morning briefing with your AI Chief of Staff."
+        : "Let's plan a new project together with your AI Chief of Staff.",
     });
   };
 
@@ -85,7 +90,52 @@ const SimulateCoS = () => {
     return steps[currentStep];
   };
 
-  const currentBrief = generateMorningBrief();
+  const generateProjectPlan = () => {
+    if (!userData || !cosData) return null;
+
+    const planningStyle = {
+      Direct: "Here's the project breakdown:",
+      Collaborative: "Let's develop this project plan together:",
+      Diplomatic: "I suggest we consider the following approach:",
+      Analytical: "Based on the requirements, here's my analysis:",
+    }[cosData.communicationStyle];
+
+    const focusEmphasis = {
+      "Strategic Planning": "strategic alignment",
+      "Project Management": "timeline and deliverables",
+      "Team Coordination": "team roles and responsibilities",
+      "Resource Optimization": "resource allocation",
+      "Process Improvement": "workflow optimization",
+    }[cosData.primaryFocus];
+
+    const steps = [
+      {
+        title: "Project Definition",
+        content: `${planningStyle}\n${userData.fullName}, let's start by defining the project scope. I'll help ensure we maintain strong ${focusEmphasis}.`,
+      },
+      {
+        title: "Timeline Planning",
+        content: "I've drafted a preliminary timeline:\n1. Research & Planning (2 weeks)\n2. Development Phase (6 weeks)\n3. Testing & Refinement (2 weeks)\n4. Launch Preparation (2 weeks)",
+      },
+      {
+        title: "Resource Allocation",
+        content: "Based on the project scope, we'll need:\n- 2 Frontend Developers\n- 1 Backend Developer\n- 1 UX Designer\n- 1 Project Manager\n\nShall I start drafting the resource request?",
+      },
+      {
+        title: "Next Steps",
+        content: "To move forward, I recommend:\n1. Scheduling a kick-off meeting\n2. Creating the project charter\n3. Setting up the project tracking tools\n4. Drafting initial team communications",
+      },
+    ];
+
+    return steps[currentStep];
+  };
+
+  const getCurrentContent = () => {
+    if (!isScenarioActive || !currentScenario) return null;
+    return currentScenario === "morning" ? generateMorningBrief() : generateProjectPlan();
+  };
+
+  const currentContent = getCurrentContent();
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,19 +172,20 @@ const SimulateCoS = () => {
                   Your AI Chief of Staff prepares your daily brief, highlighting key priorities 
                   and upcoming commitments.
                 </p>
-                {!isScenarioActive ? (
+                {(!isScenarioActive || currentScenario !== "morning") ? (
                   <Button
                     variant="secondary"
                     className="w-full"
-                    onClick={handleStartScenario}
+                    onClick={() => handleStartScenario("morning")}
+                    disabled={isScenarioActive && currentScenario !== "morning"}
                   >
-                    Start Scenario
+                    {isScenarioActive ? "In Progress" : "Start Scenario"}
                   </Button>
                 ) : (
                   <Card className="p-4 space-y-4">
                     <div className="space-y-2">
-                      <h4 className="font-medium">{currentBrief?.title}</h4>
-                      <p className="whitespace-pre-line">{currentBrief?.content}</p>
+                      <h4 className="font-medium">{currentContent?.title}</h4>
+                      <p className="whitespace-pre-line">{currentContent?.content}</p>
                     </div>
                     <div className="flex justify-end">
                       <Button
@@ -144,6 +195,7 @@ const SimulateCoS = () => {
                           } else {
                             setIsScenarioActive(false);
                             setCurrentStep(0);
+                            setCurrentScenario(null);
                             toast({
                               title: "Scenario Completed",
                               description: "You've completed the morning briefing scenario!",
@@ -158,14 +210,47 @@ const SimulateCoS = () => {
                 )}
               </div>
 
-              <div className="bg-muted/50 p-4 rounded-md opacity-70">
+              <div className="bg-muted/50 p-4 rounded-md">
                 <h3 className="font-medium mb-2">Scenario 2: Project Planning</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Work with your CoS to plan and organize a new project initiative.
                 </p>
-                <Button variant="secondary" className="w-full" disabled>
-                  Coming Soon
-                </Button>
+                {(!isScenarioActive || currentScenario !== "project") ? (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => handleStartScenario("project")}
+                    disabled={isScenarioActive && currentScenario !== "project"}
+                  >
+                    {isScenarioActive ? "In Progress" : "Start Scenario"}
+                  </Button>
+                ) : (
+                  <Card className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">{currentContent?.title}</h4>
+                      <p className="whitespace-pre-line">{currentContent?.content}</p>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => {
+                          if (currentStep < 3) {
+                            setCurrentStep(prev => prev + 1);
+                          } else {
+                            setIsScenarioActive(false);
+                            setCurrentStep(0);
+                            setCurrentScenario(null);
+                            toast({
+                              title: "Scenario Completed",
+                              description: "You've completed the project planning scenario!",
+                            });
+                          }
+                        }}
+                      >
+                        {currentStep < 3 ? "Continue" : "Complete Scenario"}
+                      </Button>
+                    </div>
+                  </Card>
+                )}
               </div>
 
               <div className="bg-muted/50 p-4 rounded-md opacity-70">
@@ -186,3 +271,4 @@ const SimulateCoS = () => {
 };
 
 export default SimulateCoS;
+
