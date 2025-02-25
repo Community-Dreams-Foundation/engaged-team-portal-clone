@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -6,7 +5,16 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import { LucideRocket, Users, Trophy, Zap } from "lucide-react"
+import { LucideRocket, Users, Zap, ChevronDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 export default function Landing() {
   const [isLogin, setIsLogin] = useState(true)
@@ -56,15 +64,89 @@ export default function Landing() {
               <span>DreamStream</span>
             </a>
             <div className="hidden md:flex gap-6">
-              <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground">
-                How It Works
-              </a>
-              <a href="#features" className="text-sm text-muted-foreground hover:text-foreground">
-                Features
-              </a>
-              <a href="#leadership" className="text-sm text-muted-foreground hover:text-foreground">
-                Leadership
-              </a>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                  How It Works <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">1. Get Onboard</span>
+                        <span className="text-xs text-muted-foreground">Sign up quickly and complete registration</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">2. Receive Documentation</span>
+                        <span className="text-xs text-muted-foreground">Get offer letter and agreement</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">3. Access Projects</span>
+                        <span className="text-xs text-muted-foreground">Start with AI-driven support</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                  Features <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Decentralized Task Execution</span>
+                        <span className="text-xs text-muted-foreground">Transform ideas into micro-tasks</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">AI-Driven Task Management</span>
+                        <span className="text-xs text-muted-foreground">Get personalized guidance</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Real-Time Collaboration</span>
+                        <span className="text-xs text-muted-foreground">Stay updated and connected</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                  Leadership <ChevronDown className="h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Development Program</span>
+                        <span className="text-xs text-muted-foreground">Join our exclusive training</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Progressive Growth</span>
+                        <span className="text-xs text-muted-foreground">Advance from emerging leader to Captain</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Competitive Advantage</span>
+                        <span className="text-xs text-muted-foreground">Drive speed and innovation</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -115,10 +197,10 @@ export default function Landing() {
             </p>
           </Card>
           <Card className="p-6 space-y-2">
-            <Trophy className="h-12 w-12 text-primary" />
-            <h3 className="font-semibold">Leadership Development</h3>
+            <Zap className="h-12 w-12 text-primary" />
+            <h3 className="font-semibold">Energy Development</h3>
             <p className="text-sm text-muted-foreground">
-              Grow your skills through our tiered leadership program and competitive challenges.
+              Enhance your capabilities through our dynamic training program and skill development.
             </p>
           </Card>
           <Card className="p-6 space-y-2">
@@ -139,27 +221,24 @@ export default function Landing() {
                 <div className="p-4 bg-primary/10 rounded-lg">
                   <h3 className="font-semibold mb-2">Our Mission</h3>
                   <p className="text-sm text-muted-foreground">
-                    We're dedicated to building a strong community of dreamers and
-                    doers. Our fellowship program empowers individuals to make meaningful
-                    impact through collaboration and innovation.
+                    Accelerate innovation by transforming ideas into actionable tasks—enabling rapid, 
+                    high-quality project execution.
                   </p>
                 </div>
                 <div className="p-4 bg-secondary/10 rounded-lg">
                   <h3 className="font-semibold mb-2">Fellowship Benefits</h3>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>• Mentorship from industry leaders</li>
-                    <li>• Access to exclusive networking events</li>
-                    <li>• Professional development workshops</li>
-                    <li>• Project collaboration opportunities</li>
-                  </ul>
+                  <p className="text-sm text-muted-foreground">
+                    Enjoy exclusive perks such as personalized coaching, competitive incentives, 
+                    fee waivers, and access to cutting-edge technology that boosts your productivity 
+                    and leadership potential.
+                  </p>
                 </div>
                 <div className="p-4 bg-accent/10 rounded-lg">
                   <h3 className="font-semibold mb-2">Program Structure</h3>
                   <p className="text-sm text-muted-foreground">
-                    Our 12-week intensive program combines hands-on projects,
-                    leadership training, and community engagement. Fellows work
-                    directly with mentors to develop their skills and advance
-                    their career goals.
+                    A clear, data-driven pathway that starts with a simple onboarding process 
+                    (offer letter and agreement) and evolves into an advanced leadership development 
+                    program, guiding you from individual excellence to strategic executive leadership.
                   </p>
                 </div>
               </div>
