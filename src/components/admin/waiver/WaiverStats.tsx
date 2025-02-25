@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface WaiverStatsProps {
+export interface WaiverStatsProps {
   isLoading: boolean;
   stats?: {
     pending: number;
@@ -72,3 +72,4 @@ export function WaiverStats({ isLoading, stats }: WaiverStatsProps) {
     </>
   );
 }
+
