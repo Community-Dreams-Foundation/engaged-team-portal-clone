@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
+import { useNotifications } from "@/contexts/NotificationContext"
 import { 
   getDatabase, 
   ref, 
@@ -71,6 +72,7 @@ export function CommunicationFeed() {
   })
   const { toast } = useToast()
   const { currentUser } = useAuth()
+  const { addNotification } = useNotifications()
   const queryClient = useQueryClient()
 
   const { data: messages = [] } = useQuery({
@@ -83,7 +85,17 @@ export function CommunicationFeed() {
     const db = getDatabase()
     const messagesRef = ref(db, 'messages')
 
-    const unsubscribe = onValue(messagesRef, () => {
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const latestMessage = Object.values(snapshot.val()).pop() as any
+        if (latestMessage && latestMessage.userId !== currentUser?.uid) {
+          addNotification({
+            title: "New Message",
+            message: `${latestMessage.userName}: ${latestMessage.content}`,
+            type: "support"
+          })
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["messages"] })
     })
 
@@ -91,7 +103,7 @@ export function CommunicationFeed() {
       off(messagesRef)
       unsubscribe()
     }
-  }, [queryClient])
+  }, [queryClient, currentUser, addNotification])
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !currentUser) return
@@ -300,3 +312,4 @@ export function CommunicationFeed() {
     </div>
   )
 }
+
