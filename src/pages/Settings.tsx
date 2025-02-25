@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PayPalButton from "@/components/PayPalButton"
+import { SubscriptionManagement } from "@/components/subscription/SubscriptionManagement"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 
@@ -28,10 +29,7 @@ export default function Settings() {
             <Card className="p-6">
               <h2 className="text-2xl font-semibold mb-4">Subscription Status</h2>
               <div className="space-y-4">
-                <div className="p-4 bg-primary/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground">Current Plan</p>
-                  <p className="font-medium">Free Plan</p>
-                </div>
+                <SubscriptionManagement />
                 {!showSubscription ? (
                   <Button 
                     onClick={() => setShowSubscription(true)}
