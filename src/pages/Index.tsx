@@ -16,10 +16,50 @@ import { Card } from "@/components/ui/card"
 export default function Index() {
   const mockKnowledgeData = {
     nodes: [
-      { id: "1", title: "Project Management", type: "skill" },
-      { id: "2", title: "Team Leadership", type: "skill" },
-      { id: "3", title: "Recent Project", type: "project" },
-      { id: "4", title: "Strategic Planning", type: "experience" }
+      { 
+        id: "1", 
+        title: "Project Management",
+        type: "skill",
+        description: "Project management expertise",
+        tags: ["management", "leadership"],
+        connections: ["2", "3"],
+        strength: 0.8,
+        lastUpdated: new Date(),
+        category: "professional"
+      },
+      { 
+        id: "2", 
+        title: "Team Leadership",
+        type: "skill",
+        description: "Team leadership experience",
+        tags: ["leadership", "communication"],
+        connections: ["1", "3"],
+        strength: 0.9,
+        lastUpdated: new Date(),
+        category: "professional"
+      },
+      { 
+        id: "3", 
+        title: "Recent Project",
+        type: "project",
+        description: "Latest project completion",
+        tags: ["project", "achievement"],
+        connections: ["1", "2"],
+        strength: 0.7,
+        lastUpdated: new Date(),
+        category: "experience"
+      },
+      { 
+        id: "4", 
+        title: "Strategic Planning",
+        type: "experience",
+        description: "Strategic planning skills",
+        tags: ["strategy", "planning"],
+        connections: ["1"],
+        strength: 0.85,
+        lastUpdated: new Date(),
+        category: "professional"
+      }
     ],
     edges: [
       { source: "1", target: "3", strength: 2 },
@@ -35,20 +75,38 @@ export default function Index() {
         name: "Research",
         companies: [
           { id: "1", name: "Tech Corp", status: "researching", probability: 0.7 }
-        ]
+        ],
+        requirements: ["Resume", "Portfolio"],
+        timeline: "1 week"
       },
       {
         id: "applied",
         name: "Applied",
         companies: [
           { id: "2", name: "Innovation Inc", status: "applied", probability: 0.8 }
-        ]
+        ],
+        requirements: ["Interview", "Technical Test"],
+        timeline: "2 weeks"
       }
     ],
     metrics: {
       activeProcesses: 2,
       successRate: 0.75,
       averageTimeToOffer: 1209600000 // 14 days in milliseconds
+    }
+  };
+
+  const mockPortfolio = {
+    name: "John Doe",
+    title: "Software Engineer",
+    description: "Experienced software engineer with a focus on web development",
+    projects: [],
+    skills: [],
+    experience: [],
+    contact: {
+      email: "john@example.com",
+      linkedin: "johndoe",
+      github: "johndoe"
     }
   };
 
@@ -86,14 +144,17 @@ export default function Index() {
         {/* Portfolio Integration Section */}
         <div className="col-span-full lg:col-span-2 space-y-4">
           <Card className="p-6">
-            <PortfolioPreview />
+            <PortfolioPreview portfolio={mockPortfolio} />
           </Card>
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-6">
-              <GitHubPortfolioPreview />
+              <GitHubPortfolioPreview 
+                content={mockPortfolio}
+                onSave={() => console.log("Saving GitHub portfolio...")}
+              />
             </Card>
             <Card className="p-6">
-              <LinkedInIntegration />
+              <LinkedInIntegration portfolio={mockPortfolio} />
             </Card>
           </div>
         </div>
