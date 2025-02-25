@@ -57,10 +57,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     // Temporary backdoor login
-    if (email === 'admin123' && password === 'admin123') {
+    if (email === 'siddhesh.koli32@gmail.com' && password === 'admin1234!') {
       const mockUser = {
         uid: 'admin123',
-        email: 'admin123',
+        email: 'siddhesh.koli32@gmail.com',
         emailVerified: true,
         displayName: 'Admin User',
         metadata: {
