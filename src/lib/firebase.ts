@@ -1,5 +1,5 @@
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from 'firebase/auth';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
@@ -16,9 +16,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Enable emulator connections in development, but only if not using mock admin
-const shouldUseEmulator = process.env.NODE_ENV === 'development' && localStorage.getItem('isMockAdmin') !== 'true';
-if (shouldUseEmulator) {
+if (process.env.NODE_ENV === 'development') {
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectFirestoreEmulator(db, 'localhost', 8080);
 }
+

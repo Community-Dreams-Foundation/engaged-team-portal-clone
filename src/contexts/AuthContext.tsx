@@ -40,62 +40,42 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMockAdmin, setIsMockAdmin] = useState(() => 
-    localStorage.getItem('isMockAdmin') === 'true'
-  );
   const [isNewUser, setIsNewUser] = useState(false);
 
-  console.log('AuthProvider render:', { currentUser, loading, isMockAdmin, isNewUser });
-
-  const mockAdminUser = {
-    uid: 'admin',
-    email: 'abc@gmail.com',
-    emailVerified: true,
-    displayName: 'Admin User',
-    metadata: {
-      creationTime: new Date().toISOString(),
-      lastSignInTime: new Date().toISOString(),
-    },
-  } as User;
-
   useEffect(() => {
-    if (!isMockAdmin) {
-      setPersistence(auth, browserLocalPersistence)
-        .catch((error) => {
-          console.error('Error setting persistence:', error);
-          toast({ 
-            variant: "destructive", 
-            title: "Authentication Error", 
-            description: "Failed to enable persistent login" 
-          });
+    setPersistence(auth, browserLocalPersistence)
+      .catch((error) => {
+        console.error('Error setting persistence:', error);
+        toast({ 
+          variant: "destructive", 
+          title: "Authentication Error", 
+          description: "Failed to enable persistent login" 
         });
-    }
-  }, [isMockAdmin]);
+      });
+  }, []);
 
   useEffect(() => {
-    if (!isMockAdmin) {
-      const unsubscribe = onIdTokenChanged(auth, async (user) => {
-        console.log('Token changed:', user?.email);
-        if (user) {
-          try {
-            const token = await user.getIdToken(true);
-            localStorage.setItem('authToken', token);
-          } catch (error) {
-            console.error('Error refreshing token:', error);
-            toast({
-              variant: "destructive",
-              title: "Session Error",
-              description: "Failed to refresh authentication token"
-            });
-          }
-        } else {
-          localStorage.removeItem('authToken');
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      console.log('Token changed:', user?.email);
+      if (user) {
+        try {
+          const token = await user.getIdToken(true);
+          localStorage.setItem('authToken', token);
+        } catch (error) {
+          console.error('Error refreshing token:', error);
+          toast({
+            variant: "destructive",
+            title: "Session Error",
+            description: "Failed to refresh authentication token"
+          });
         }
-      });
+      } else {
+        localStorage.removeItem('authToken');
+      }
+    });
 
-      return unsubscribe;
-    }
-  }, [isMockAdmin]);
+    return unsubscribe;
+  }, []);
 
   const signup = async (email: string, password: string) => {
     try {
@@ -109,24 +89,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
-    console.log('Login attempt:', { email });
-
-    if (email === 'abc@gmail.com' && password === 'admin1234!') {
-      console.log('Mock admin login');
-      setCurrentUser(mockAdminUser);
-      setIsMockAdmin(true);
-      setIsNewUser(false);
-      localStorage.setItem('isMockAdmin', 'true');
-      toast({ title: "Logged in as Admin", description: "Welcome back, Admin!" });
-      return;
-    }
-
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Firebase login success:', result.user.email);
-      setIsMockAdmin(false);
       setIsNewUser(false);
-      localStorage.removeItem('isMockAdmin');
       toast({ title: "Logged in successfully", description: "Welcome back!" });
     } catch (error: any) {
       console.error('Login error:', error);
@@ -139,7 +105,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       console.log('Google login success:', result.user.email);
-      setIsMockAdmin(false);
       setIsNewUser(false);
       if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
         setIsNewUser(true);
@@ -153,16 +118,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    console.log('Logout attempt:', { isMockAdmin });
-
-    if (isMockAdmin) {
-      setCurrentUser(null);
-      setIsMockAdmin(false);
-      localStorage.removeItem('isMockAdmin');
-      toast({ title: "Logged out successfully" });
-      return;
-    }
-
     try {
       await signOut(auth);
       localStorage.removeItem('authToken');
@@ -185,28 +140,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log('Initial auth setup');
-    
-    if (localStorage.getItem('isMockAdmin') === 'true') {
-      console.log('Setting up mock admin');
-      setCurrentUser(mockAdminUser);
-      setIsMockAdmin(true);
+    console.log('Setting up Firebase auth listener');
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Auth state changed:', user?.email);
+      setCurrentUser(user);
       setLoading(false);
-      return;
-    }
-
-    if (!isMockAdmin) {
-      console.log('Setting up Firebase auth listener');
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        console.log('Auth state changed:', user?.email);
-        setCurrentUser(user);
-        setLoading(false);
-      });
-      return unsubscribe;
-    }
-
-    setLoading(false);
-  }, [isMockAdmin]);
+    });
+    return unsubscribe;
+  }, []);
 
   const value = {
     currentUser,
@@ -225,3 +166,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
