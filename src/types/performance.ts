@@ -63,5 +63,21 @@ export interface PerformanceMetrics {
   avgTaskTime: number;
   delegationEfficiency: number;
   feedbackScore: number;
+  efficiency: number;
+  totalTasks: number;
+  tasksThisWeek: number;
+  averageTaskTime: number;
+  level: number;
+  experience: number;
+  experienceToNextLevel: number;
+  leaderboardRank: number;
+  totalParticipants: number;
+  achievements: Achievement[];
+  goals: PersonalGoal[];
+  weeklyTasks: Array<{
+    name: string;
+    tasks: number;
+  }>;
+  feedback: Feedback[];
+  portfolioAnalytics: PortfolioAnalytics;
 }
-
