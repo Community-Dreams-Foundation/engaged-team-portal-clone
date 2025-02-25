@@ -25,7 +25,9 @@ export default function Index() {
         connections: ["2", "3"],
         strength: 0.8,
         lastUpdated: new Date(),
-        category: "professional"
+        category: "professional",
+        lastAccessed: new Date(),
+        createdAt: new Date()
       },
       { 
         id: "2", 
@@ -36,7 +38,9 @@ export default function Index() {
         connections: ["1", "3"],
         strength: 0.9,
         lastUpdated: new Date(),
-        category: "professional"
+        category: "professional",
+        lastAccessed: new Date(),
+        createdAt: new Date()
       },
       { 
         id: "3", 
@@ -47,24 +51,14 @@ export default function Index() {
         connections: ["1", "2"],
         strength: 0.7,
         lastUpdated: new Date(),
-        category: "experience"
-      },
-      { 
-        id: "4", 
-        title: "Strategic Planning",
-        type: "experience",
-        description: "Strategic planning skills",
-        tags: ["strategy", "planning"],
-        connections: ["1"],
-        strength: 0.85,
-        lastUpdated: new Date(),
-        category: "professional"
+        category: "experience",
+        lastAccessed: new Date(),
+        createdAt: new Date()
       }
     ],
     edges: [
       { source: "1", target: "3", strength: 2 },
-      { source: "2", target: "3", strength: 1 },
-      { source: "4", target: "1", strength: 3 }
+      { source: "2", target: "3", strength: 1 }
     ]
   };
 
@@ -74,7 +68,15 @@ export default function Index() {
         id: "research",
         name: "Research",
         companies: [
-          { id: "1", name: "Tech Corp", status: "researching", probability: 0.7 }
+          { 
+            id: "1", 
+            name: "Tech Corp", 
+            status: "researching" as const,
+            probability: 0.7,
+            lastContact: Date.now(),
+            notes: "Initial research phase",
+            nextSteps: "Schedule initial call"
+          }
         ],
         requirements: ["Resume", "Portfolio"],
         timeline: "1 week"
@@ -83,7 +85,15 @@ export default function Index() {
         id: "applied",
         name: "Applied",
         companies: [
-          { id: "2", name: "Innovation Inc", status: "applied", probability: 0.8 }
+          { 
+            id: "2", 
+            name: "Innovation Inc", 
+            status: "applied" as const,
+            probability: 0.8,
+            lastContact: Date.now(),
+            notes: "Application submitted",
+            nextSteps: "Follow up next week"
+          }
         ],
         requirements: ["Interview", "Technical Test"],
         timeline: "2 weeks"
@@ -97,17 +107,44 @@ export default function Index() {
   };
 
   const mockPortfolio = {
-    name: "John Doe",
-    title: "Software Engineer",
-    description: "Experienced software engineer with a focus on web development",
-    projects: [],
-    skills: [],
-    experience: [],
-    contact: {
-      email: "john@example.com",
-      linkedin: "johndoe",
-      github: "johndoe"
+    userId: "user123",
+    metadata: {
+      title: "John Doe's Portfolio",
+      description: "Software Engineer Portfolio",
+      lastUpdated: Date.now(),
+      format: "website" as const,
+      visibility: "public" as const
+    },
+    items: [],
+    metrics: {
+      tasksCompleted: 150,
+      efficiency: 0.85,
+      timesSaved: 120,
+      impactScore: 92
+    },
+    preferences: {
+      template: "default" as const,
+      primaryColor: "#3b82f6",
+      showMetrics: true,
+      selectedItems: []
+    },
+    summary: {
+      totalProjects: 15,
+      avgEfficiency: 0.85,
+      topSkills: ["React", "TypeScript", "Node.js"],
+      overallImpact: {
+        tasksCompleted: 150,
+        efficiencyImprovement: 0.25,
+        timesSaved: 120
+      }
     }
+  };
+
+  const mockGithubContent = {
+    readmeContent: "# Portfolio\nWelcome to my portfolio",
+    portfolioPage: "<html><body>Portfolio Page</body></html>",
+    repositoryName: "portfolio",
+    commitMessage: "Update portfolio"
   };
 
   return (
@@ -149,8 +186,8 @@ export default function Index() {
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-6">
               <GitHubPortfolioPreview 
-                content={mockPortfolio}
-                onSave={() => console.log("Saving GitHub portfolio...")}
+                content={mockGithubContent}
+                onSave={() => Promise.resolve()}
               />
             </Card>
             <Card className="p-6">
@@ -176,3 +213,4 @@ export default function Index() {
     </DashboardLayout>
   );
 }
+
