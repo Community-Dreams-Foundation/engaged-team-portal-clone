@@ -11,22 +11,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+declare global {
+  interface Window {
+    paypal: any;
+  }
+}
+
 const plans = {
   monthly: {
-    planId: 'P-1C748246YG018921SM6DKRYI', // Your monthly plan ID
+    planId: 'P-1C748246YG018921SM6DKRYI',
     price: 15,
     newMemberPrice: 10
   },
   quarterly: {
-    planId: 'YOUR_QUARTERLY_PLAN_ID', // Replace with your plan ID
+    planId: 'YOUR_QUARTERLY_PLAN_ID',
     price: 40
   },
   semiAnnual: {
-    planId: 'YOUR_SEMI_ANNUAL_PLAN_ID', // Replace with your plan ID
+    planId: 'YOUR_SEMI_ANNUAL_PLAN_ID',
     price: 75
   },
   annual: {
-    planId: 'YOUR_ANNUAL_PLAN_ID', // Replace with your plan ID
+    planId: 'YOUR_ANNUAL_PLAN_ID',
     price: 140
   }
 };
@@ -50,7 +56,7 @@ const PayPalButton = () => {
     try {
       const subscriptionRef = doc(db, 'subscriptions', currentUser.uid);
       const dueDate = new Date();
-      dueDate.setDate(5); // Set to the 5th of next month
+      dueDate.setDate(5);
       if (dueDate.getDate() > 5) {
         dueDate.setMonth(dueDate.getMonth() + 1);
       }
