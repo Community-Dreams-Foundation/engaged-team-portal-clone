@@ -1,6 +1,7 @@
 
 export type TaskStatus = "todo" | "in-progress" | "completed"
 export type TaskPriority = "high" | "medium" | "low"
+export type SkillLevel = "beginner" | "intermediate" | "advanced"
 
 export interface Task {
   id: string
@@ -36,5 +37,17 @@ export interface Task {
     impact: "low" | "medium" | "high"
     businessValue: number // 1-10
     learningOpportunity: number // 1-10
+    domain?: string
+    skillRequirements?: SkillLevel[]
+    aiEligible?: boolean
+    externalStakeholder?: boolean
+    performanceHistory?: {
+      averageCompletionTime: number
+      accuracyRate: number
+    }
   }
 }
+
+// New type for task creation
+export interface TaskInput extends Omit<Task, "id" | "createdAt" | "updatedAt" | "isTimerRunning" | "totalElapsedTime" | "lastActivity"> {}
+
