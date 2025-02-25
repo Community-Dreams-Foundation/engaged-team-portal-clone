@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import { PayPalButton } from "@/components/PayPalButton"
+import PayPalButton from "@/components/PayPalButton"
 
 export default function Landing() {
   const [email, setEmail] = useState("")

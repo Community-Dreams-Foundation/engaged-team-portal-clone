@@ -3,7 +3,7 @@ import { useState } from "react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PayPalButton } from "@/components/PayPalButton"
+import PayPalButton from "@/components/PayPalButton"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function Settings() {
