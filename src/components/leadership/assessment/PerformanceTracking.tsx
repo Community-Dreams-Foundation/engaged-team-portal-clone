@@ -19,6 +19,8 @@ interface PerformanceMetric {
   taskCompletionRate: number;
   teamEfficiency: number;
   delegationAccuracy: number;
+  averageTaskTime: number;
+  tasksCompleted: number;
 }
 
 interface PerformanceTrackingProps {
@@ -129,3 +131,4 @@ export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) 
     </div>
   )
 }
+
