@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -51,6 +52,12 @@ export default function Landing() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Function to handle switching to signup mode
+  const handleSwitchToSignup = () => {
+    setIsLogin(false)
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   }
 
   return (
@@ -152,13 +159,16 @@ export default function Landing() {
           <div className="flex items-center gap-4">
             <Button
               variant={isLogin ? "ghost" : "outline"}
-              onClick={() => setIsLogin(true)}
+              onClick={() => {
+                setIsLogin(true)
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+              }}
             >
               Sign In
             </Button>
             <Button
               variant={!isLogin ? "default" : "outline"}
-              onClick={() => setIsLogin(false)}
+              onClick={handleSwitchToSignup}
             >
               Join Now
             </Button>
@@ -178,11 +188,12 @@ export default function Landing() {
             AI-driven task management platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
-            <Button size="lg" className="w-full sm:w-auto">
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto"
+              onClick={handleSwitchToSignup}
+            >
               Get Started Now
-            </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto">
-              Watch Demo
             </Button>
           </div>
         </div>
