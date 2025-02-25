@@ -55,20 +55,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   } as User;
 
   useEffect(() => {
-    setPersistence(auth, browserLocalPersistence)
-      .catch((error) => {
-        console.error('Error setting persistence:', error);
-        toast({ 
-          variant: "destructive", 
-          title: "Authentication Error", 
-          description: "Failed to enable persistent login" 
+    if (!isMockAdmin) {
+      setPersistence(auth, browserLocalPersistence)
+        .catch((error) => {
+          console.error('Error setting persistence:', error);
+          toast({ 
+            variant: "destructive", 
+            title: "Authentication Error", 
+            description: "Failed to enable persistent login" 
+          });
         });
-      });
-  }, []);
+    }
+  }, [isMockAdmin]);
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
+      if (user && !isMockAdmin) {
         try {
           const token = await user.getIdToken(true);
           localStorage.setItem('authToken', token);
@@ -86,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [isMockAdmin]);
 
   const signup = async (email: string, password: string) => {
     try {
@@ -123,8 +125,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       setIsMockAdmin(false);
-      // Check if this is the first time the user has signed in
-      setIsNewUser(result.additionalUserInfo?.isNewUser ?? false);
+      setIsNewUser(false);
+      if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+        setIsNewUser(true);
+      }
       toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Google login failed", description: error.message });
@@ -161,14 +165,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!isMockAdmin) {
+    if (!isMockAdmin) {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
-      }
+        setLoading(false);
+      });
+      return unsubscribe;
+    } else {
       setLoading(false);
-    });
-
-    return unsubscribe;
+    }
   }, [isMockAdmin]);
 
   const value = {
@@ -188,4 +193,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
