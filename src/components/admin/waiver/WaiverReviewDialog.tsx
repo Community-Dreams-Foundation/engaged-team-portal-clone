@@ -17,7 +17,7 @@ interface WaiverReviewDialogProps {
   waiver: WaiverRequest
   open: boolean
   onOpenChange: (open: boolean) => void
-  onApprove: (waiverIdcomments: string) => void
+  onApprove: (waiverId: string, comments: string) => void
   onReject: (waiverId: string, comments: string) => void
 }
 
