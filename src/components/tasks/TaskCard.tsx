@@ -4,16 +4,26 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Timer, AlertCircle, Lock, Play, Pause, Clock, Tag, Link2, AlertTriangle } from "lucide-react"
-import { format } from "date-fns"
+import { useEffect, useState } from "react"
 
 interface TaskCardProps {
   task: Task
   onTimerToggle: (taskId: string) => void
   formatDuration: (milliseconds: number) => string
-  canStartTask: boolean
+  canStartTask: (taskId: string) => Promise<boolean>
 }
 
 export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: TaskCardProps) {
+  const [canStart, setCanStart] = useState(false);
+
+  useEffect(() => {
+    const checkCanStart = async () => {
+      const result = await canStartTask(task.id);
+      setCanStart(result);
+    };
+    checkCanStart();
+  }, [task.id, canStartTask]);
+
   const getPriorityBadge = (priority?: string) => {
     const colors = {
       high: "text-red-500 border-red-500",
@@ -69,7 +79,7 @@ export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: 
             <span className="text-sm text-muted-foreground">
               {formatDuration(task.totalElapsedTime || 0)}
             </span>
-            {!canStartTask && (
+            {!canStart && (
               <span className="flex items-center gap-1 text-yellow-500">
                 <Lock className="h-4 w-4" />
               </span>
@@ -91,7 +101,7 @@ export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: 
             size="sm"
             className="h-8 w-8 p-0"
             onClick={() => onTimerToggle(task.id)}
-            disabled={task.status === 'completed'}
+            disabled={task.status === 'completed' || !canStart}
           >
             {task.isTimerRunning ? (
               <Pause className="h-4 w-4" />

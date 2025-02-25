@@ -13,7 +13,7 @@ interface TaskColumnProps {
   onDragStart: (e: React.DragEvent, taskId: string) => void
   onTimerToggle: (taskId: string) => void
   formatDuration: (milliseconds: number) => string
-  canStartTask: (taskId: string) => boolean
+  canStartTask: (taskId: string) => Promise<boolean>
 }
 
 export function TaskColumn({
@@ -49,7 +49,7 @@ export function TaskColumn({
               task={task}
               onTimerToggle={onTimerToggle}
               formatDuration={formatDuration}
-              canStartTask={canStartTask(task.id)}
+              canStartTask={canStartTask}
             />
           </div>
         ))}
