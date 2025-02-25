@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PayPalButton from "@/components/PayPalButton"
 import { SubscriptionManagement } from "@/components/subscription/SubscriptionManagement"
+import { LeadershipMetrics } from "@/components/leadership/LeadershipMetrics"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 
@@ -23,6 +24,7 @@ export default function Settings() {
             <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="leadership">Leadership</TabsTrigger>
           </TabsList>
           
           <TabsContent value="billing" className="space-y-4">
@@ -67,8 +69,13 @@ export default function Settings() {
               <p>Notification settings coming soon...</p>
             </Card>
           </TabsContent>
+
+          <TabsContent value="leadership">
+            <LeadershipMetrics />
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
   )
 }
+
