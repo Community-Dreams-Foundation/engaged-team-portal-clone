@@ -2,22 +2,18 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   User,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail,
-  GoogleAuthProvider,
-  signInWithPopup,
   setPersistence,
   browserLocalPersistence,
   onIdTokenChanged,
   getIdTokenResult
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { toast } from '@/components/ui/use-toast';
-import type { UserRole, ExtendedUser, AuditLog } from '@/types/auth';
+import { useAuthOperations } from '@/hooks/useAuthOperations';
+import { checkRole } from '@/utils/authUtils';
+import type { UserRole, ExtendedUser } from '@/types/auth';
 
 interface AuthContextType {
   currentUser: ExtendedUser | null;
@@ -49,6 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>();
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  const { signup, login, signInWithGoogle, handleLogout, resetPassword } = useAuthOperations();
 
   useEffect(() => {
     setPersistence(auth, browserLocalPersistence)
@@ -74,7 +71,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem('authToken', token);
           setUserRole(role);
           
-          // Update the extended user object
           const extendedUser: ExtendedUser = Object.assign(user, { role });
           setCurrentUser(extendedUser);
           
@@ -96,144 +92,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const logAuditEvent = async (action: string, details: Record<string, any>) => {
-    if (!currentUser) return;
-
-    try {
-      const auditLog: AuditLog = {
-        userId: currentUser.uid,
-        action,
-        details,
-        timestamp: Date.now()
-      };
-
-      await addDoc(collection(db, 'audit_logs'), auditLog);
-      console.log('Audit log created:', action);
-    } catch (error) {
-      console.error('Error creating audit log:', error);
-      toast({
-        variant: "destructive",
-        title: "Audit Log Error",
-        description: "Failed to log admin action"
-      });
-    }
-  };
-
-  const signup = async (email: string, password: string) => {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      setIsNewUser(true);
-      
-      // Set default role as member
-      await setDoc(doc(db, 'users', result.user.uid), {
-        email,
-        role: 'member',
-        createdAt: Date.now()
-      });
-
-      toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error creating account", description: error.message });
-      throw error;
-    }
-  };
-
-  const login = async (email: string, password: string) => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Firebase login success:', result.user.email);
-      
-      // Fetch user role from Firestore
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      const userData = userDoc.data();
-      const role = userData?.role as UserRole;
-      
-      setUserRole(role);
-      setIsNewUser(false);
-      
-      if (role === 'super_admin') {
-        await logAuditEvent('super_admin_login', { email });
-      }
-
-      toast({ title: "Logged in successfully", description: "Welcome back!" });
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast({ variant: "destructive", title: "Login failed", description: error.message });
-      throw error;
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      console.log('Google login success:', result.user.email);
-      
-      // Check if user exists in Firestore
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      
-      if (!userDoc.exists()) {
-        // New user - set default role
-        await setDoc(doc(db, 'users', result.user.uid), {
-          email: result.user.email,
-          role: 'member',
-          createdAt: Date.now()
-        });
-        setIsNewUser(true);
-      } else {
-        setIsNewUser(false);
-        const userData = userDoc.data();
-        setUserRole(userData.role as UserRole);
-        
-        if (userData.role === 'super_admin') {
-          await logAuditEvent('super_admin_google_login', { email: result.user.email });
-        }
-      }
-
-      toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      toast({ variant: "destructive", title: "Google login failed", description: error.message });
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      if (currentUser && userRole === 'super_admin') {
-        await logAuditEvent('super_admin_logout', { email: currentUser.email });
-      }
-      
-      await signOut(auth);
-      localStorage.removeItem('authToken');
-      setUserRole(undefined);
-      toast({ title: "Logged out successfully" });
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      toast({ variant: "destructive", title: "Logout failed", description: error.message });
-      throw error;
-    }
-  };
-
-  const resetPassword = async (email: string) => {
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast({ title: "Password reset email sent", description: "Check your email for further instructions" });
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Password reset failed", description: error.message });
-      throw error;
-    }
-  };
-
-  const isSuperAdmin = () => userRole === 'super_admin';
-  const isAdmin = () => userRole === 'admin' || userRole === 'super_admin';
-
   useEffect(() => {
     console.log('Setting up Firebase auth listener');
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email);
       
       if (user) {
-        // Fetch user role from Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.data();
         const role = userData?.role as UserRole;
@@ -254,16 +118,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     currentUser,
     userRole,
-    login,
-    signup,
-    logout,
+    login: async (email: string, password: string) => {
+      const role = await login(email, password);
+      setUserRole(role);
+      setIsNewUser(false);
+    },
+    signup: async (email: string, password: string) => {
+      await signup(email, password);
+      setIsNewUser(true);
+    },
+    logout: async () => {
+      if (currentUser) {
+        await handleLogout(currentUser.uid, userRole);
+        setUserRole(undefined);
+      }
+    },
     resetPassword,
-    signInWithGoogle,
+    signInWithGoogle: async () => {
+      const role = await signInWithGoogle();
+      setUserRole(role);
+      setIsNewUser(!role);
+      toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
+    },
     loading,
     isNewUser,
-    logAuditEvent,
-    isSuperAdmin,
-    isAdmin
+    logAuditEvent: async (action: string, details: Record<string, any>) => {
+      if (currentUser) {
+        await logAuditEvent(currentUser.uid, action, details);
+      }
+    },
+    ...checkRole(userRole)
   };
 
   return (
@@ -272,3 +156,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
