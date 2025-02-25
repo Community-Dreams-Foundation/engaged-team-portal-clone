@@ -20,6 +20,7 @@ import { useQuery } from "@tanstack/react-query"
 import { getDatabase, ref, get, update } from "firebase/database"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Agent, AgentType, CoSRecommendation, Task } from "@/types/task"
+import { PerformanceMetrics } from "@/types/performance"
 
 interface CoSPreferences {
   tone: "formal" | "casual"

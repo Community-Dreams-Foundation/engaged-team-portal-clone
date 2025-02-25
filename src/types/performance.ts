@@ -1,6 +1,4 @@
 
-import { PortfolioFormat } from "./portfolio";
-
 export interface AnalyticsMetric {
   timestamp: number;
   value: number;
@@ -61,26 +59,9 @@ export interface Feedback {
 }
 
 export interface PerformanceMetrics {
-  efficiency: number;
-  totalTasks: number;
-  tasksThisWeek: number;
-  averageTaskTime: number;
-  level: number;
-  experience: number;
-  experienceToNextLevel: number;
-  leaderboardRank: number;
-  totalParticipants: number;
-  achievements: Achievement[];
-  goals: PersonalGoal[];
-  weeklyTasks: Array<{
-    name: string;
-    tasks: number;
-  }>;
-  feedback: Array<{
-    id: string;
-    text: string;
-    rating: number;
-    date: number;
-  }>;
-  portfolioAnalytics: PortfolioAnalytics;
+  taskCompletionRate: number;
+  avgTaskTime: number;
+  delegationEfficiency: number;
+  feedbackScore: number;
 }
+
