@@ -7,9 +7,12 @@ export const fetchPerformanceData = async (userId: string): Promise<PerformanceM
   const snapshot = await get(performanceRef);
 
   if (!snapshot.exists()) {
-    // Initialize default performance data for new users
     const defaultData: PerformanceMetrics = {
-      efficiency: 92,
+      taskCompletionRate: 0,
+      avgTaskTime: 0,
+      delegationEfficiency: 0,
+      feedbackScore: 0,
+      efficiency: 0,
       totalTasks: 0,
       tasksThisWeek: 0,
       averageTaskTime: 0,

@@ -81,7 +81,52 @@ const mockPerformanceMetrics: PerformanceMetrics = {
   taskCompletionRate: 0.85,
   avgTaskTime: 45,
   delegationEfficiency: 0.78,
-  feedbackScore: 92
+  feedbackScore: 92,
+  efficiency: 92,
+  totalTasks: 150,
+  tasksThisWeek: 25,
+  averageTaskTime: 45,
+  level: 5,
+  experience: 2500,
+  experienceToNextLevel: 5000,
+  leaderboardRank: 12,
+  totalParticipants: 100,
+  achievements: [
+    {
+      id: "first-milestone",
+      title: "First Milestone",
+      description: "Completed first 10 tasks",
+      icon: "trophy",
+      earnedAt: Date.now()
+    }
+  ],
+  goals: [],
+  weeklyTasks: [
+    { name: "Mon", tasks: 5 },
+    { name: "Tue", tasks: 7 },
+    { name: "Wed", tasks: 4 },
+    { name: "Thu", tasks: 6 },
+    { name: "Fri", tasks: 3 }
+  ],
+  feedback: [],
+  portfolioAnalytics: {
+    views: [],
+    uniqueVisitors: 0,
+    sectionEngagement: [],
+    platformPerformance: {
+      linkedin: {
+        shares: 0,
+        clicks: 0,
+        impressions: 0
+      },
+      github: {
+        stars: 0,
+        forks: 0,
+        views: 0
+      }
+    },
+    clickThroughRate: 0
+  }
 }
 
 export function CosAgent() {
