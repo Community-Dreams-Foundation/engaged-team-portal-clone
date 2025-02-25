@@ -73,6 +73,12 @@ export function MeetingScheduler() {
         type: "meeting",
         metadata: {
           meetingId: newMeetingRef.key || undefined,
+          priority: "medium",
+          actionRequired: true,
+          action: {
+            type: "view_meeting",
+            link: `/meetings/${newMeetingRef.key}`
+          }
         },
       })
 
@@ -152,4 +158,3 @@ export function MeetingScheduler() {
     </Card>
   )
 }
-
