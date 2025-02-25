@@ -1,7 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
-  Auth,
   User,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -37,58 +36,43 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMockAdmin, setIsMockAdmin] = useState(false);
+
+  const mockAdminUser = {
+    uid: 'admin',
+    email: 'abc@gmail.com',
+    emailVerified: true,
+    displayName: 'Admin User',
+    metadata: {
+      creationTime: new Date().toISOString(),
+      lastSignInTime: new Date().toISOString(),
+    },
+  } as User;
 
   const signup = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Account created successfully",
-        description: "Welcome to DreamStream!"
-      });
+      toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error creating account",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Error creating account", description: error.message });
       throw error;
     }
   };
 
   const login = async (email: string, password: string) => {
-    // Temporary backdoor login
-    if (email === 'siddhesh.koli32@gmail.com' && password === 'admin1234!') {
-      const mockUser = {
-        uid: 'admin123',
-        email: 'siddhesh.koli32@gmail.com',
-        emailVerified: true,
-        displayName: 'Admin User',
-        metadata: {
-          creationTime: new Date().toISOString(),
-          lastSignInTime: new Date().toISOString(),
-        },
-      } as User;
-      
-      setCurrentUser(mockUser);
-      toast({
-        title: "Logged in successfully",
-        description: "Welcome back, Admin!"
-      });
+    if (email === 'abc@gmail.com' && password === 'admin1234!') {
+      setCurrentUser(mockAdminUser);
+      setIsMockAdmin(true);
+      toast({ title: "Logged in as Admin", description: "Welcome back, Admin!" });
       return;
     }
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: "Logged in successfully",
-        description: "Welcome back!"
-      });
+      setIsMockAdmin(false);
+      toast({ title: "Logged in successfully", description: "Welcome back!" });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Login failed", description: error.message });
       throw error;
     }
   };
@@ -97,41 +81,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      toast({
-        title: "Logged in successfully",
-        description: "Welcome to DreamStream!"
-      });
+      setIsMockAdmin(false);
+      toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Google login failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Google login failed", description: error.message });
       throw error;
     }
   };
 
   const logout = async () => {
-    // Clear the mock user if it exists
-    if (currentUser?.uid === 'admin123') {
+    if (isMockAdmin) {
       setCurrentUser(null);
-      toast({
-        title: "Logged out successfully"
-      });
+      setIsMockAdmin(false);
+      toast({ title: "Logged out successfully" });
       return;
     }
 
     try {
       await signOut(auth);
-      toast({
-        title: "Logged out successfully"
-      });
+      toast({ title: "Logged out successfully" });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Logout failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Logout failed", description: error.message });
       throw error;
     }
   };
@@ -139,28 +109,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const resetPassword = async (email: string) => {
     try {
       await sendPasswordResetEmail(auth, email);
-      toast({
-        title: "Password reset email sent",
-        description: "Check your email for further instructions"
-      });
+      toast({ title: "Password reset email sent", description: "Check your email for further instructions" });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Password reset failed",
-        description: error.message
-      });
+      toast({ variant: "destructive", title: "Password reset failed", description: error.message });
       throw error;
     }
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+      if (!isMockAdmin) {
+        setCurrentUser(user);
+      }
       setLoading(false);
     });
 
     return unsubscribe;
-  }, []);
+  }, [isMockAdmin]);
 
   const value = {
     currentUser,
@@ -178,4 +143,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
