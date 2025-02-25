@@ -4,18 +4,20 @@ import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA-1YNZvFUEiWosWXxJd4I7HNZq4XoGtQk",
-  authDomain: "dreamstream-c3a8c.firebaseapp.com",
-  projectId: "dreamstream-c3a8c",
-  storageBucket: "dreamstream-c3a8c.appspot.com",
-  messagingSenderId: "168581716208",
-  appId: "1:168581716208:web:3e3a7c7d6c7c7c7d6c7c7c"
+  // Replace these with the values from your Firebase console
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Only connect to emulators in development
 if (process.env.NODE_ENV === 'development') {
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectFirestoreEmulator(db, 'localhost', 8080);
