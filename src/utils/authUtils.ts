@@ -1,13 +1,13 @@
 
 import { User } from 'firebase/auth';
-import { doc, addDoc, collection } from 'firebase/firestore';
+import { doc, addDoc, collection, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import type { AuditLog, UserRole } from '@/types/auth';
 
 export const createUserDocument = async (uid: string, email: string | null) => {
   try {
-    await doc(db, 'users', uid).set({
+    await setDoc(doc(db, 'users', uid), {
       email,
       role: 'member',
       createdAt: Date.now()
@@ -49,4 +49,3 @@ export const checkRole = (role: UserRole | undefined) => ({
   isSuperAdmin: () => role === 'super_admin',
   isAdmin: () => role === 'admin' || role === 'super_admin'
 });
-
