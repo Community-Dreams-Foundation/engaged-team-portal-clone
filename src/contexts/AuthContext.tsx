@@ -10,7 +10,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  onIdTokenChanged
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
@@ -64,6 +65,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
   }, []);
 
+  // Monitor ID token changes and handle refresh
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const token = await user.getIdToken(true);
+          // Store the refreshed token if needed
+          localStorage.setItem('authToken', token);
+        } catch (error) {
+          console.error('Error refreshing token:', error);
+          toast({
+            variant: "destructive",
+            title: "Session Error",
+            description: "Failed to refresh authentication token"
+          });
+        }
+      } else {
+        localStorage.removeItem('authToken');
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   const signup = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
@@ -114,6 +139,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       await signOut(auth);
+      localStorage.removeItem('authToken');
       toast({ title: "Logged out successfully" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Logout failed", description: error.message });
@@ -158,3 +184,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
