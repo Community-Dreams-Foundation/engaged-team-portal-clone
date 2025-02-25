@@ -17,6 +17,15 @@ export interface PersonalGoal {
   createdAt: number;
 }
 
+export interface Feedback {
+  id: string;
+  text: string;
+  author: string;
+  role: string;
+  rating?: number;
+  givenAt: number;
+}
+
 export interface PerformanceMetrics {
   efficiency: number;
   totalTasks: number;
@@ -33,4 +42,6 @@ export interface PerformanceMetrics {
     name: string;
     tasks: number;
   }>;
+  feedback: Feedback[];
 }
+
