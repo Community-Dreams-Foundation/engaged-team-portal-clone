@@ -24,10 +24,10 @@ export default function Index() {
         tags: ["management", "leadership"],
         connections: ["2", "3"],
         strength: 0.8,
-        lastUpdated: new Date(),
+        lastUpdated: new Date().getTime(),
         category: "professional",
-        lastAccessed: new Date(),
-        createdAt: new Date()
+        lastAccessed: new Date().getTime(),
+        createdAt: new Date().getTime()
       },
       { 
         id: "2", 
@@ -37,10 +37,10 @@ export default function Index() {
         tags: ["leadership", "communication"],
         connections: ["1", "3"],
         strength: 0.9,
-        lastUpdated: new Date(),
+        lastUpdated: new Date().getTime(),
         category: "professional",
-        lastAccessed: new Date(),
-        createdAt: new Date()
+        lastAccessed: new Date().getTime(),
+        createdAt: new Date().getTime()
       },
       { 
         id: "3", 
@@ -50,10 +50,10 @@ export default function Index() {
         tags: ["project", "achievement"],
         connections: ["1", "2"],
         strength: 0.7,
-        lastUpdated: new Date(),
+        lastUpdated: new Date().getTime(),
         category: "experience",
-        lastAccessed: new Date(),
-        createdAt: new Date()
+        lastAccessed: new Date().getTime(),
+        createdAt: new Date().getTime()
       }
     ],
     edges: [
@@ -106,6 +106,7 @@ export default function Index() {
       }
     ],
     metrics: {
+      totalApplications: 5,
       activeProcesses: 2,
       successRate: 0.75,
       averageTimeToOffer: 1209600000 // 14 days in milliseconds
@@ -219,4 +220,3 @@ export default function Index() {
     </DashboardLayout>
   );
 }
-
