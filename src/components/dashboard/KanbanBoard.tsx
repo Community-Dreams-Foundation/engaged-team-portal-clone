@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
@@ -7,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { TaskColumn } from "@/components/tasks/TaskColumn"
+import { TaskMonitor } from "./monitoring/TaskMonitor"
 
 export function KanbanBoard() {
   const { currentUser } = useAuth()
@@ -179,21 +179,25 @@ export function KanbanBoard() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {columns.map(column => (
-        <TaskColumn
-          key={column.status}
-          title={column.title}
-          status={column.status}
-          tasks={tasks}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onDragStart={handleDragStart}
-          onTimerToggle={toggleTimer}
-          formatDuration={formatDuration}
-          canStartTask={canStartTask}
-        />
-      ))}
+    <div className="space-y-6">
+      <TaskMonitor tasks={tasks} />
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {columns.map(column => (
+          <TaskColumn
+            key={column.status}
+            title={column.title}
+            status={column.status}
+            tasks={tasks}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragStart={handleDragStart}
+            onTimerToggle={toggleTimer}
+            formatDuration={formatDuration}
+            canStartTask={canStartTask}
+          />
+        ))}
+      </div>
     </div>
   )
 }
