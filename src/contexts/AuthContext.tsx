@@ -24,6 +24,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   loading: boolean;
+  isNewUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMockAdmin, setIsMockAdmin] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   const mockAdminUser = {
     uid: 'admin',
@@ -52,7 +54,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     },
   } as User;
 
-  // Enable persistent sessions
   useEffect(() => {
     setPersistence(auth, browserLocalPersistence)
       .catch((error) => {
@@ -65,13 +66,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
   }, []);
 
-  // Monitor ID token changes and handle refresh
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
         try {
           const token = await user.getIdToken(true);
-          // Store the refreshed token if needed
           localStorage.setItem('authToken', token);
         } catch (error) {
           console.error('Error refreshing token:', error);
@@ -92,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signup = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
+      setIsNewUser(true);
       toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error creating account", description: error.message });
@@ -103,6 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (email === 'abc@gmail.com' && password === 'admin1234!') {
       setCurrentUser(mockAdminUser);
       setIsMockAdmin(true);
+      setIsNewUser(false);
       toast({ title: "Logged in as Admin", description: "Welcome back, Admin!" });
       return;
     }
@@ -110,6 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setIsMockAdmin(false);
+      setIsNewUser(false);
       toast({ title: "Logged in successfully", description: "Welcome back!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Login failed", description: error.message });
@@ -119,9 +121,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
       setIsMockAdmin(false);
+      // Check if this is the first time the user has signed in
+      setIsNewUser(result.additionalUserInfo?.isNewUser ?? false);
       toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Google login failed", description: error.message });
@@ -175,7 +178,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     logout,
     resetPassword,
     signInWithGoogle,
-    loading
+    loading,
+    isNewUser
   };
 
   return (

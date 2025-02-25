@@ -17,7 +17,7 @@ import Settings from "./pages/Settings";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, isNewUser } = useAuth();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -25,6 +25,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!currentUser) {
     return <Navigate to="/landing" />;
+  }
+
+  // Redirect new users to the intake page
+  if (isNewUser && window.location.pathname !== '/intake') {
+    return <Navigate to="/intake" />;
+  }
+
+  // Redirect returning users to dashboard if they try to access intake
+  if (!isNewUser && window.location.pathname === '/intake') {
+    return <Navigate to="/" />;
   }
 
   return <>{children}</>;
@@ -55,8 +65,15 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/intake"
+              element={
+                <ProtectedRoute>
+                  <Intake />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/submit-idea" element={<SubmitIdea />} />
-            <Route path="/intake" element={<Intake />} />
             <Route path="/customize-cos" element={<CustomizeCoS />} />
             <Route path="/simulate-cos" element={<SimulateCoS />} />
             <Route path="*" element={<NotFound />} />
