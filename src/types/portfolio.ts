@@ -1,4 +1,3 @@
-
 export type PortfolioFormat = "linkedin" | "github" | "website";
 
 export interface PortfolioMetadata {
@@ -98,5 +97,33 @@ export interface FormattedLinkedInPost {
     tasks: number;
     efficiency: number;
     impact: number;
+  };
+}
+
+export interface VisualCustomization {
+  colorScheme: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+  typography: {
+    headingFont: string;
+    bodyFont: string;
+    fontSize: {
+      base: string;
+      heading: string;
+      subheading: string;
+    };
+  };
+  layout: {
+    template: "classic" | "modern" | "minimal";
+    spacing: "compact" | "comfortable" | "spacious";
+    alignment: "left" | "center";
+  };
+  branding: {
+    logo?: string;
+    brandColors: string[];
   };
 }
