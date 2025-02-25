@@ -1,82 +1,117 @@
 
-import { useEffect, useState } from "react"
-import { collection, onSnapshot, query, where } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { useAuth } from "@/contexts/AuthContext"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { WaiverStatus } from "./WaiverStatus"
-import { formatDistanceToNow } from "date-fns"
+import React, { useEffect, useState } from "react";
+import { WaiverService } from "@/services/WaiverService";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDistanceToNow } from "date-fns";
+import { WaiverTemplateDialog } from "./WaiverTemplateDialog";
 
-interface Waiver {
-  id: string
-  title: string
-  reason: string
-  additionalDetails?: string
-  status: "pending" | "approved" | "rejected"
-  createdAt: Date
-  updatedAt: Date
+interface WaiverTemplate {
+  id: string;
+  name: string;
+  content: string;
+  category: string;
+  created_at: string;
 }
 
 export function WaiverList() {
-  const [waivers, setWaivers] = useState<Waiver[]>([])
-  const { currentUser } = useAuth()
+  const [waivers, setWaivers] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<WaiverTemplate[]>([]);
 
   useEffect(() => {
-    if (!currentUser) return
+    const unsubscribeWaivers = WaiverService.subscribeToWaivers(setWaivers);
+    const unsubscribeTemplates = WaiverService.subscribeToWaiverTemplates(setTemplates);
 
-    const waiversRef = collection(db, "waivers")
-    const userWaivers = query(waiversRef, where("userId", "==", currentUser.uid))
-    
-    const unsubscribe = onSnapshot(userWaivers, (snapshot) => {
-      const waiversData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt.toDate(),
-        updatedAt: doc.data().updatedAt.toDate(),
-      })) as Waiver[]
+    return () => {
+      unsubscribeWaivers();
+      unsubscribeTemplates();
+    };
+  }, []);
 
-      setWaivers(waiversData)
-    })
-
-    return () => unsubscribe()
-  }, [currentUser])
-
-  if (waivers.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">No waiver requests found</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-500";
+      case "rejected":
+        return "bg-red-500";
+      case "pending":
+        return "bg-yellow-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {waivers.map((waiver) => (
-        <Card key={waiver.id}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{waiver.title}</CardTitle>
-              <WaiverStatus status={waiver.status} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">{waiver.reason}</p>
-            {waiver.additionalDetails && (
-              <p className="text-sm text-muted-foreground mb-4">{waiver.additionalDetails}</p>
-            )}
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                Submitted {formatDistanceToNow(new Date(waiver.createdAt), { addSuffix: true })}
-              </span>
-              <span>
-                Last updated {formatDistanceToNow(new Date(waiver.updatedAt), { addSuffix: true })}
-              </span>
-            </div>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Waivers</h2>
+        <WaiverTemplateDialog />
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Templates</h3>
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-4">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="p-4 border rounded-lg hover:bg-accent"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{template.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {template.category}
+                        </p>
+                      </div>
+                      <Badge>{formatDistanceToNow(new Date(template.created_at), { addSuffix: true })}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
-      ))}
+
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold mb-4">Recent Waivers</h3>
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-4">
+                {waivers.map((waiver) => (
+                  <div
+                    key={waiver.waiver_id}
+                    className="p-4 border rounded-lg hover:bg-accent"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{waiver.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {waiver.description}
+                        </p>
+                      </div>
+                      <Badge className={getStatusColor(waiver.status)}>
+                        {waiver.status}
+                      </Badge>
+                    </div>
+                    {waiver.review_comments && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Comments: {waiver.review_comments}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {formatDistanceToNow(new Date(waiver.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-  )
+  );
 }
