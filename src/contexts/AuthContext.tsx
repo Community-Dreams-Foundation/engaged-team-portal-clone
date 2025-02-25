@@ -69,25 +69,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [isMockAdmin]);
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user && !isMockAdmin) {
-        try {
-          const token = await user.getIdToken(true);
-          localStorage.setItem('authToken', token);
-        } catch (error) {
-          console.error('Error refreshing token:', error);
-          toast({
-            variant: "destructive",
-            title: "Session Error",
-            description: "Failed to refresh authentication token"
-          });
+    if (!isMockAdmin) {
+      const unsubscribe = onIdTokenChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const token = await user.getIdToken(true);
+            localStorage.setItem('authToken', token);
+          } catch (error) {
+            console.error('Error refreshing token:', error);
+            toast({
+              variant: "destructive",
+              title: "Session Error",
+              description: "Failed to refresh authentication token"
+            });
+          }
+        } else {
+          localStorage.removeItem('authToken');
         }
-      } else {
-        localStorage.removeItem('authToken');
-      }
-    });
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    }
   }, [isMockAdmin]);
 
   const signup = async (email: string, password: string) => {
@@ -106,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setCurrentUser(mockAdminUser);
       setIsMockAdmin(true);
       setIsNewUser(false);
+      localStorage.setItem('isMockAdmin', 'true');
       toast({ title: "Logged in as Admin", description: "Welcome back, Admin!" });
       return;
     }
@@ -114,6 +117,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await signInWithEmailAndPassword(auth, email, password);
       setIsMockAdmin(false);
       setIsNewUser(false);
+      localStorage.removeItem('isMockAdmin');
       toast({ title: "Logged in successfully", description: "Welcome back!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Login failed", description: error.message });
@@ -140,6 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (isMockAdmin) {
       setCurrentUser(null);
       setIsMockAdmin(false);
+      localStorage.removeItem('isMockAdmin');
       toast({ title: "Logged out successfully" });
       return;
     }
@@ -165,15 +170,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    if (localStorage.getItem('isMockAdmin') === 'true') {
+      setCurrentUser(mockAdminUser);
+      setIsMockAdmin(true);
+      setLoading(false);
+      return;
+    }
+
     if (!isMockAdmin) {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
         setLoading(false);
       });
       return unsubscribe;
-    } else {
-      setLoading(false);
     }
+
+    setLoading(false);
   }, [isMockAdmin]);
 
   const value = {
