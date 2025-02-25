@@ -17,10 +17,14 @@ import type { UserRole } from '@/types/auth';
 export const useAuthOperations = () => {
   const signup = async (email: string, password: string) => {
     try {
+      console.log('Starting signup operation...');
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('User created in Firebase Auth:', result.user.uid);
       await createUserDocument(result.user.uid, email);
+      console.log('User document created in Firestore');
       toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast({ variant: "destructive", title: "Error creating account", description: error.message });
       throw error;
     }
@@ -28,10 +32,12 @@ export const useAuthOperations = () => {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Starting login operation...');
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Firebase login success:', result.user.email);
       
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      console.log('Retrieved user document:', userDoc.exists());
       const userData = userDoc.data();
       const role = userData?.role as UserRole;
       
@@ -109,4 +115,3 @@ export const useAuthOperations = () => {
     resetPassword
   };
 };
-

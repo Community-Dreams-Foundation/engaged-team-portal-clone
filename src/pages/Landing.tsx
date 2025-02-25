@@ -27,6 +27,8 @@ export default function Landing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Starting authentication process...');
+    
     if (!email || !password) {
       toast({
         variant: "destructive",
@@ -38,19 +40,26 @@ export default function Landing() {
 
     setIsLoading(true)
     try {
+      console.log(`Attempting ${isLogin ? 'login' : 'signup'} for email:`, email);
+      
       if (isLogin) {
+        console.log('Calling login function...');
         await login(email, password)
+        console.log('Login successful');
         toast({
           title: "Welcome back!",
           description: "Successfully logged in"
         })
       } else {
+        console.log('Calling signup function...');
         await signup(email, password)
+        console.log('Signup successful');
         toast({
           title: "Account created!",
           description: "Successfully signed up"
         })
       }
+      console.log('Navigating to homepage...');
       navigate("/")
     } catch (error: any) {
       console.error('Auth error:', error)
@@ -60,6 +69,7 @@ export default function Landing() {
         description: error.message || "Failed to authenticate. Please try again."
       })
     } finally {
+      console.log('Setting loading state to false');
       setIsLoading(false)
     }
   }

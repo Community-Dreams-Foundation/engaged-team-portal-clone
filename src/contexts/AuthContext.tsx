@@ -4,7 +4,7 @@ import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
-import { checkRole, logAuditEvent, createUserDocument } from '@/utils/authUtils';
+import { checkRole, logAuditEvent } from '@/utils/authUtils';
 import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import type { UserRole, ExtendedUser } from '@/types/auth';
@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { signup, login, signInWithGoogle, handleLogout, resetPassword } = useAuthOperations();
 
   useEffect(() => {
+    console.log('Setting up Firebase persistence...');
     setPersistence(auth, browserLocalPersistence)
       .catch((error) => {
         console.error('Error setting persistence:', error);
@@ -46,15 +47,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     currentUser,
     userRole,
     login: async (email: string, password: string) => {
+      console.log('AuthContext: Starting login process');
       const role = await login(email, password);
+      console.log('AuthContext: Setting user role:', role);
       setUserRole(role);
       setIsNewUser(false);
     },
     signup: async (email: string, password: string) => {
+      console.log('AuthContext: Starting signup process');
       await signup(email, password);
       setIsNewUser(true);
     },
     logout: async () => {
+      console.log('AuthContext: Starting logout process');
       if (currentUser) {
         await handleLogout(currentUser.uid, userRole);
         setUserRole(undefined);
@@ -62,6 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     },
     resetPassword,
     signInWithGoogle: async () => {
+      console.log('AuthContext: Starting Google sign-in process');
       const role = await signInWithGoogle();
       setUserRole(role);
       setIsNewUser(!role);
@@ -83,4 +89,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
