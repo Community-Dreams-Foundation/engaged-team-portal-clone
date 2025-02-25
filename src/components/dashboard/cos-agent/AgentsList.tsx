@@ -2,14 +2,73 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Bot, Trophy, Timer, Activity } from "lucide-react"
+import { Bot, Trophy, Timer, Activity, UserPlus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 import type { Agent } from "@/types/task"
+import { useAuth } from "@/contexts/AuthContext"
+import { getDatabase, ref, update } from "firebase/database"
 
 interface AgentsListProps {
   agents: Agent[];
 }
 
 export function AgentsList({ agents }: AgentsListProps) {
+  const { toast } = useToast()
+  const { currentUser } = useAuth()
+
+  const handleDelegateTask = async (agent: Agent) => {
+    if (!currentUser?.uid) return
+    
+    if (agent.currentLoad >= 80) {
+      toast({
+        title: "Agent Overloaded",
+        description: "This agent's workload is too high. Consider delegating to another agent.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const db = getDatabase()
+      const agentRef = ref(db, `users/${currentUser.uid}/agents/${agent.id}`)
+      
+      // Calculate new load based on current tasks
+      const newLoad = Math.min(agent.currentLoad + 20, 100)
+      
+      await update(agentRef, {
+        currentLoad: newLoad,
+        lastActive: Date.now(),
+        status: newLoad >= 80 ? "overloaded" : "active"
+      })
+
+      toast({
+        title: "Task Delegated",
+        description: `Task successfully assigned to ${agent.name}`,
+      })
+    } catch (error) {
+      console.error("Error delegating task:", error)
+      toast({
+        title: "Delegation Failed",
+        description: "Failed to delegate task. Please try again.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-500"
+      case "inactive":
+        return "bg-gray-500"
+      case "overloaded":
+        return "bg-red-500"
+      default:
+        return "bg-blue-500"
+    }
+  }
+
   return (
     <div className="space-y-3">
       {agents.map((agent) => (
@@ -18,15 +77,33 @@ export function AgentsList({ agents }: AgentsListProps) {
             <div className="flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
               <span className="font-medium">{agent.name}</span>
-              <Badge variant="outline" className="ml-2">
-                {agent.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <span 
+                  className={`h-2 w-2 rounded-full ${getStatusColor(agent.status)}`}
+                />
+                <Badge variant="outline">
+                  {agent.status}
+                </Badge>
+              </div>
             </div>
-            <Badge variant="secondary">
-              {agent.assignedTasks.length} tasks
-            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDelegateTask(agent)}
+              disabled={agent.status === "inactive" || agent.status === "overloaded"}
+              className="ml-2"
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              Delegate
+            </Button>
           </div>
-          <Progress value={agent.currentLoad} className="mt-2" />
+          
+          <Progress 
+            value={agent.currentLoad} 
+            className="mt-2"
+            variant={agent.currentLoad > 80 ? "destructive" : "default"}
+          />
+          
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Trophy className="h-3 w-3" />
@@ -41,8 +118,22 @@ export function AgentsList({ agents }: AgentsListProps) {
               {agent.performance.tasksCompleted} completed
             </span>
           </div>
+
+          <div className="mt-2 text-sm">
+            <span className="text-muted-foreground">Specializations: </span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {Object.entries(agent.specializationScore || {}).map(([domain, score]) => (
+                score > 0 && (
+                  <Badge key={domain} variant="secondary" className="text-xs">
+                    {domain}: {score}%
+                  </Badge>
+                )
+              ))}
+            </div>
+          </div>
         </Card>
       ))}
     </div>
   )
 }
+
