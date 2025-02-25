@@ -55,6 +55,9 @@ export interface Feedback {
   text: string;
   rating: number;
   date: number;
+  author: string;
+  role: string;
+  givenAt: number;
 }
 
 export interface PerformanceMetrics {
