@@ -1,4 +1,3 @@
-
 import { getDatabase, ref, set, get, update } from "firebase/database";
 import type { PerformanceMetrics, PersonalGoal } from "@/types/performance";
 
@@ -35,7 +34,8 @@ export const fetchPerformanceData = async (userId: string): Promise<PerformanceM
         { name: "Wed", tasks: 0 },
         { name: "Thu", tasks: 0 },
         { name: "Fri", tasks: 0 }
-      ]
+      ],
+      feedback: [] // Add the feedback array with initial empty state
     };
 
     await set(performanceRef, defaultData);
