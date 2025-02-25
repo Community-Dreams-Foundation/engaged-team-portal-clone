@@ -1,4 +1,6 @@
 
+import { User } from 'firebase/auth';
+
 export type UserRole = 'member' | 'admin' | 'super_admin';
 
 export interface AuditLog {
@@ -15,3 +17,4 @@ export interface CustomClaims {
 export interface ExtendedUser extends User {
   role?: UserRole;
 }
+
