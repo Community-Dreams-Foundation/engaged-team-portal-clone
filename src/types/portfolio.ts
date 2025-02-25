@@ -1,4 +1,3 @@
-
 export type PortfolioFormat = "linkedin" | "github" | "website";
 
 export interface PortfolioMetadata {
@@ -62,4 +61,34 @@ export interface Portfolio {
   metrics: PortfolioMetrics;
   preferences: PortfolioPreferences;
   summary: PortfolioSummary;
+}
+
+export interface LinkedInSuggestion {
+  id: string;
+  name: string;
+  title: string;
+  relevanceScore: number;
+  matchedSkills: string[];
+  connectionDegree: "1st" | "2nd" | "3rd+";
+}
+
+export interface LinkedInGroup {
+  id: string;
+  name: string;
+  memberCount: number;
+  description: string;
+  relevanceScore: number;
+  category: string;
+  matchedKeywords: string[];
+}
+
+export interface FormattedLinkedInPost {
+  title: string;
+  content: string;
+  hashtags: string[];
+  metrics: {
+    tasks: number;
+    efficiency: number;
+    impact: number;
+  };
 }
