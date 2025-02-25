@@ -1,8 +1,18 @@
-
 export type TaskStatus = "todo" | "in-progress" | "completed"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
 export type AgentType = "general" | "data-analysis" | "content-creation" | "project-management"
+
+export interface CoSRecommendation {
+  id: string
+  type: "task" | "time" | "leadership" | "agent"
+  content: string
+  timestamp: number
+  feedback?: "positive" | "negative"
+  priority?: "low" | "medium" | "high"
+  impact?: number // 0-100 score for recommendation impact
+  actualDuration?: number // in minutes
+}
 
 export interface Task {
   id: string
@@ -64,10 +74,8 @@ export interface Task {
   }
 }
 
-// New type for task creation
 export interface TaskInput extends Omit<Task, "id" | "createdAt" | "updatedAt" | "isTimerRunning" | "totalElapsedTime" | "lastActivity"> {}
 
-// New type for personalization preferences
 export interface PersonalizationPreferences {
   workloadThreshold: number // hours per week
   notificationFrequency: "high" | "medium" | "low"
@@ -96,4 +104,3 @@ export interface Agent {
   status: "active" | "inactive" | "overloaded"
   specializationScore: Record<string, number> // domain -> score
 }
-

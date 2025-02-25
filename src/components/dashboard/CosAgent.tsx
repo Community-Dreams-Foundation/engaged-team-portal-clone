@@ -21,17 +21,6 @@ import { getDatabase, ref, get, update } from "firebase/database"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Agent, AgentType, CoSRecommendation, Task } from "@/types/task"
 
-interface CoSRecommendation {
-  id: string
-  type: "task" | "time" | "leadership" | "agent"
-  content: string
-  timestamp: number
-  feedback?: "positive" | "negative"
-  priority?: "low" | "medium" | "high"
-  impact?: number // 0-100 score for recommendation impact
-  actualDuration?: number // in minutes
-}
-
 interface CoSPreferences {
   tone: "formal" | "casual"
   notificationFrequency: "high" | "medium" | "low"
@@ -40,13 +29,6 @@ interface CoSPreferences {
   delegationPreference: "aggressive" | "balanced" | "conservative"
   communicationStyle: "formal" | "casual"
   agentInteractionLevel: "high" | "medium" | "low"
-}
-
-interface PerformanceMetrics {
-  taskCompletionRate: number
-  avgTaskTime: number
-  delegationEfficiency: number
-  feedbackScore: number
 }
 
 const defaultPreferences: CoSPreferences = {
