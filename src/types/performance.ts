@@ -50,6 +50,13 @@ export interface Achievement {
   earnedAt: number;
 }
 
+export interface Feedback {
+  id: string;
+  text: string;
+  rating: number;
+  date: number;
+}
+
 export interface PerformanceMetrics {
   efficiency: number;
   totalTasks: number;
