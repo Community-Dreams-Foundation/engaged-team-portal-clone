@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,12 +8,18 @@ import {
   Timer,
   BrainCircuit,
   ChevronRight,
+  Plus,
+  Activity,
+  Trophy,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
 import { useQuery } from "@tanstack/react-query"
 import { getDatabase, ref, get, update } from "firebase/database"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Agent, AgentType, CoSRecommendation, Task } from "@/types/task"
 
 interface CoSRecommendation {
   id: string
@@ -33,6 +38,8 @@ interface CoSPreferences {
   trainingFocus: string[]
   workloadThreshold: number // hours per week
   delegationPreference: "aggressive" | "balanced" | "conservative"
+  communicationStyle: "formal" | "casual"
+  agentInteractionLevel: "high" | "medium" | "low"
 }
 
 interface PerformanceMetrics {
@@ -47,7 +54,9 @@ const defaultPreferences: CoSPreferences = {
   notificationFrequency: "medium",
   trainingFocus: ["time-management", "leadership", "delegation"],
   workloadThreshold: 40,
-  delegationPreference: "balanced"
+  delegationPreference: "balanced",
+  communicationStyle: "casual",
+  agentInteractionLevel: "medium"
 }
 
 const mockRecommendations: CoSRecommendation[] = [
@@ -97,6 +106,9 @@ export function CosAgent() {
   const { toast } = useToast()
   const [recommendations, setRecommendations] = useState<CoSRecommendation[]>([])
   const [metrics, setMetrics] = useState<PerformanceMetrics>(mockPerformanceMetrics)
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [showCreateAgent, setShowCreateAgent] = useState(false)
+  const [selectedAgentType, setSelectedAgentType] = useState<AgentType>("general")
   
   const { data: preferences } = useQuery({
     queryKey: ['cosPreferences', currentUser?.uid],
@@ -110,31 +122,81 @@ export function CosAgent() {
     enabled: !!currentUser
   })
 
+  const { data: userAgents } = useQuery({
+    queryKey: ['agents', currentUser?.uid],
+    queryFn: async () => {
+      if (!currentUser?.uid) return []
+      const db = getDatabase()
+      const agentsRef = ref(db, `users/${currentUser.uid}/agents`)
+      const snapshot = await get(agentsRef)
+      return snapshot.exists() ? Object.values(snapshot.val()) : []
+    },
+    enabled: !!currentUser
+  })
+
   useEffect(() => {
-    // In a real implementation, this would be replaced with a WebSocket connection
-    // to receive real-time recommendations from the AI
-    setRecommendations(mockRecommendations)
-  }, [])
+    if (userAgents) {
+      setAgents(userAgents as Agent[])
+    }
+  }, [userAgents])
+
+  const handleCreateAgent = async () => {
+    if (!currentUser) return
+
+    try {
+      const db = getDatabase()
+      const newAgent: Agent = {
+        id: `agent-${Date.now()}`,
+        type: selectedAgentType,
+        name: `${selectedAgentType.charAt(0).toUpperCase() + selectedAgentType.slice(1)} Agent`,
+        skills: [],
+        currentLoad: 0,
+        assignedTasks: [],
+        performance: {
+          successRate: 100,
+          averageTaskTime: 0,
+          tasksCompleted: 0
+        },
+        createdAt: Date.now(),
+        lastActive: Date.now(),
+        status: "active",
+        specializationScore: {}
+      }
+
+      await update(ref(db, `users/${currentUser.uid}/agents/${newAgent.id}`), newAgent)
+      
+      setAgents(prev => [...prev, newAgent])
+      setShowCreateAgent(false)
+      
+      toast({
+        title: "Agent Created",
+        description: `New ${selectedAgentType} agent has been created successfully!`,
+      })
+    } catch (error) {
+      console.error("Error creating agent:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create agent. Please try again.",
+      })
+    }
+  }
 
   const handleFeedback = async (recId: string, feedback: "positive" | "negative") => {
     if (!currentUser) return
 
     try {
-      // Update recommendation feedback in local state
       setRecommendations(prevRecs => 
         prevRecs.map(rec => 
           rec.id === recId ? { ...rec, feedback } : rec
         )
       )
 
-      // Update metrics based on feedback
       setMetrics(prev => ({
         ...prev,
         feedbackScore: feedback === "positive" ? prev.feedbackScore + 1 : prev.feedbackScore - 1
       }))
 
-      // In a real implementation, this would be sent to the AI service
-      // to improve future recommendations
       const db = getDatabase()
       await update(ref(db, `users/${currentUser.uid}/recommendations/${recId}`), {
         feedback,
@@ -205,6 +267,9 @@ export function CosAgent() {
             <Badge variant="outline">
               {preferences.delegationPreference} delegation
             </Badge>
+            <Badge variant="outline">
+              {preferences.agentInteractionLevel} interaction
+            </Badge>
           </div>
         )}
 
@@ -225,6 +290,74 @@ export function CosAgent() {
             <p className="text-sm text-muted-foreground">Feedback Score</p>
             <p className="text-lg font-semibold">{metrics.feedbackScore}</p>
           </Card>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium">Active Agents</h4>
+            <Dialog open={showCreateAgent} onOpenChange={setShowCreateAgent}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Agent
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Agent</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    {["general", "data-analysis", "content-creation", "project-management"].map((type) => (
+                      <Button
+                        key={type}
+                        variant={selectedAgentType === type ? "default" : "outline"}
+                        onClick={() => setSelectedAgentType(type as AgentType)}
+                      >
+                        {type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button onClick={handleCreateAgent} className="w-full">
+                    Create Agent
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="space-y-3">
+            {agents.map((agent) => (
+              <Card key={agent.id} className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{agent.name}</span>
+                    <Badge variant="outline" className="ml-2">
+                      {agent.status}
+                    </Badge>
+                  </div>
+                  <Badge variant="secondary">
+                    {agent.assignedTasks.length} tasks
+                  </Badge>
+                </div>
+                <Progress value={agent.currentLoad} className="mt-2" />
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Trophy className="h-3 w-3" />
+                    {(agent.performance.successRate * 100).toFixed(0)}%
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Timer className="h-3 w-3" />
+                    {agent.performance.averageTaskTime}m
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Activity className="h-3 w-3" />
+                    {agent.performance.tasksCompleted} completed
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-4">

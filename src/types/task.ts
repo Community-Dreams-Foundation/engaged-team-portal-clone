@@ -2,6 +2,7 @@
 export type TaskStatus = "todo" | "in-progress" | "completed"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
+export type AgentType = "general" | "data-analysis" | "content-creation" | "project-management"
 
 export interface Task {
   id: string
@@ -48,6 +49,18 @@ export interface Task {
     timeExpectation?: number // expected completion time in minutes
     autoSplitEligible?: boolean // whether the task can be auto-split
     personalizationScore?: number // 0-100, calculated based on user match
+    agentRecommendations?: {
+      suggestedAgentType?: AgentType
+      confidence: number
+      reasoning: string
+    }
+    gamification?: {
+      points: number
+      badges: string[]
+      achievements: string[]
+      leaderboardPosition?: number
+      skillProgress?: Record<string, number> // skill name -> progress (0-100)
+    }
   }
 }
 
@@ -62,5 +75,25 @@ export interface PersonalizationPreferences {
   communicationStyle: "formal" | "casual"
   skillFocus: string[]
   learningGoals: string[]
+  agentInteractionLevel: "proactive" | "reactive" | "minimal"
+  preferredAgentTypes: AgentType[]
+}
+
+export interface Agent {
+  id: string
+  type: AgentType
+  name: string
+  skills: string[]
+  currentLoad: number // percentage
+  assignedTasks: string[] // task IDs
+  performance: {
+    successRate: number
+    averageTaskTime: number
+    tasksCompleted: number
+  }
+  createdAt: number
+  lastActive: number
+  status: "active" | "inactive" | "overloaded"
+  specializationScore: Record<string, number> // domain -> score
 }
 
