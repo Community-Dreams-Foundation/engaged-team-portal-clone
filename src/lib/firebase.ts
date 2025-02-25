@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -31,8 +31,8 @@ export const analytics = analyticsPromise;
 // Function to check Firebase connection status
 export const checkFirebaseConnection = async () => {
   try {
-    await db.terminate(); // Clean up any existing connections
-    await db.enableNetwork(); // Try to enable the network
+    await disableNetwork(db); // First disable the network
+    await enableNetwork(db); // Then try to enable it
     return true;
   } catch (error) {
     console.error('Firebase connection error:', error);
