@@ -15,12 +15,25 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Users } from "lucide-react"
+import { useNotifications } from "@/contexts/NotificationContext"
+import { getDatabase, ref, push } from "firebase/database"
+import { useAuth } from "@/contexts/AuthContext"
+
+interface Meeting {
+  date: Date;
+  timeSlot: string;
+  notes: string;
+  userId: string;
+  status: "scheduled" | "cancelled" | "completed";
+}
 
 export function MeetingScheduler() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [timeSlot, setTimeSlot] = useState<string>()
   const [notes, setNotes] = useState("")
   const { toast } = useToast()
+  const { addNotification } = useNotifications()
+  const { currentUser } = useAuth()
 
   const timeSlots = [
     "09:00 AM",
@@ -31,8 +44,8 @@ export function MeetingScheduler() {
     "04:00 PM",
   ]
 
-  const handleScheduleMeeting = () => {
-    if (!date || !timeSlot) {
+  const handleScheduleMeeting = async () => {
+    if (!date || !timeSlot || !currentUser) {
       toast({
         variant: "destructive",
         title: "Please select both date and time",
@@ -41,10 +54,43 @@ export function MeetingScheduler() {
       return
     }
 
-    toast({
-      title: "Meeting Scheduled",
-      description: `Your meeting has been scheduled for ${date.toLocaleDateString()} at ${timeSlot}`,
-    })
+    const db = getDatabase()
+    const meetingsRef = ref(db, "meetings")
+    const newMeeting: Meeting = {
+      date,
+      timeSlot,
+      notes,
+      userId: currentUser.uid,
+      status: "scheduled",
+    }
+
+    try {
+      const newMeetingRef = await push(meetingsRef, newMeeting)
+      
+      await addNotification({
+        title: "Meeting Scheduled",
+        message: `Your meeting has been scheduled for ${date.toLocaleDateString()} at ${timeSlot}`,
+        type: "meeting",
+        metadata: {
+          meetingId: newMeetingRef.key || undefined,
+        },
+      })
+
+      toast({
+        title: "Meeting Scheduled",
+        description: `Your meeting has been scheduled for ${date.toLocaleDateString()} at ${timeSlot}`,
+      })
+
+      // Reset form
+      setTimeSlot(undefined)
+      setNotes("")
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error scheduling meeting",
+        description: "There was an error scheduling your meeting. Please try again.",
+      })
+    }
   }
 
   return (
@@ -106,3 +152,4 @@ export function MeetingScheduler() {
     </Card>
   )
 }
+
