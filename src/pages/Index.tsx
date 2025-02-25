@@ -19,7 +19,7 @@ export default function Index() {
       { 
         id: "1", 
         title: "Project Management",
-        type: "skill",
+        type: "skill" as const,
         description: "Project management expertise",
         tags: ["management", "leadership"],
         connections: ["2", "3"],
@@ -32,7 +32,7 @@ export default function Index() {
       { 
         id: "2", 
         title: "Team Leadership",
-        type: "skill",
+        type: "skill" as const,
         description: "Team leadership experience",
         tags: ["leadership", "communication"],
         connections: ["1", "3"],
@@ -45,7 +45,7 @@ export default function Index() {
       { 
         id: "3", 
         title: "Recent Project",
-        type: "project",
+        type: "project" as const,
         description: "Latest project completion",
         tags: ["project", "achievement"],
         connections: ["1", "2"],
@@ -79,7 +79,10 @@ export default function Index() {
           }
         ],
         requirements: ["Resume", "Portfolio"],
-        timeline: "1 week"
+        timeline: {
+          start: Date.now(),
+          target: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days from now
+        }
       },
       {
         id: "applied",
@@ -96,7 +99,10 @@ export default function Index() {
           }
         ],
         requirements: ["Interview", "Technical Test"],
-        timeline: "2 weeks"
+        timeline: {
+          start: Date.now(),
+          target: Date.now() + 14 * 24 * 60 * 60 * 1000 // 14 days from now
+        }
       }
     ],
     metrics: {
