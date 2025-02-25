@@ -1,10 +1,12 @@
+
 import { getDatabase, ref, get, set, update } from "firebase/database";
 import { Task } from "@/types/task";
 import type { 
   Portfolio, 
   PortfolioItem, 
   PortfolioFormat, 
-  PortfolioMetadata 
+  PortfolioMetadata,
+  PortfolioSummary 
 } from "@/types/portfolio";
 
 export const generatePortfolioFromTasks = async (
