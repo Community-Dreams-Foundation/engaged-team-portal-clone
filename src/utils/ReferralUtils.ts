@@ -1,3 +1,4 @@
+
 import { 
   getFirestore, 
   doc, 
@@ -11,6 +12,7 @@ import {
   getDocs,
   arrayUnion
 } from 'firebase/firestore';
+import { addNotification } from '@/contexts/NotificationContext';
 
 export const generateReferralCode = (userId: string): string => {
   // Generate a unique referral code using user ID and random characters
@@ -27,8 +29,8 @@ export const createReferralRecord = async (userId: string, userEmail: string) =>
     userEmail,
     referralCode,
     referralsCount: 0,
-    successfulReferrals: 0,
-    totalRewards: 0,
+    paidReferrals: 0,
+    rewardsEarned: [],
     createdAt: new Date(),
     referralHistory: []
   });
@@ -62,19 +64,96 @@ export const trackReferral = async (referralCode: string, newUserId: string) => 
   });
 };
 
-export const completeReferral = async (referrerId: string, newUserId: string) => {
+export const updateReferralStatus = async (referrerId: string, newUserId: string, status: 'paid' | 'cancelled') => {
   const db = getFirestore();
-  const referralDoc = doc(db, 'referrals', referrerId);
+  const referralDoc = await getDoc(doc(db, 'referrals', referrerId));
   
-  // Update successful referrals count and reward
-  await updateDoc(referralDoc, {
-    successfulReferrals: increment(1),
-    totalRewards: increment(10), // $10 reward per successful referral
-    'referralHistory': arrayUnion({
-      newUserId,
-      timestamp: new Date(),
-      status: 'completed',
-      rewardAmount: 10
-    })
+  if (!referralDoc.exists()) return;
+  
+  const data = referralDoc.data();
+  const paidReferrals = status === 'paid' ? data.paidReferrals + 1 : data.paidReferrals;
+  
+  await updateDoc(doc(db, 'referrals', referrerId), {
+    paidReferrals,
+    'referralHistory': data.referralHistory.map((ref: any) => 
+      ref.newUserId === newUserId ? { ...ref, status } : ref
+    )
   });
+
+  if (status === 'paid') {
+    await checkAndApplyReferralRewards(referrerId, paidReferrals);
+  }
 };
+
+export const checkAndApplyReferralRewards = async (userId: string, paidReferralsCount: number) => {
+  const db = getFirestore();
+  const referralDoc = await getDoc(doc(db, 'referrals', userId));
+  
+  if (!referralDoc.exists()) return;
+  
+  const data = referralDoc.data();
+  const earnedRewards = data.rewardsEarned || [];
+  let newReward = null;
+
+  // Check for new reward thresholds
+  if (paidReferralsCount >= 10 && !earnedRewards.includes('leadership_waiver')) {
+    newReward = {
+      type: 'leadership_waiver',
+      description: 'Leadership Waiver - No fee payment due',
+      earnedAt: new Date()
+    };
+  } else if (paidReferralsCount >= 5 && !earnedRewards.includes('three_months_free')) {
+    newReward = {
+      type: 'three_months_free',
+      description: '3 Months Free Subscription',
+      earnedAt: new Date()
+    };
+  } else if (paidReferralsCount >= 3 && !earnedRewards.includes('one_month_free')) {
+    newReward = {
+      type: 'one_month_free',
+      description: '1 Month Free Subscription',
+      earnedAt: new Date()
+    };
+  }
+
+  if (newReward) {
+    // Update referral document with new reward
+    await updateDoc(doc(db, 'referrals', userId), {
+      rewardsEarned: arrayUnion(newReward.type)
+    });
+
+    // Apply the reward to the subscription
+    const subscriptionDoc = await getDoc(doc(db, 'subscriptions', userId));
+    if (subscriptionDoc.exists()) {
+      const subscriptionData = subscriptionDoc.data();
+      const currentDueDate = new Date(subscriptionData.dueDate);
+      
+      if (newReward.type === 'leadership_waiver') {
+        await updateDoc(doc(db, 'subscriptions', userId), {
+          status: 'waived',
+          leadershipWaiver: true
+        });
+      } else {
+        // Add free months to the due date
+        const monthsToAdd = newReward.type === 'three_months_free' ? 3 : 1;
+        currentDueDate.setMonth(currentDueDate.getMonth() + monthsToAdd);
+        
+        await updateDoc(doc(db, 'subscriptions', userId), {
+          dueDate: currentDueDate.toISOString()
+        });
+      }
+    }
+
+    // Send notification to user about the reward
+    await addNotification({
+      title: 'Referral Reward Earned!',
+      message: `Congratulations! You've earned: ${newReward.description}`,
+      type: 'payment',
+      metadata: {
+        type: newReward.type,
+        actionRequired: false
+      }
+    });
+  }
+};
+
