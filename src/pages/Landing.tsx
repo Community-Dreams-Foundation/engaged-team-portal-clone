@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import PayPalButton from "@/components/PayPalButton"
 
 export default function Landing() {
   const [email, setEmail] = useState("")
@@ -51,18 +50,15 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-12 items-start">
             <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-6">Subscribe to Premium</h2>
+              <h2 className="text-2xl font-bold mb-6">Welcome to DreamStream</h2>
               <div className="space-y-4">
                 <div className="p-4 bg-primary/10 rounded-lg">
-                  <h3 className="font-semibold mb-2">Premium Benefits</h3>
-                  <ul className="space-y-2 text-sm">
-                    <li>✓ Advanced training modules</li>
-                    <li>✓ Priority support</li>
-                    <li>✓ Exclusive community access</li>
-                    <li>✓ Professional certification</li>
-                  </ul>
+                  <h3 className="font-semibold mb-2">Our Mission</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We're dedicated to building a strong community of dreamers and
+                    doers. Join us to collaborate, learn, and grow together.
+                  </p>
                 </div>
-                <PayPalButton />
               </div>
             </Card>
 

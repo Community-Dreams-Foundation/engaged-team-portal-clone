@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PayPalButton from "@/components/PayPalButton"
 import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
 
 export default function Settings() {
   const { currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState("billing")
+  const [showSubscription, setShowSubscription] = useState(false)
 
   return (
     <DashboardLayout>
@@ -30,7 +32,21 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground">Current Plan</p>
                   <p className="font-medium">Free Plan</p>
                 </div>
-                <PayPalButton />
+                {!showSubscription ? (
+                  <Button 
+                    onClick={() => setShowSubscription(true)}
+                    className="w-full"
+                  >
+                    Turn on subscription
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Subscribe to unlock premium features
+                    </p>
+                    <PayPalButton />
+                  </div>
+                )}
               </div>
             </Card>
           </TabsContent>
