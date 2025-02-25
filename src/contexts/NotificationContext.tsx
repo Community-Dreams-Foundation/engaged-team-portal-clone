@@ -7,7 +7,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver";
+  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver" | "payment";
   status: "unread" | "read";
   timestamp: number;
   metadata?: {
@@ -15,6 +15,9 @@ export interface Notification {
     supportTicketId?: string;
     taskId?: string;
     waiverId?: string;
+    paymentId?: string;
+    amount?: number;
+    dueDate?: string;
     priority?: "low" | "medium" | "high";
     actionRequired?: boolean;
     action?: {

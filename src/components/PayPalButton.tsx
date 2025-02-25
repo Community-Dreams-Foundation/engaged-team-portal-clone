@@ -1,20 +1,43 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { doc, setDoc, getFirestore } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-declare global {
-  interface Window {
-    paypal: any;
+const plans = {
+  monthly: {
+    planId: 'P-1C748246YG018921SM6DKRYI', // Your monthly plan ID
+    price: 15,
+    newMemberPrice: 10
+  },
+  quarterly: {
+    planId: 'YOUR_QUARTERLY_PLAN_ID', // Replace with your plan ID
+    price: 40
+  },
+  semiAnnual: {
+    planId: 'YOUR_SEMI_ANNUAL_PLAN_ID', // Replace with your plan ID
+    price: 75
+  },
+  annual: {
+    planId: 'YOUR_ANNUAL_PLAN_ID', // Replace with your plan ID
+    price: 140
   }
-}
+};
 
 const PayPalButton = () => {
   const { currentUser } = useAuth();
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
   const db = getFirestore();
+  const isNewMember = true; // This should be determined based on user's history
 
-  const saveSubscriptionToFirebase = async (subscriptionID: string, status: string) => {
+  const saveSubscriptionToFirebase = async (subscriptionID: string, status: string, planType: string) => {
     if (!currentUser) {
       toast({
         variant: "destructive",
@@ -26,18 +49,29 @@ const PayPalButton = () => {
 
     try {
       const subscriptionRef = doc(db, 'subscriptions', currentUser.uid);
+      const dueDate = new Date();
+      dueDate.setDate(5); // Set to the 5th of next month
+      if (dueDate.getDate() > 5) {
+        dueDate.setMonth(dueDate.getMonth() + 1);
+      }
+      
       await setDoc(subscriptionRef, {
         subscriptionID,
         status,
+        planType,
         createdAt: new Date(),
         updatedAt: new Date(),
+        dueDate: dueDate.toISOString(),
         userID: currentUser.uid,
-        email: currentUser.email
+        email: currentUser.email,
+        lateFee: 0,
+        isNewMember,
+        price: isNewMember && planType === 'monthly' ? plans.monthly.newMemberPrice : plans[planType].price
       });
 
       toast({
         title: "Subscription successful",
-        description: "Your subscription has been activated"
+        description: `Your ${planType} subscription has been activated`
       });
     } catch (error) {
       console.error('Error saving subscription:', error);
@@ -65,13 +99,14 @@ const PayPalButton = () => {
         },
         createSubscription: function(data: any, actions: any) {
           return actions.subscription.create({
-            plan_id: 'P-1C748246YG018921SM6DKRYI'
+            plan_id: plans[selectedPlan].planId
           });
         },
         onApprove: async function(data: any) {
           await saveSubscriptionToFirebase(
             data.subscriptionID,
-            'ACTIVE'
+            'ACTIVE',
+            selectedPlan
           );
           console.log('Subscription successful:', data.subscriptionID);
         },
@@ -91,9 +126,33 @@ const PayPalButton = () => {
     return () => {
       document.body.removeChild(script);
     };
-  }, [currentUser]);
+  }, [currentUser, selectedPlan]);
 
-  return <div id="paypal-button-container" className="w-full max-w-xs mx-auto"></div>;
+  return (
+    <div className="space-y-4">
+      <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select a plan" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="monthly">
+            Monthly ({isNewMember ? `$${plans.monthly.newMemberPrice}` : `$${plans.monthly.price}`})
+          </SelectItem>
+          <SelectItem value="quarterly">
+            Quarterly (${plans.quarterly.price})
+          </SelectItem>
+          <SelectItem value="semiAnnual">
+            Semi-Annual (${plans.semiAnnual.price})
+          </SelectItem>
+          <SelectItem value="annual">
+            Annual (${plans.annual.price})
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <div id="paypal-button-container" className="w-full max-w-xs mx-auto"></div>
+    </div>
+  );
 };
 
 export default PayPalButton;
+
