@@ -70,3 +70,33 @@ export interface Portfolio {
   preferences: PortfolioPreferences;
   summary: PortfolioSummary;
 }
+
+export interface LinkedInSuggestion {
+  id: string;
+  name: string;
+  title: string;
+  relevanceScore: number;
+  matchedSkills: string[];
+  connectionDegree: string;
+}
+
+export interface LinkedInGroup {
+  id: string;
+  name: string;
+  memberCount: number;
+  description: string;
+  relevanceScore: number;
+  category: string;
+  matchedKeywords: string[];
+}
+
+export interface FormattedLinkedInPost {
+  title: string;
+  content: string;
+  hashtags: string[];
+  metrics: {
+    tasks: number;
+    efficiency: number;
+    impact: number;
+  };
+}
