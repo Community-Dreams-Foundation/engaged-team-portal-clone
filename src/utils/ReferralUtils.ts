@@ -12,7 +12,7 @@ import {
   getDocs,
   arrayUnion
 } from 'firebase/firestore';
-import { addNotification } from '@/contexts/NotificationContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 export const generateReferralCode = (userId: string): string => {
   // Generate a unique referral code using user ID and random characters
@@ -88,6 +88,7 @@ export const updateReferralStatus = async (referrerId: string, newUserId: string
 export const checkAndApplyReferralRewards = async (userId: string, paidReferralsCount: number) => {
   const db = getFirestore();
   const referralDoc = await getDoc(doc(db, 'referrals', userId));
+  const { addNotification } = useNotifications();
   
   if (!referralDoc.exists()) return;
   
