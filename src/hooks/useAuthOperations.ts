@@ -1,4 +1,3 @@
-
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -9,7 +8,7 @@ import {
   getIdTokenResult
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, checkFirebaseConnection } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import { createUserDocument, logAuditEvent } from '@/utils/authUtils';
 import type { UserRole } from '@/types/auth';
@@ -18,6 +17,13 @@ export const useAuthOperations = () => {
   const signup = async (email: string, password: string) => {
     try {
       console.log('Starting signup operation...');
+      
+      // Check connection before attempting signup
+      const isConnected = await checkFirebaseConnection();
+      if (!isConnected) {
+        throw new Error('Firebase is offline. Please check your internet connection.');
+      }
+      
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created in Firebase Auth:', result.user.uid);
       await createUserDocument(result.user.uid, email);
@@ -25,7 +31,11 @@ export const useAuthOperations = () => {
       toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast({ variant: "destructive", title: "Error creating account", description: error.message });
+      toast({ 
+        variant: "destructive", 
+        title: "Error creating account", 
+        description: error.message || "Failed to create account. Please check your internet connection."
+      });
       throw error;
     }
   };
@@ -33,6 +43,13 @@ export const useAuthOperations = () => {
   const login = async (email: string, password: string) => {
     try {
       console.log('Starting login operation...');
+      
+      // Check connection before attempting login
+      const isConnected = await checkFirebaseConnection();
+      if (!isConnected) {
+        throw new Error('Firebase is offline. Please check your internet connection.');
+      }
+      
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Firebase login success:', result.user.email);
       
@@ -49,7 +66,15 @@ export const useAuthOperations = () => {
       return role;
     } catch (error: any) {
       console.error('Login error:', error);
-      toast({ variant: "destructive", title: "Login failed", description: error.message });
+      const errorMessage = error.code === 'auth/network-request-failed'
+        ? 'Unable to connect to authentication service. Please check your internet connection.'
+        : error.message;
+      
+      toast({ 
+        variant: "destructive", 
+        title: "Login failed", 
+        description: errorMessage
+      });
       throw error;
     }
   };

@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -16,10 +16,26 @@ const firebaseConfig = {
 
 // Initialize Firebase only once
 const app = initializeApp(firebaseConfig);
+
+// Initialize auth with offline persistence
 export const auth = getAuth(app);
+auth.useDeviceLanguage(); // Set language to device default
+
+// Initialize Firestore
 export const db = getFirestore(app);
 
 // Initialize analytics only if supported
 const analyticsPromise = isSupported().then(yes => yes ? getAnalytics(app) : null);
 export const analytics = analyticsPromise;
 
+// Function to check Firebase connection status
+export const checkFirebaseConnection = async () => {
+  try {
+    await db.terminate(); // Clean up any existing connections
+    await db.enableNetwork(); // Try to enable the network
+    return true;
+  } catch (error) {
+    console.error('Firebase connection error:', error);
+    return false;
+  }
+};
