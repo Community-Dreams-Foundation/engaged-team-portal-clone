@@ -53,23 +53,44 @@ export default function Landing() {
               DreamStream Fellowship
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Join the Community Dreams Foundation and make an impact
+              Join a transformative community dedicated to fostering innovation and leadership
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 items-start">
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold mb-6">Welcome to DreamStream</h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-primary/10 rounded-lg">
-                  <h3 className="font-semibold mb-2">Our Mission</h3>
-                  <p className="text-sm text-muted-foreground">
-                    We're dedicated to building a strong community of dreamers and
-                    doers. Join us to collaborate, learn, and grow together.
-                  </p>
+            <div className="space-y-8">
+              <Card className="p-6">
+                <h2 className="text-2xl font-bold mb-6">Why Join DreamStream?</h2>
+                <div className="space-y-6">
+                  <div className="p-4 bg-primary/10 rounded-lg">
+                    <h3 className="font-semibold mb-2">Our Mission</h3>
+                    <p className="text-sm text-muted-foreground">
+                      We're dedicated to building a strong community of dreamers and
+                      doers. Our fellowship program empowers individuals to make meaningful
+                      impact through collaboration and innovation.
+                    </p>
+                  </div>
+                  <div className="p-4 bg-secondary/10 rounded-lg">
+                    <h3 className="font-semibold mb-2">Fellowship Benefits</h3>
+                    <ul className="text-sm text-muted-foreground space-y-2">
+                      <li>• Mentorship from industry leaders</li>
+                      <li>• Access to exclusive networking events</li>
+                      <li>• Professional development workshops</li>
+                      <li>• Project collaboration opportunities</li>
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-accent/10 rounded-lg">
+                    <h3 className="font-semibold mb-2">Program Structure</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Our 12-week intensive program combines hands-on projects,
+                      leadership training, and community engagement. Fellows work
+                      directly with mentors to develop their skills and advance
+                      their career goals.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
 
             <Card className="p-6">
               <div className="flex justify-center space-x-4 mb-6">
