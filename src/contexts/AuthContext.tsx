@@ -8,7 +8,9 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
@@ -48,6 +50,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       lastSignInTime: new Date().toISOString(),
     },
   } as User;
+
+  // Enable persistent sessions
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence)
+      .catch((error) => {
+        console.error('Error setting persistence:', error);
+        toast({ 
+          variant: "destructive", 
+          title: "Authentication Error", 
+          description: "Failed to enable persistent login" 
+        });
+      });
+  }, []);
 
   const signup = async (email: string, password: string) => {
     try {
