@@ -12,23 +12,46 @@ import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
 import type { WaiverRequest } from "@/types/waiver"
 import { Badge } from "@/components/ui/badge"
+import { WaiverService } from "@/services/WaiverService"
+import { useToast } from "@/hooks/use-toast"
 
 interface WaiverReviewDialogProps {
   waiver: WaiverRequest
   open: boolean
   onOpenChange: (open: boolean) => void
-  onApprove: (waiverId: string, comments: string) => void
-  onReject: (waiverId: string, comments: string) => void
+  onReviewComplete: () => void
 }
 
 export function WaiverReviewDialog({
   waiver,
   open,
   onOpenChange,
-  onApprove,
-  onReject,
+  onReviewComplete,
 }: WaiverReviewDialogProps) {
   const [reviewComments, setReviewComments] = useState("")
+  const [isProcessing, setIsProcessing] = useState(false)
+  const { toast } = useToast()
+
+  const handleReview = async (status: "approved" | "rejected") => {
+    setIsProcessing(true)
+    try {
+      await WaiverService.updateWaiverStatus(waiver.waiver_id, status, reviewComments)
+      toast({
+        title: "Waiver Review Complete",
+        description: `The waiver has been ${status}.`,
+      })
+      onReviewComplete()
+      onOpenChange(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process waiver review. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,13 +91,15 @@ export function WaiverReviewDialog({
           <Button
             type="button"
             variant="destructive"
-            onClick={() => onReject(waiver.waiver_id, reviewComments)}
+            onClick={() => handleReview("rejected")}
+            disabled={isProcessing}
           >
             Reject
           </Button>
           <Button
             type="button"
-            onClick={() => onApprove(waiver.waiver_id, reviewComments)}
+            onClick={() => handleReview("approved")}
+            disabled={isProcessing}
           >
             Approve
           </Button>
