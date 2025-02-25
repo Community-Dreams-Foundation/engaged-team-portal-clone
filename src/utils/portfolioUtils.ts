@@ -1,11 +1,17 @@
 
-import { getDatabase, ref, get, set, update } from "firebase/database"
-import { Task } from "@/types/task"
-import { Portfolio, PortfolioItem } from "@/types/portfolio"
+import { getDatabase, ref, get, set, update } from "firebase/database";
+import { Task } from "@/types/task";
+import type { 
+  Portfolio, 
+  PortfolioItem, 
+  PortfolioFormat, 
+  PortfolioMetadata 
+} from "@/types/portfolio";
 
 export const generatePortfolioFromTasks = async (
   userId: string,
-  tasks: Task[]
+  tasks: Task[],
+  format: PortfolioFormat = "linkedin"
 ): Promise<Portfolio> => {
   const portfolioItems: PortfolioItem[] = tasks
     .filter((task) => task.status === "completed")
@@ -36,30 +42,27 @@ export const generatePortfolioFromTasks = async (
       ].filter(Boolean) as string[],
     }));
 
-  const summary = generatePortfolioSummary(portfolioItems);
-
+  const metrics = calculatePortfolioMetrics(portfolioItems);
+  const metadata = generatePortfolioMetadata(format);
+  
   return {
     userId,
+    metadata,
     items: portfolioItems,
-    summary,
-    customization: {
+    metrics,
+    preferences: {
       template: "default",
       primaryColor: "#4F46E5", // Indigo-600
       showMetrics: true,
       selectedItems: portfolioItems.map(item => item.id)
-    },
-    social: {
-      linkedIn: { connected: false },
-      github: { connected: false }
-    },
-    lastUpdated: Date.now()
+    }
   };
 };
 
 const calculateTimeEfficiency = (task: Task): number => {
   if (!task.actualDuration || !task.estimatedDuration) return 0;
   const improvement = ((task.estimatedDuration - task.actualDuration) / task.estimatedDuration) * 100;
-  return Math.max(improvement, 0); // Only return positive efficiency
+  return Math.max(improvement, 0);
 };
 
 const calculateEfficiency = (task: Task): number => {
@@ -88,49 +91,22 @@ const generateAchievements = (task: Task): string[] => {
   return achievements;
 };
 
-const generatePortfolioSummary = (items: PortfolioItem[]) => {
-  const totalProjects = items.length;
-  
-  // Calculate average efficiency
-  const avgEfficiency = items.reduce((sum, item) => 
-    sum + item.impact.efficiency, 0) / totalProjects;
-  
-  // Aggregate all skills and count occurrences
-  const skillCount = items.reduce((acc, item) => {
-    item.skills.forEach(skill => {
-      acc[skill] = (acc[skill] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
-  
-  // Get top skills (top 5 most frequent)
-  const topSkills = Object.entries(skillCount)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, 5)
-    .map(([skill]) => skill);
-  
-  // Calculate overall impact
-  const overallImpact = items.reduce((acc, item) => ({
-    timesSaved: acc.timesSaved + (item.metrics.avgCompletionTime || 0),
-    tasksCompleted: acc.tasksCompleted + item.metrics.totalTasks,
-    efficiencyImprovement: acc.efficiencyImprovement + item.impact.timeEfficiency
-  }), {
-    timesSaved: 0,
-    tasksCompleted: 0,
-    efficiencyImprovement: 0
-  });
-  
+const calculatePortfolioMetrics = (items: PortfolioItem[]): Portfolio["metrics"] => {
   return {
-    totalProjects,
-    avgEfficiency,
-    topSkills,
-    overallImpact: {
-      timesSaved: Math.round(overallImpact.timesSaved),
-      tasksCompleted: overallImpact.tasksCompleted,
-      efficiencyImprovement: Math.round(overallImpact.efficiencyImprovement / totalProjects)
-    }
+    tasksCompleted: items.length,
+    efficiency: items.reduce((sum, item) => sum + item.impact.efficiency, 0) / items.length,
+    timesSaved: items.reduce((sum, item) => sum + item.metrics.avgCompletionTime, 0),
+    impactScore: items.reduce((sum, item) => sum + item.impact.timeEfficiency, 0)
   };
 };
+
+const generatePortfolioMetadata = (format: PortfolioFormat): PortfolioMetadata => ({
+  title: `My Professional Portfolio`,
+  description: "A showcase of my professional achievements and impact",
+  lastUpdated: Date.now(),
+  format,
+  visibility: "private"
+});
 
 export const savePortfolio = async (userId: string, portfolio: Portfolio) => {
   const db = getDatabase();
@@ -138,18 +114,73 @@ export const savePortfolio = async (userId: string, portfolio: Portfolio) => {
   return set(portfolioRef, portfolio);
 };
 
-export const updatePortfolioCustomization = async (
-  userId: string,
-  customization: Portfolio["customization"]
-) => {
-  const db = getDatabase();
-  const customizationRef = ref(db, `users/${userId}/portfolio/customization`);
-  return update(customizationRef, customization);
-};
-
 export const getPortfolio = async (userId: string): Promise<Portfolio | null> => {
   const db = getDatabase();
   const portfolioRef = ref(db, `users/${userId}/portfolio`);
   const snapshot = await get(portfolioRef);
   return snapshot.exists() ? snapshot.val() : null;
+};
+
+export const updatePortfolioPreferences = async (
+  userId: string,
+  preferences: Portfolio["preferences"]
+) => {
+  const db = getDatabase();
+  const preferencesRef = ref(db, `users/${userId}/portfolio/preferences`);
+  return update(preferencesRef, preferences);
+};
+
+export const formatPortfolioForPlatform = async (
+  portfolio: Portfolio,
+  format: PortfolioFormat
+): Promise<string> => {
+  switch (format) {
+    case "linkedin":
+      return formatForLinkedIn(portfolio);
+    case "github":
+      return formatForGitHub(portfolio);
+    case "website":
+      return formatForWebsite(portfolio);
+    default:
+      throw new Error(`Unsupported portfolio format: ${format}`);
+  }
+};
+
+const formatForLinkedIn = (portfolio: Portfolio): string => {
+  const { items, metrics } = portfolio;
+  const highlights = items
+    .slice(0, 3)
+    .map(item => `🎯 ${item.title}: ${item.projectHighlights[0]}`)
+    .join("\n\n");
+
+  return `🚀 Professional Portfolio Update\n\n${highlights}\n\n📊 Impact Metrics:\n` +
+    `✨ ${metrics.tasksCompleted} Tasks Completed\n` +
+    `⚡ ${Math.round(metrics.efficiency)}% Average Efficiency\n` +
+    `🎯 ${Math.round(metrics.impactScore)} Impact Score\n\n` +
+    `#ProfessionalDevelopment #ProductivityMetrics #CareerGrowth`;
+};
+
+const formatForGitHub = (portfolio: Portfolio): string => {
+  const { items, metrics } = portfolio;
+  
+  return `# Professional Portfolio\n\n` +
+    `## Overview\n${portfolio.metadata.description}\n\n` +
+    `## Key Metrics\n` +
+    `- Tasks Completed: ${metrics.tasksCompleted}\n` +
+    `- Average Efficiency: ${Math.round(metrics.efficiency)}%\n` +
+    `- Impact Score: ${Math.round(metrics.impactScore)}\n\n` +
+    `## Project Highlights\n\n` +
+    items.map(item => (
+      `### ${item.title}\n\n${item.description}\n\n` +
+      `**Impact:**\n` +
+      `- Time Efficiency: ${Math.round(item.impact.timeEfficiency)}%\n` +
+      `- Tasks Completed: ${item.metrics.totalTasks}\n` +
+      `\n**Skills:** ${item.skills.join(", ")}\n`
+    )).join("\n");
+};
+
+const formatForWebsite = (portfolio: Portfolio): string => {
+  // This is a simplified version - you would typically return HTML/JSX
+  // or integrate with a static site generator
+  return JSON.stringify(portfolio, null, 2);
 };

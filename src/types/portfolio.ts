@@ -1,60 +1,53 @@
 
+export type PortfolioFormat = "linkedin" | "github" | "website";
+
+export interface PortfolioMetadata {
+  title: string;
+  description: string;
+  lastUpdated: number;
+  format: PortfolioFormat;
+  visibility: "public" | "private";
+}
+
+export interface PortfolioPreferences {
+  template: "default" | "minimal" | "detailed";
+  primaryColor: string;
+  showMetrics: boolean;
+  selectedItems: string[];
+}
+
+export interface PortfolioMetrics {
+  tasksCompleted: number;
+  efficiency: number;
+  timesSaved: number;
+  impactScore: number;
+}
+
 export interface PortfolioItem {
-  id: string
-  title: string
-  description: string
+  id: string;
+  title: string;
+  description: string;
   impact: {
-    timeEfficiency: number // percentage improvement in task completion time
-    tasksCompleted: number
-    efficiency: number // overall efficiency rating
-  }
+    timeEfficiency: number;
+    tasksCompleted: number;
+    efficiency: number;
+  };
   metrics: {
-    avgCompletionTime: number
-    tasksAheadOfSchedule: number
-    totalTasks: number
-  }
-  skills: string[]
-  achievements: string[]
-  createdAt: number
-  updatedAt: number
-  projectHighlights: string[]
-  feedback?: Array<{
-    id: string
-    text: string
-    rating: number
-    from: string
-    timestamp: number
-  }>
+    avgCompletionTime: number;
+    tasksAheadOfSchedule: number;
+    totalTasks: number;
+  };
+  skills: string[];
+  achievements: string[];
+  createdAt: number;
+  updatedAt: number;
+  projectHighlights: string[];
 }
 
 export interface Portfolio {
-  userId: string
-  items: PortfolioItem[]
-  summary: {
-    totalProjects: number
-    avgEfficiency: number
-    topSkills: string[]
-    overallImpact: {
-      timesSaved: number // in minutes
-      tasksCompleted: number
-      efficiencyImprovement: number // percentage
-    }
-  }
-  customization: {
-    template: "default" | "minimal" | "detailed"
-    primaryColor: string
-    showMetrics: boolean
-    selectedItems: string[] // IDs of items to show
-  }
-  social: {
-    linkedIn?: {
-      connected: boolean
-      lastSync?: number
-    }
-    github?: {
-      connected: boolean
-      lastSync?: number
-    }
-  }
-  lastUpdated: number
+  userId: string;
+  metadata: PortfolioMetadata;
+  items: PortfolioItem[];
+  metrics: PortfolioMetrics;
+  preferences: PortfolioPreferences;
 }
