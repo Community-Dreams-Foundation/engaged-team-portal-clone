@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar } from "@/components/ui/avatar"
 import { Headphones, Send, Paperclip } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { LiveAgentStatus } from "./LiveAgentStatus"
 
 interface LiveMessage {
   id: string;
@@ -20,7 +21,7 @@ export function LiveAgentSupport() {
   const [messages, setMessages] = useState<LiveMessage[]>([
     {
       id: '1',
-      content: 'Hi, I\'m Sarah. I\'ll be your support agent today. How can I help you?',
+      content: "Hi, I'm Sarah. I'll be your support agent today. How can I help you?",
       sender: 'agent',
       timestamp: new Date(),
       agentName: 'Sarah',
@@ -64,9 +65,7 @@ export function LiveAgentSupport() {
           <Headphones className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">Live Support</h3>
         </div>
-        <Badge variant="outline" className="animate-pulse">
-          Agent Online
-        </Badge>
+        <LiveAgentStatus />
       </div>
 
       <ScrollArea className="flex-1 p-4">
