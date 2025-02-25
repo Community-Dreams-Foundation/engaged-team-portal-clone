@@ -16,14 +16,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Enable session persistence for 30 days (in milliseconds)
-auth.settings = {
-  sessionPersistenceMilliseconds: 30 * 24 * 60 * 60 * 1000
-};
-
 // Enable emulator connections in development
 if (process.env.NODE_ENV === 'development') {
   connectAuthEmulator(auth, 'http://localhost:9099');
   connectFirestoreEmulator(db, 'localhost', 8080);
 }
-
