@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -7,6 +6,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { LucideRocket, Users, Zap, ChevronDown } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,16 +27,38 @@ export default function Landing() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email || !password) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Input",
+        description: "Please enter both email and password"
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
       if (isLogin) {
         await login(email, password)
+        toast({
+          title: "Welcome back!",
+          description: "Successfully logged in"
+        })
       } else {
         await signup(email, password)
+        toast({
+          title: "Account created!",
+          description: "Successfully signed up"
+        })
       }
       navigate("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth error:', error)
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: error.message || "Failed to authenticate. Please try again."
+      })
     } finally {
       setIsLoading(false)
     }
@@ -46,15 +68,23 @@ export default function Landing() {
     setIsLoading(true)
     try {
       await signInWithGoogle()
+      toast({
+        title: "Welcome!",
+        description: "Successfully signed in with Google"
+      })
       navigate("/")
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google auth error:', error)
+      toast({
+        variant: "destructive",
+        title: "Google Sign-in Error",
+        description: error.message || "Failed to sign in with Google"
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Function to handle switching to signup mode
   const handleSwitchToSignup = () => {
     setIsLogin(false)
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
@@ -62,7 +92,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Navigation Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <nav className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
@@ -177,7 +206,6 @@ export default function Landing() {
       </header>
 
       <main className="container pt-24 pb-16">
-        {/* Hero Section */}
         <div className="py-20 text-center space-y-6">
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             Accelerate Innovation with{" "}
@@ -198,7 +226,6 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Value Propositions */}
         <div className="grid md:grid-cols-3 gap-6 py-12">
           <Card className="p-6 space-y-2">
             <Users className="h-12 w-12 text-primary" />
@@ -223,7 +250,6 @@ export default function Landing() {
           </Card>
         </div>
 
-        {/* Auth Section */}
         <div className="grid md:grid-cols-2 gap-12 items-start py-12">
           <div className="space-y-8">
             <Card className="p-6">
@@ -261,12 +287,14 @@ export default function Landing() {
               <Button
                 variant={isLogin ? "default" : "outline"}
                 onClick={() => setIsLogin(true)}
+                disabled={isLoading}
               >
                 Login
               </Button>
               <Button
                 variant={!isLogin ? "default" : "outline"}
                 onClick={() => setIsLogin(false)}
+                disabled={isLoading}
               >
                 Sign Up
               </Button>
@@ -282,6 +310,7 @@ export default function Landing() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -292,6 +321,7 @@ export default function Landing() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
