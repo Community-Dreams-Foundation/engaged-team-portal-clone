@@ -4,7 +4,7 @@ import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
-import { checkRole, logAuditEvent } from '@/utils/authUtils';
+import { checkRole, logAuditEvent, createUserDocument } from '@/utils/authUtils';
 import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import type { UserRole, ExtendedUser } from '@/types/auth';
@@ -83,3 +83,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+

@@ -49,3 +49,4 @@ export const checkRole = (role: UserRole | undefined) => ({
   isSuperAdmin: () => role === 'super_admin',
   isAdmin: () => role === 'admin' || role === 'super_admin'
 });
+
