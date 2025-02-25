@@ -1,10 +1,35 @@
 
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  earnedAt: number;
+import { PortfolioFormat } from "./portfolio";
+
+export interface AnalyticsMetric {
+  timestamp: number;
+  value: number;
+}
+
+export interface SectionEngagement {
+  sectionId: string;
+  sectionName: string;
+  viewDuration: number;
+  clicks: number;
+}
+
+export interface PortfolioAnalytics {
+  views: AnalyticsMetric[];
+  uniqueVisitors: number;
+  sectionEngagement: SectionEngagement[];
+  platformPerformance: {
+    linkedin: {
+      shares: number;
+      clicks: number;
+      impressions: number;
+    };
+    github: {
+      stars: number;
+      forks: number;
+      views: number;
+    };
+  };
+  clickThroughRate: number;
 }
 
 export interface PersonalGoal {
@@ -12,18 +37,17 @@ export interface PersonalGoal {
   title: string;
   target: number;
   current: number;
-  type: "tasks" | "efficiency" | "training" | "custom";
+  type: "tasks" | "efficiency" | "views";
   deadline: number;
   createdAt: number;
 }
 
-export interface Feedback {
+export interface Achievement {
   id: string;
-  text: string;
-  author: string;
-  role: string;
-  rating?: number;
-  givenAt: number;
+  title: string;
+  description: string;
+  icon: string;
+  earnedAt: number;
 }
 
 export interface PerformanceMetrics {
@@ -42,6 +66,11 @@ export interface PerformanceMetrics {
     name: string;
     tasks: number;
   }>;
-  feedback: Feedback[];
+  feedback: Array<{
+    id: string;
+    text: string;
+    rating: number;
+    date: number;
+  }>;
+  portfolioAnalytics: PortfolioAnalytics;
 }
-
