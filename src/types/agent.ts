@@ -1,4 +1,6 @@
 
+import { SimulationNodeDatum } from "d3";
+
 export interface CoSPreferences {
   tone: "formal" | "casual";
   notificationFrequency: "high" | "medium" | "low";
@@ -26,7 +28,7 @@ export interface CoSPreferences {
   };
 }
 
-export interface KnowledgeNode {
+export interface KnowledgeNode extends SimulationNodeDatum {
   id: string;
   type: "skill" | "project" | "experience" | "connection";
   title: string;
@@ -78,4 +80,3 @@ export interface RecruitmentFunnel {
     averageTimeToOffer: number;
   };
 }
-
