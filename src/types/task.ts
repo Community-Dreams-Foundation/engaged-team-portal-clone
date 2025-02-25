@@ -45,9 +45,22 @@ export interface Task {
       averageCompletionTime: number
       accuracyRate: number
     }
+    timeExpectation?: number // expected completion time in minutes
+    autoSplitEligible?: boolean // whether the task can be auto-split
+    personalizationScore?: number // 0-100, calculated based on user match
   }
 }
 
 // New type for task creation
 export interface TaskInput extends Omit<Task, "id" | "createdAt" | "updatedAt" | "isTimerRunning" | "totalElapsedTime" | "lastActivity"> {}
+
+// New type for personalization preferences
+export interface PersonalizationPreferences {
+  workloadThreshold: number // hours per week
+  notificationFrequency: "high" | "medium" | "low"
+  delegationPreference: "aggressive" | "balanced" | "conservative"
+  communicationStyle: "formal" | "casual"
+  skillFocus: string[]
+  learningGoals: string[]
+}
 
