@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
-import { getDatabase, ref, set } from "firebase/database"
-import type { LeadershipAssessment, LeadershipMetrics } from "@/types/leadership"
+import { getDatabase, ref, set, get } from "firebase/database"
+import type { LeadershipAssessment } from "@/types/leadership"
 import { AgentSimulation } from "./AgentSimulation"
 import { PerformanceTracking } from "./PerformanceTracking"
 import { AssessmentResults } from "./AssessmentResults"
@@ -48,7 +48,7 @@ export function InitialAssessmentModule() {
         teamEfficiency: 0,
         overallScore: 0,
         feedback: "",
-        timestamp: Date.now(),
+        timestamp: Date.now()
       }
     }
 

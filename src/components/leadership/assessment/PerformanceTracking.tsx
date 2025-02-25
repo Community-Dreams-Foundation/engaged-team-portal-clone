@@ -11,8 +11,15 @@ import {
   ResponsiveContainer
 } from "recharts"
 import { useQuery } from "@tanstack/react-query"
-import { getDatabase, ref, onValue } from "firebase/database"
+import { getDatabase, ref, onValue, off } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
+
+interface PerformanceMetric {
+  timestamp: string;
+  taskCompletionRate: number;
+  teamEfficiency: number;
+  delegationAccuracy: number;
+}
 
 interface PerformanceTrackingProps {
   assessmentId: string;
@@ -21,12 +28,15 @@ interface PerformanceTrackingProps {
 export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) {
   const { currentUser } = useAuth()
 
-  const { data: metrics } = useQuery({
+  const { data: metrics = [] } = useQuery<PerformanceMetric[]>({
     queryKey: ['performanceMetrics', assessmentId],
-    queryFn: async () => {
-      if (!currentUser?.uid) return []
-      
+    queryFn: () => {
       return new Promise((resolve) => {
+        if (!currentUser?.uid) {
+          resolve([])
+          return
+        }
+        
         const db = getDatabase()
         const metricsRef = ref(db, `users/${currentUser.uid}/assessments/${assessmentId}/metrics`)
         
@@ -45,6 +55,9 @@ export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) 
           
           resolve(chartData)
         })
+
+        // Cleanup subscription on unmount
+        return () => off(metricsRef)
       })
     },
     enabled: !!currentUser && !!assessmentId
@@ -56,7 +69,7 @@ export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) 
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4">Task Completion Rate</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={metrics || []}>
+            <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="timestamp" />
               <YAxis />
@@ -74,7 +87,7 @@ export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) 
         <Card className="p-4">
           <h3 className="text-lg font-semibold mb-4">Team Efficiency</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={metrics || []}>
+            <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="timestamp" />
               <YAxis />
@@ -96,19 +109,19 @@ export function PerformanceTracking({ assessmentId }: PerformanceTrackingProps) 
           <div>
             <p className="text-sm text-muted-foreground">Delegation Accuracy</p>
             <p className="text-2xl font-semibold">
-              {metrics?.[metrics.length - 1]?.delegationAccuracy?.toFixed(1)}%
+              {metrics[metrics.length - 1]?.delegationAccuracy?.toFixed(1)}%
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Average Task Time</p>
             <p className="text-2xl font-semibold">
-              {metrics?.[metrics.length - 1]?.averageTaskTime?.toFixed(1)} min
+              {metrics[metrics.length - 1]?.averageTaskTime?.toFixed(1)} min
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Tasks Completed</p>
             <p className="text-2xl font-semibold">
-              {metrics?.[metrics.length - 1]?.tasksCompleted || 0}
+              {metrics[metrics.length - 1]?.tasksCompleted || 0}
             </p>
           </div>
         </div>
