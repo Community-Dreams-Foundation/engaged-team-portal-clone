@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { TrainingModules } from "@/components/dashboard/TrainingModules"
 import { CosAgent } from "@/components/dashboard/CosAgent"
@@ -220,4 +219,3 @@ export default function Index() {
     </DashboardLayout>
   );
 }
-
