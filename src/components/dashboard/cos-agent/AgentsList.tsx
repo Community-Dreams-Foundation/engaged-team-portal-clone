@@ -100,8 +100,7 @@ export function AgentsList({ agents }: AgentsListProps) {
           
           <Progress 
             value={agent.currentLoad} 
-            className="mt-2"
-            variant={agent.currentLoad > 80 ? "destructive" : "default"}
+            className={`mt-2 ${agent.currentLoad > 80 ? "[--progress-background:hsl(var(--destructive))]" : ""}`}
           />
           
           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -136,4 +135,3 @@ export function AgentsList({ agents }: AgentsListProps) {
     </div>
   )
 }
-
