@@ -100,20 +100,17 @@ export const checkAndApplyReferralRewards = async (userId: string, paidReferrals
   if (paidReferralsCount >= 10 && !earnedRewards.includes('leadership_waiver')) {
     newReward = {
       type: 'leadership_waiver',
-      description: 'Leadership Waiver - No fee payment due',
-      earnedAt: new Date()
+      description: 'Leadership Waiver - No fee payment due'
     };
   } else if (paidReferralsCount >= 5 && !earnedRewards.includes('three_months_free')) {
     newReward = {
       type: 'three_months_free',
-      description: '3 Months Free Subscription',
-      earnedAt: new Date()
+      description: '3 Months Free Subscription'
     };
   } else if (paidReferralsCount >= 3 && !earnedRewards.includes('one_month_free')) {
     newReward = {
       type: 'one_month_free',
-      description: '1 Month Free Subscription',
-      earnedAt: new Date()
+      description: '1 Month Free Subscription'
     };
   }
 
@@ -151,8 +148,8 @@ export const checkAndApplyReferralRewards = async (userId: string, paidReferrals
       message: `Congratulations! You've earned: ${newReward.description}`,
       type: 'payment',
       metadata: {
-        type: newReward.type,
-        actionRequired: false
+        actionRequired: false,
+        priority: 'high'
       }
     });
   }
