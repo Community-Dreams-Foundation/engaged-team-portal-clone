@@ -57,8 +57,8 @@ export default function Index() {
       }
     ],
     edges: [
-      { source: "1", target: "3", strength: 2 },
-      { source: "2", target: "3", strength: 1 }
+      { source: "1", target: "3", type: "created" as const, strength: 2 },
+      { source: "2", target: "3", type: "created" as const, strength: 1 }
     ]
   };
 
@@ -220,3 +220,4 @@ export default function Index() {
     </DashboardLayout>
   );
 }
+
