@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { getDatabase, ref, onValue, update, push, get } from "firebase/database"
@@ -8,13 +7,14 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update";
+  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver";
   status: "unread" | "read";
   timestamp: number;
   metadata?: {
     meetingId?: string;
     supportTicketId?: string;
     taskId?: string;
+    waiverId?: string;
     priority?: "low" | "medium" | "high";
     actionRequired?: boolean;
     action?: {
@@ -40,7 +40,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { toast } = useToast()
   const { currentUser } = useAuth()
 
-  // Calculate unread count whenever notifications change
   const unreadCount = notifications.filter(n => n.status === "unread").length
 
   useEffect(() => {
@@ -56,7 +55,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           id,
           ...value as Omit<Notification, "id">
         }))
-        // Sort notifications by timestamp, newest first
         notificationsList.sort((a, b) => b.timestamp - a.timestamp)
         setNotifications(notificationsList)
       } else {

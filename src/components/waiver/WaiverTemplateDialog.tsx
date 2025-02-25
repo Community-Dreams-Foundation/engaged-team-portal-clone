@@ -46,7 +46,11 @@ export function WaiverTemplateDialog() {
 
   const onSubmit = async (values: TemplateFormValues) => {
     try {
-      await WaiverService.createWaiverTemplate(values);
+      await WaiverService.createWaiverTemplate({
+        name: values.name,
+        content: values.content,
+        category: values.category
+      });
       toast({
         title: "Success",
         description: "Waiver template created successfully",
