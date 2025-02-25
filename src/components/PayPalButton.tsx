@@ -11,12 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-declare global {
-  interface Window {
-    paypal: any;
-  }
-}
-
 const plans = {
   monthly: {
     planId: 'P-1C748246YG018921SM6DKRYI',
@@ -72,7 +66,7 @@ const PayPalButton = () => {
         email: currentUser.email,
         lateFee: 0,
         isNewMember,
-        price: isNewMember && planType === 'monthly' ? plans.monthly.newMemberPrice : plans[planType].price
+        price: isNewMember && planType === 'monthly' ? plans.monthly.newMemberPrice : plans[planType as keyof typeof plans].price
       });
 
       toast({
@@ -96,35 +90,37 @@ const PayPalButton = () => {
     script.async = true;
 
     script.onload = () => {
-      window.paypal.Buttons({
-        style: {
-          shape: 'rect',
-          color: 'gold',
-          layout: 'vertical',
-          label: 'subscribe'
-        },
-        createSubscription: function(data: any, actions: any) {
-          return actions.subscription.create({
-            plan_id: plans[selectedPlan].planId
-          });
-        },
-        onApprove: async function(data: any) {
-          await saveSubscriptionToFirebase(
-            data.subscriptionID,
-            'ACTIVE',
-            selectedPlan
-          );
-          console.log('Subscription successful:', data.subscriptionID);
-        },
-        onError: function(err: any) {
-          console.error('PayPal Error:', err);
-          toast({
-            variant: "destructive",
-            title: "PayPal Error",
-            description: "There was an error processing your subscription"
-          });
-        }
-      }).render('#paypal-button-container');
+      if (window.paypal) {
+        window.paypal.Buttons({
+          style: {
+            shape: 'rect',
+            color: 'gold',
+            layout: 'vertical',
+            label: 'subscribe'
+          },
+          createSubscription: function(data: any, actions: any) {
+            return actions.subscription.create({
+              plan_id: plans[selectedPlan as keyof typeof plans].planId
+            });
+          },
+          onApprove: async function(data: any) {
+            await saveSubscriptionToFirebase(
+              data.subscriptionID,
+              'ACTIVE',
+              selectedPlan
+            );
+            console.log('Subscription successful:', data.subscriptionID);
+          },
+          onError: function(err: any) {
+            console.error('PayPal Error:', err);
+            toast({
+              variant: "destructive",
+              title: "PayPal Error",
+              description: "There was an error processing your subscription"
+            });
+          }
+        }).render('#paypal-button-container');
+      }
     };
 
     document.body.appendChild(script);
@@ -161,4 +157,3 @@ const PayPalButton = () => {
 };
 
 export default PayPalButton;
-

@@ -1,5 +1,16 @@
-
-import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  increment,
+  collection,
+  query,
+  where,
+  getDocs,
+  arrayUnion
+} from 'firebase/firestore';
 
 export const generateReferralCode = (userId: string): string => {
   // Generate a unique referral code using user ID and random characters
@@ -67,4 +78,3 @@ export const completeReferral = async (referrerId: string, newUserId: string) =>
     })
   });
 };
-
