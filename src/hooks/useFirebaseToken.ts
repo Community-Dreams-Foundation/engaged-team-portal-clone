@@ -10,35 +10,43 @@ export const useFirebaseToken = (
   setUserRole: (role: UserRole | undefined) => void
 ) => {
   useEffect(() => {
+    let mounted = true;
+
     const unsubscribe = auth.onIdTokenChanged(async (user) => {
       console.log('Token changed:', user?.email);
-      if (user) {
+      if (user && mounted) {
         try {
           const token = await getIdToken(user, true);
           const tokenResult = await getIdTokenResult(user);
           const role = tokenResult.claims.role as UserRole;
           
           localStorage.setItem('authToken', token);
-          setUserRole(role);
-          
-          const extendedUser: ExtendedUser = Object.assign(user, { role });
-          setCurrentUser(extendedUser);
-          
+          if (mounted) {
+            setUserRole(role);
+            const extendedUser: ExtendedUser = Object.assign(user, { role });
+            setCurrentUser(extendedUser);
+          }
         } catch (error) {
           console.error('Error refreshing token:', error);
-          toast({
-            variant: "destructive",
-            title: "Session Error",
-            description: "Failed to refresh authentication token"
-          });
+          if (mounted) {
+            toast({
+              variant: "destructive",
+              title: "Session Error",
+              description: "Failed to refresh authentication token"
+            });
+          }
         }
-      } else {
+      } else if (mounted) {
         localStorage.removeItem('authToken');
         setCurrentUser(null);
         setUserRole(undefined);
       }
     });
 
-    return unsubscribe;
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [setCurrentUser, setUserRole]);
 };
+

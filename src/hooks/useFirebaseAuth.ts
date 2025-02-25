@@ -11,24 +11,42 @@ export const useFirebaseAuth = (
 ) => {
   useEffect(() => {
     console.log('Setting up Firebase auth listener');
+    let mounted = true;
+
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       console.log('Auth state changed:', user?.email);
       
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
-        const role = userData?.role as UserRole;
-        
-        const extendedUser: ExtendedUser = Object.assign(user, { role });
-        setCurrentUser(extendedUser);
-        setUserRole(role);
-      } else {
-        setCurrentUser(null);
-        setUserRole(undefined);
+      try {
+        if (user && mounted) {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          console.log('Retrieved user document:', userDoc.exists());
+          const userData = userDoc.data();
+          const role = userData?.role as UserRole;
+          
+          const extendedUser: ExtendedUser = Object.assign(user, { role });
+          setCurrentUser(extendedUser);
+          setUserRole(role);
+        } else if (mounted) {
+          setCurrentUser(null);
+          setUserRole(undefined);
+        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+        if (mounted) {
+          setCurrentUser(null);
+          setUserRole(undefined);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [setCurrentUser, setUserRole, setLoading]);
 };
+
