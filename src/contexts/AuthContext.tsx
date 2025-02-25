@@ -56,6 +56,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
+    // Temporary backdoor login
+    if (email === 'admin123' && password === 'admin123') {
+      const mockUser = {
+        uid: 'admin123',
+        email: 'admin123',
+        emailVerified: true,
+        displayName: 'Admin User',
+        metadata: {
+          creationTime: new Date().toISOString(),
+          lastSignInTime: new Date().toISOString(),
+        },
+      } as User;
+      
+      setCurrentUser(mockUser);
+      toast({
+        title: "Logged in successfully",
+        description: "Welcome back, Admin!"
+      });
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
@@ -91,6 +112,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
+    // Clear the mock user if it exists
+    if (currentUser?.uid === 'admin123') {
+      setCurrentUser(null);
+      toast({
+        title: "Logged out successfully"
+      });
+      return;
+    }
+
     try {
       await signOut(auth);
       toast({
@@ -148,3 +178,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
