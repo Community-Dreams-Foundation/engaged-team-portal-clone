@@ -8,19 +8,26 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function Landing() {
+  const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { login, signInWithGoogle } = useAuth()
+  const { login, signup, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await login(email, password)
+      if (isLogin) {
+        await login(email, password)
+      } else {
+        await signup(email, password)
+      }
       navigate("/")
     } catch (error) {
+      console.error('Auth error:', error)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -31,6 +38,8 @@ export default function Landing() {
       await signInWithGoogle()
       navigate("/")
     } catch (error) {
+      console.error('Google auth error:', error)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -63,7 +72,22 @@ export default function Landing() {
             </Card>
 
             <Card className="p-6">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <div className="flex justify-center space-x-4 mb-6">
+                <Button
+                  variant={isLogin ? "default" : "outline"}
+                  onClick={() => setIsLogin(true)}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant={!isLogin ? "default" : "outline"}
+                  onClick={() => setIsLogin(false)}
+                >
+                  Sign Up
+                </Button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -86,7 +110,7 @@ export default function Landing() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Loading..." : "Login"}
+                  {isLoading ? "Loading..." : isLogin ? "Login" : "Sign Up"}
                 </Button>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
