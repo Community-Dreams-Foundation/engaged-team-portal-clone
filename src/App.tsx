@@ -12,10 +12,10 @@ import Intake from "./pages/Intake";
 import CustomizeCoS from "./pages/CustomizeCoS";
 import SimulateCoS from "./pages/SimulateCoS";
 import Landing from "./pages/Landing";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
-// Protected route wrapper component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
@@ -44,6 +44,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />

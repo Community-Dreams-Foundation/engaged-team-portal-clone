@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { PayPalButton } from "@/components/PayPalButton"
 
 export default function Landing() {
   const [email, setEmail] = useState("")
@@ -48,27 +49,22 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl font-bold">Why Join Us?</h2>
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            <Card className="p-6">
+              <h2 className="text-2xl font-bold mb-6">Subscribe to Premium</h2>
               <div className="space-y-4">
-                <p className="text-lg">
-                  🌟 Access professional tools and resources
-                </p>
-                <p className="text-lg">
-                  💼 Gain real-world experience
-                </p>
-                <p className="text-lg">
-                  🚀 Accelerate your career growth
-                </p>
-                <p className="text-lg">
-                  🤝 Be part of a supportive community
-                </p>
+                <div className="p-4 bg-primary/10 rounded-lg">
+                  <h3 className="font-semibold mb-2">Premium Benefits</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li>✓ Advanced training modules</li>
+                    <li>✓ Priority support</li>
+                    <li>✓ Exclusive community access</li>
+                    <li>✓ Professional certification</li>
+                  </ul>
+                </div>
+                <PayPalButton />
               </div>
-              <Button size="lg" onClick={() => navigate("/intake")} className="w-full md:w-auto">
-                Join Us Now
-              </Button>
-            </div>
+            </Card>
 
             <Card className="p-6">
               <form onSubmit={handleLogin} className="space-y-4">
