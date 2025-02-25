@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import type { Agent } from "@/types/task"
 import { useAuth } from "@/contexts/AuthContext"
-import { getDatabase, ref, update } from "firebase/database"
+import { getDatabase, ref, update, get } from "firebase/database"
 
 interface AgentsListProps {
   agents: Agent[];
@@ -16,6 +16,32 @@ interface AgentsListProps {
 export function AgentsList({ agents }: AgentsListProps) {
   const { toast } = useToast()
   const { currentUser } = useAuth()
+
+  const calculateAgentMatch = (agent: Agent, taskDomain: string) => {
+    // Calculate match score based on specialization and current workload
+    const specializationScore = agent.specializationScore[taskDomain] || 0
+    const workloadFactor = 1 - (agent.currentLoad / 100)
+    return specializationScore * workloadFactor
+  }
+
+  const findBestAgent = async (taskDomain: string) => {
+    if (!agents.length) return null
+
+    const availableAgents = agents.filter(agent => 
+      agent.status !== "inactive" && agent.currentLoad < 80
+    )
+
+    if (!availableAgents.length) return null
+
+    const agentScores = availableAgents.map(agent => ({
+      agent,
+      score: calculateAgentMatch(agent, taskDomain)
+    }))
+
+    return agentScores.reduce((best, current) => 
+      current.score > best.score ? current : best
+    ).agent
+  }
 
   const handleDelegateTask = async (agent: Agent) => {
     if (!currentUser?.uid) return
@@ -32,14 +58,26 @@ export function AgentsList({ agents }: AgentsListProps) {
     try {
       const db = getDatabase()
       const agentRef = ref(db, `users/${currentUser.uid}/agents/${agent.id}`)
+      const delegationHistoryRef = ref(db, `users/${currentUser.uid}/delegationHistory/${Date.now()}`)
       
       // Calculate new load based on current tasks
       const newLoad = Math.min(agent.currentLoad + 20, 100)
       
+      // Update agent data
       await update(agentRef, {
         currentLoad: newLoad,
         lastActive: Date.now(),
         status: newLoad >= 80 ? "overloaded" : "active"
+      })
+
+      // Record delegation history
+      await update(delegationHistoryRef, {
+        agentId: agent.id,
+        agentName: agent.name,
+        timestamp: Date.now(),
+        workloadBefore: agent.currentLoad,
+        workloadAfter: newLoad,
+        type: "manual_delegation"
       })
 
       toast({
