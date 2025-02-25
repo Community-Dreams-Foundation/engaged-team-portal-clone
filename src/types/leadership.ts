@@ -14,6 +14,12 @@ export interface LeadershipMetrics {
   overallScore: number;
   feedback: string;
   timestamp: number;
+  domainSpecificScores?: {
+    [key in LeadershipDomain]?: number;
+  };
+  mentorshipScore?: number;
+  communicationScore?: number;
+  innovationScore?: number;
 }
 
 export interface LeadershipAssessment {
@@ -24,6 +30,12 @@ export interface LeadershipAssessment {
   endDate: number;
   metrics: LeadershipMetrics;
   status: "in-progress" | "completed";
+  mentorFeedback?: {
+    mentorId: string;
+    rating: number;
+    comments: string;
+    timestamp: number;
+  }[];
 }
 
 export interface Team {
@@ -38,6 +50,8 @@ export interface Team {
     teamEfficiency: number;
     innovationScore: number;
     collaborationRate: number;
+    communicationScore?: number;
+    projectSuccessRate?: number;
   };
 }
 
@@ -49,6 +63,9 @@ export interface LeadershipTraining {
   score: number;
   certificationEarned: boolean;
   feedback?: string;
+  mentorId?: string;
+  moduleType: "technical" | "soft-skills" | "management" | "strategy";
+  requiredForPromotion?: boolean;
 }
 
 export interface LeadershipProfile {
@@ -64,15 +81,26 @@ export interface LeadershipProfile {
     leaderboardRank: number;
     mentorshipScore?: number;
     innovationImpact?: number;
+    communicationScore?: number;
+    projectDeliveryRate?: number;
+    teamGrowthRate?: number;
   };
   achievements: Array<{
     id: string;
     name: string;
     description: string;
     earnedAt: number;
+    category?: "leadership" | "technical" | "innovation" | "mentorship";
   }>;
   mentors: string[];
   mentees: string[];
+  specializations?: LeadershipDomain[];
+  promotionHistory?: Array<{
+    fromTier: LeadershipTier;
+    toTier: LeadershipTier;
+    timestamp: number;
+    approvedBy?: string;
+  }>;
 }
 
 export interface PromotionRequest {
@@ -86,5 +114,10 @@ export interface PromotionRequest {
   reviewedAt?: number;
   reviewedBy?: string;
   feedback?: string;
+  requirements?: {
+    trainingModules: string[];
+    minimumMetrics: Partial<LeadershipMetrics>;
+    timeInCurrentTier: number;
+    mentorshipRequired: boolean;
+  };
 }
-
