@@ -1,11 +1,14 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar } from "@/components/ui/avatar"
 import { Bot, Send } from "lucide-react"
+import { getDatabase, ref, push, onValue } from "firebase/database"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 interface Message {
   id: string;
@@ -15,39 +18,69 @@ interface Message {
 }
 
 export function ChatbotInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'Hello! How can I assist you today?',
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
+  const { currentUser } = useAuth()
+  const { toast } = useToast()
 
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return
+  useEffect(() => {
+    if (!currentUser) return
+    
+    const db = getDatabase()
+    const messagesRef = ref(db, `chats/${currentUser.uid}/messages`)
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: inputMessage,
-      sender: 'user',
-      timestamp: new Date(),
-    }
-
-    setMessages(prev => [...prev, newMessage])
-    setInputMessage('')
-
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I'm processing your request. Would you like to speak with a live agent?",
-        sender: 'bot',
-        timestamp: new Date(),
+    // Listen for messages in real-time
+    const unsubscribe = onValue(messagesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const messagesData = Object.entries(snapshot.val()).map(([id, data]: [string, any]) => ({
+          id,
+          content: data.content,
+          sender: data.sender,
+          timestamp: new Date(data.timestamp),
+        }))
+        setMessages(messagesData)
       }
-      setMessages(prev => [...prev, botResponse])
-    }, 1000)
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [currentUser])
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !currentUser) return
+
+    const db = getDatabase()
+    const messagesRef = ref(db, `chats/${currentUser.uid}/messages`)
+
+    try {
+      const newMessage = {
+        content: inputMessage,
+        sender: 'user' as const,
+        timestamp: Date.now(),
+      }
+
+      await push(messagesRef, newMessage)
+      setInputMessage('')
+
+      // Simulate bot response
+      setTimeout(async () => {
+        const botResponse = {
+          content: "I'm processing your request. Would you like to speak with a live agent?",
+          sender: 'bot' as const,
+          timestamp: Date.now(),
+        }
+        await push(messagesRef, botResponse)
+      }, 1000)
+
+    } catch (error) {
+      console.error("Error sending message:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+      })
+    }
   }
 
   return (
@@ -80,7 +113,7 @@ export function ChatbotInterface() {
               >
                 <p className="text-sm">{message.content}</p>
                 <span className="text-xs opacity-70">
-                  {message.timestamp.toLocaleTimeString()}
+                  {new Date(message.timestamp).toLocaleTimeString()}
                 </span>
               </div>
             </div>
