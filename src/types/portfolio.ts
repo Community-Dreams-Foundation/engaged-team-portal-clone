@@ -44,10 +44,22 @@ export interface PortfolioItem {
   projectHighlights: string[];
 }
 
+export interface PortfolioSummary {
+  totalProjects: number;
+  avgEfficiency: number;
+  topSkills: string[];
+  overallImpact: {
+    tasksCompleted: number;
+    efficiencyImprovement: number;
+    timesSaved: number;
+  };
+}
+
 export interface Portfolio {
   userId: string;
   metadata: PortfolioMetadata;
   items: PortfolioItem[];
   metrics: PortfolioMetrics;
   preferences: PortfolioPreferences;
+  summary: PortfolioSummary;
 }

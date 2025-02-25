@@ -1,4 +1,3 @@
-
 import { getDatabase, ref, get, set, update } from "firebase/database";
 import { Task } from "@/types/task";
 import type { 
@@ -44,6 +43,19 @@ export const generatePortfolioFromTasks = async (
 
   const metrics = calculatePortfolioMetrics(portfolioItems);
   const metadata = generatePortfolioMetadata(format);
+  const allSkills = portfolioItems.flatMap(item => item.skills);
+  const topSkills = [...new Set(allSkills)].slice(0, 5); // Get unique skills, limit to top 5
+
+  const summary: PortfolioSummary = {
+    totalProjects: portfolioItems.length,
+    avgEfficiency: portfolioItems.reduce((sum, item) => sum + item.impact.efficiency, 0) / portfolioItems.length || 0,
+    topSkills,
+    overallImpact: {
+      tasksCompleted: portfolioItems.length,
+      efficiencyImprovement: metrics.efficiency,
+      timesSaved: metrics.timesSaved
+    }
+  };
   
   return {
     userId,
@@ -55,7 +67,8 @@ export const generatePortfolioFromTasks = async (
       primaryColor: "#4F46E5", // Indigo-600
       showMetrics: true,
       selectedItems: portfolioItems.map(item => item.id)
-    }
+    },
+    summary
   };
 };
 
@@ -180,7 +193,5 @@ const formatForGitHub = (portfolio: Portfolio): string => {
 };
 
 const formatForWebsite = (portfolio: Portfolio): string => {
-  // This is a simplified version - you would typically return HTML/JSX
-  // or integrate with a static site generator
   return JSON.stringify(portfolio, null, 2);
 };
