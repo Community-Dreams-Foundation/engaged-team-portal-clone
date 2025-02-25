@@ -40,8 +40,12 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isMockAdmin, setIsMockAdmin] = useState(false);
+  const [isMockAdmin, setIsMockAdmin] = useState(() => 
+    localStorage.getItem('isMockAdmin') === 'true'
+  );
   const [isNewUser, setIsNewUser] = useState(false);
+
+  console.log('AuthProvider render:', { currentUser, loading, isMockAdmin, isNewUser });
 
   const mockAdminUser = {
     uid: 'admin',
@@ -71,6 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!isMockAdmin) {
       const unsubscribe = onIdTokenChanged(auth, async (user) => {
+        console.log('Token changed:', user?.email);
         if (user) {
           try {
             const token = await user.getIdToken(true);
@@ -104,7 +109,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (email: string, password: string) => {
+    console.log('Login attempt:', { email });
+
     if (email === 'abc@gmail.com' && password === 'admin1234!') {
+      console.log('Mock admin login');
       setCurrentUser(mockAdminUser);
       setIsMockAdmin(true);
       setIsNewUser(false);
@@ -114,12 +122,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Firebase login success:', result.user.email);
       setIsMockAdmin(false);
       setIsNewUser(false);
       localStorage.removeItem('isMockAdmin');
       toast({ title: "Logged in successfully", description: "Welcome back!" });
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({ variant: "destructive", title: "Login failed", description: error.message });
       throw error;
     }
@@ -128,6 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      console.log('Google login success:', result.user.email);
       setIsMockAdmin(false);
       setIsNewUser(false);
       if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
@@ -135,12 +146,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
+      console.error('Google login error:', error);
       toast({ variant: "destructive", title: "Google login failed", description: error.message });
       throw error;
     }
   };
 
   const logout = async () => {
+    console.log('Logout attempt:', { isMockAdmin });
+
     if (isMockAdmin) {
       setCurrentUser(null);
       setIsMockAdmin(false);
@@ -154,6 +168,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.removeItem('authToken');
       toast({ title: "Logged out successfully" });
     } catch (error: any) {
+      console.error('Logout error:', error);
       toast({ variant: "destructive", title: "Logout failed", description: error.message });
       throw error;
     }
@@ -170,7 +185,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log('Initial auth setup');
+    
     if (localStorage.getItem('isMockAdmin') === 'true') {
+      console.log('Setting up mock admin');
       setCurrentUser(mockAdminUser);
       setIsMockAdmin(true);
       setLoading(false);
@@ -178,7 +196,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (!isMockAdmin) {
+      console.log('Setting up Firebase auth listener');
       const unsubscribe = onAuthStateChanged(auth, (user) => {
+        console.log('Auth state changed:', user?.email);
         setCurrentUser(user);
         setLoading(false);
       });

@@ -19,24 +19,36 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading, isNewUser } = useAuth();
   
+  console.log('ProtectedRoute render:', { 
+    currentUser: currentUser?.email,
+    loading,
+    isNewUser,
+    path: window.location.pathname
+  });
+
   if (loading) {
+    console.log('Still loading auth state...');
     return <div>Loading...</div>;
   }
   
   if (!currentUser) {
+    console.log('No user, redirecting to landing...');
     return <Navigate to="/landing" />;
   }
 
   // Redirect new users to the intake page
   if (isNewUser && window.location.pathname !== '/intake') {
+    console.log('New user, redirecting to intake...');
     return <Navigate to="/intake" />;
   }
 
   // Redirect returning users to dashboard if they try to access intake
   if (!isNewUser && window.location.pathname === '/intake') {
+    console.log('Returning user trying to access intake, redirecting to dashboard...');
     return <Navigate to="/" />;
   }
 
+  console.log('Rendering protected content...');
   return <>{children}</>;
 };
 
