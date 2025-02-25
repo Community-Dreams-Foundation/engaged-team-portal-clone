@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +11,9 @@ import {
 import { Headphones, MessageSquare, Users, ChevronRight } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { ChatbotInterface } from "./ChatbotInterface"
+import { LiveAgentSupport } from "./LiveAgentSupport"
+import { MeetingScheduler } from "./MeetingScheduler"
 
 interface SupportTier {
   level: 1 | 2 | 3;
@@ -91,15 +93,14 @@ export function TieredSupport() {
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>{tier.title}</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    {/* Support interface will be implemented here */}
-                    <p className="text-muted-foreground">
-                      Support interface for tier {tier.level} is being implemented.
-                    </p>
+                    {tier.level === 1 && <ChatbotInterface />}
+                    {tier.level === 2 && <LiveAgentSupport />}
+                    {tier.level === 3 && <MeetingScheduler />}
                   </div>
                 </DialogContent>
               </Dialog>
