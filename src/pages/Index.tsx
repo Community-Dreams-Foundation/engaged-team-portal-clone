@@ -12,34 +12,41 @@ export default function Index() {
   return (
     <DashboardLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Kanban Board Section */}
+        {/* Kanban Board Section with Task Management */}
         <div className="col-span-full">
           <Card className="p-6">
             <KanbanBoard />
           </Card>
         </div>
 
-        {/* Training Modules Section */}
+        {/* CoS Agent and Training Section */}
         <div className="md:col-span-2">
-          <TrainingModules />
+          <Card className="p-6">
+            <TrainingModules />
+          </Card>
         </div>
 
-        <CosAgent />
+        {/* Performance and Portfolio Section */}
+        <div className="space-y-4">
+          <CosAgent />
+          <Card className="p-6">
+            <PerformanceMetrics />
+          </Card>
+        </div>
 
-        <Card className="p-6 md:col-start-2 lg:col-start-3">
-          <PerformanceMetrics />
-        </Card>
-
-        {/* Support System */}
+        {/* Support and Communication Section */}
         <div className="col-span-full">
           <Card className="p-6">
             <TieredSupport />
           </Card>
         </div>
 
-        <Card className="p-6 md:col-span-2">
-          <CommunicationFeed />
-        </Card>
+        {/* Internal Communication Feed */}
+        <div className="col-span-full lg:col-span-2">
+          <Card className="p-6">
+            <CommunicationFeed />
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   )

@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Check, Trash2 } from "lucide-react"
+import { Bell, Check, Trash2, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
@@ -28,8 +28,29 @@ export function NotificationsDropdown() {
         return "💰"
       case "performance_update":
         return "📈"
+      case "leadership":
+        return "⭐"
+      case "waiver":
+        return "📝"
+      case "training":
+        return "📚"
       default:
         return "ℹ️"
+    }
+  }
+
+  const getNotificationColor = (type: string) => {
+    switch (type) {
+      case "fee_reminder":
+      case "task_alert":
+        return "text-red-500"
+      case "leadership":
+      case "performance_update":
+        return "text-green-500"
+      case "training":
+        return "text-blue-500"
+      default:
+        return "text-primary"
     }
   }
 
@@ -41,6 +62,26 @@ export function NotificationsDropdown() {
       window.location.href = notification.metadata.action.link
     }
   }
+
+  const groupNotifications = () => {
+    const now = Date.now()
+    return notifications.reduce((groups: any, notification) => {
+      const timeDiff = now - notification.timestamp
+      let group = 'older'
+      
+      if (timeDiff < 24 * 60 * 60 * 1000) {
+        group = 'today'
+      } else if (timeDiff < 7 * 24 * 60 * 60 * 1000) {
+        group = 'thisWeek'
+      }
+      
+      if (!groups[group]) groups[group] = []
+      groups[group].push(notification)
+      return groups
+    }, {})
+  }
+
+  const groupedNotifications = groupNotifications()
 
   return (
     <DropdownMenu>
@@ -79,51 +120,62 @@ export function NotificationsDropdown() {
               No notifications
             </div>
           ) : (
-            notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className="p-4 focus:bg-accent cursor-pointer"
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <div className="flex gap-4 items-start">
-                  <div className="text-2xl">{getNotificationIcon(notification.type)}</div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm font-medium leading-none ${
-                        notification.status === "unread" ? "text-primary" : ""
-                      }`}>
-                        {notification.title}
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteNotification(notification.id)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{formatDistanceToNow(notification.timestamp, { addSuffix: true })}</span>
-                      {notification.metadata?.priority && (
-                        <Badge variant={
-                          notification.metadata.priority === "high" ? "destructive" :
-                          notification.metadata.priority === "medium" ? "secondary" :
-                          "outline"
-                        }>
-                          {notification.metadata.priority}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+            Object.entries(groupedNotifications).map(([group, items]: [string, any[]]) => (
+              <div key={group}>
+                <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-3 w-3" />
+                  {group === 'today' ? 'Today' : 
+                   group === 'thisWeek' ? 'This Week' : 'Older'}
                 </div>
-              </DropdownMenuItem>
+                {items.map((notification) => (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className="p-4 focus:bg-accent cursor-pointer"
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex gap-4 items-start">
+                      <div className={`text-2xl ${getNotificationColor(notification.type)}`}>
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm font-medium leading-none ${
+                            notification.status === "unread" ? "text-primary" : ""
+                          }`}>
+                            {notification.title}
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteNotification(notification.id)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {notification.message}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{formatDistanceToNow(notification.timestamp, { addSuffix: true })}</span>
+                          {notification.metadata?.priority && (
+                            <Badge variant={
+                              notification.metadata.priority === "high" ? "destructive" :
+                              notification.metadata.priority === "medium" ? "secondary" :
+                              "outline"
+                            }>
+                              {notification.metadata.priority}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
             ))
           )}
         </ScrollArea>
