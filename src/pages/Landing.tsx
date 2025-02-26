@@ -45,31 +45,16 @@ export default function Landing() {
       if (isLogin) {
         console.log('Calling login function...');
         await login(email, password)
-        console.log('Login successful');
-        toast({
-          title: "Welcome back!",
-          description: "Successfully logged in"
-        })
+        console.log('Login successful, navigating to homepage');
+        navigate("/")
       } else {
         console.log('Calling signup function...');
         await signup(email, password)
-        console.log('Signup successful');
-        toast({
-          title: "Account created!",
-          description: "Successfully signed up"
-        })
+        console.log('Signup successful, navigating to homepage');
+        navigate("/")
       }
-      console.log('Navigating to homepage...');
-      navigate("/")
     } catch (error: any) {
       console.error('Auth error:', error)
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: error.message || "Failed to authenticate. Please try again."
-      })
-    } finally {
-      console.log('Setting loading state to false');
       setIsLoading(false)
     }
   }

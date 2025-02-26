@@ -43,36 +43,38 @@ export const useAuthOperations = () => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Starting login operation for email:', email);
+      console.log('Starting login operation for:', email);
       
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
         throw new Error('Firebase is offline. Please check your internet connection.');
       }
       
-      // Attempt to sign in
       console.log('Attempting Firebase authentication...');
       const result = await signInWithEmailAndPassword(auth, email, password);
       console.log('Firebase login successful for:', result.user.email);
       
-      // Fetch user document
       console.log('Fetching user document...');
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
       console.log('User document exists:', userDoc.exists());
       
-      if (!userDoc.exists()) {
-        console.warn('User document not found, creating one...');
-        await createUserDocument(result.user.uid, result.user.email);
-      }
+      let role: UserRole;
       
-      const userData = userDoc.data();
-      const role = userData?.role as UserRole;
-      console.log('User role:', role);
+      if (!userDoc.exists()) {
+        console.log('Creating user document for new user');
+        await createUserDocument(result.user.uid, email);
+        role = 'member';
+      } else {
+        const userData = userDoc.data();
+        role = userData?.role as UserRole;
+        console.log('User role from document:', role);
+      }
       
       if (role === 'super_admin') {
         await logAuditEvent(result.user.uid, 'super_admin_login', { email });
       }
 
+      console.log('Login successful, returning role:', role);
       toast({ title: "Logged in successfully", description: "Welcome back!" });
       return role;
     } catch (error: any) {

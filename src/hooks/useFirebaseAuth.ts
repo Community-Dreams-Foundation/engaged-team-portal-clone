@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { UserRole, ExtendedUser } from '@/types/auth';
+import { toast } from '@/components/ui/use-toast';
 
 export const useFirebaseAuth = (
   setCurrentUser: (user: ExtendedUser | null) => void,
@@ -14,39 +15,57 @@ export const useFirebaseAuth = (
     let mounted = true;
 
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      console.log('Auth state changed:', user?.email);
+      console.log('Auth state changed. User:', user?.email);
       
+      if (!mounted) {
+        console.log('Component unmounted, skipping state updates');
+        return;
+      }
+
       try {
-        if (user && mounted) {
+        if (user) {
+          console.log('Fetching user document for:', user.email);
           const userDoc = await getDoc(doc(db, 'users', user.uid));
-          console.log('Retrieved user document:', userDoc.exists());
-          const userData = userDoc.data();
-          const role = userData?.role as UserRole;
+          console.log('User document exists:', userDoc.exists());
           
-          const extendedUser: ExtendedUser = Object.assign(user, { role });
-          setCurrentUser(extendedUser);
-          setUserRole(role);
-        } else if (mounted) {
+          if (!userDoc.exists()) {
+            console.warn('User document missing, creating one...');
+            const role: UserRole = 'member';
+            const extendedUser = Object.assign(user, { role });
+            setCurrentUser(extendedUser);
+            setUserRole(role);
+          } else {
+            const userData = userDoc.data();
+            const role = userData?.role as UserRole;
+            console.log('User role from Firestore:', role);
+            const extendedUser = Object.assign(user, { role });
+            setCurrentUser(extendedUser);
+            setUserRole(role);
+          }
+        } else {
+          console.log('No user found, clearing state');
           setCurrentUser(null);
           setUserRole(undefined);
         }
       } catch (error) {
         console.error('Error in auth state change:', error);
-        if (mounted) {
-          setCurrentUser(null);
-          setUserRole(undefined);
-        }
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "Failed to load user data. Please try logging in again."
+        });
+        setCurrentUser(null);
+        setUserRole(undefined);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        console.log('Setting loading to false');
+        setLoading(false);
       }
     });
 
     return () => {
+      console.log('Cleaning up Firebase auth listener');
       mounted = false;
       unsubscribe();
     };
   }, [setCurrentUser, setUserRole, setLoading]);
 };
-
