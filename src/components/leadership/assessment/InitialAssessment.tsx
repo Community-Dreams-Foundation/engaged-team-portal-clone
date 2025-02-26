@@ -1,15 +1,15 @@
-
 import React, { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
 import { useQuery } from "@tanstack/react-query"
-import { getDatabase, ref, push, set } from "firebase/database"
+import { getDatabase, ref, set, get } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
 import type { AssessmentScenario, AssessmentResult } from "@/types/assessment"
 import { AgentsList } from "@/components/dashboard/cos-agent/AgentsList"
 import type { Agent } from "@/types/task"
+import type { LeadershipTier, LeadershipDomain } from "@/types/leadership"
 
 const INITIAL_SCENARIOS = [
   {
@@ -60,7 +60,6 @@ export function InitialAssessment() {
     const scenario = INITIAL_SCENARIOS[currentScenario]
     
     try {
-      // Create initial agents for the scenario
       const newAgents: Agent[] = await Promise.all(
         Array(scenario.agentConfig.count).fill(null).map(async (_, index) => {
           const agent: Agent = {
@@ -89,7 +88,6 @@ export function InitialAssessment() {
       
       setActiveAgents(newAgents)
       
-      // Start progress timer
       const intervalId = setInterval(() => {
         setProgress(prev => {
           const newProgress = prev + (100 / (scenario.timeLimit * 60))
@@ -118,11 +116,10 @@ export function InitialAssessment() {
     
     setIsRunning(false)
     
-    // Calculate assessment results based on agent performance
     const agentPerformanceScores = activeAgents.map(agent => ({
       agentId: agent.id,
       efficiency: agent.performance.successRate,
-      satisfaction: 85, // Mock satisfaction score
+      satisfaction: 85,
       taskCompletion: agent.performance.tasksCompleted
     }))
     
@@ -130,10 +127,7 @@ export function InitialAssessment() {
       (acc, curr) => acc + curr.efficiency, 0
     ) / agentPerformanceScores.length
     
-    // Determine initial leadership tier
-    const initialTier: LeadershipTier = overallScore >= 90 ? "team-lead" :
-                                      overallScore >= 75 ? "captain" :
-                                      "emerging"
+    const initialTier = determineInitialTier(overallScore)
     
     const result: AssessmentResult = {
       userId: currentUser.uid,
@@ -141,7 +135,7 @@ export function InitialAssessment() {
       tier: initialTier,
       domainStrengths: [
         {
-          domain: "project-management",
+          domain: getLeadershipDomain(),
           score: overallScore
         }
       ],
@@ -175,6 +169,16 @@ export function InitialAssessment() {
         description: "Failed to save assessment results. Please try again."
       })
     }
+  }
+
+  const determineInitialTier = (overallScore: number): LeadershipTier => {
+    if (overallScore >= 90) return "team-lead";
+    if (overallScore >= 75) return "captain";
+    return "emerging";
+  };
+
+  const getLeadershipDomain = (): LeadershipDomain => {
+    return "product-design";
   }
 
   if (assessmentResult) {
