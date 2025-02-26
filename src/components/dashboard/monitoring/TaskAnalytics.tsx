@@ -3,6 +3,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle, Brain, Clock, Trophy, TrendingUp, Users, Target, Star } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import type { Task } from "@/types/task"
 import { WeeklyActivityChart } from "../metrics/WeeklyActivityChart"
 import { StatsGrid } from "../metrics/StatsGrid"
@@ -47,9 +48,9 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
     // Calculate leadership impact score based on business value and team efficiency
     const leadershipImpactScore = completedTasks.reduce((acc, task) => {
       const businessValue = task.metadata?.businessValue || 5
-      const teamEfficiency = task.metadata?.teamEfficiency || 0.5
+      const efficiency = task.metadata?.performanceHistory?.accuracyRate || 0.5
       const stakeholderImpact = task.metadata?.externalStakeholder ? 1.5 : 1
-      return acc + (businessValue * teamEfficiency * stakeholderImpact)
+      return acc + (businessValue * efficiency * stakeholderImpact)
     }, 0) / (completedTasks.length || 1)
 
     // Calculate innovation and mentorship scores
