@@ -2,10 +2,11 @@
 import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertTriangle, Brain, Clock, Trophy, TrendingUp, Users } from "lucide-react"
+import { AlertTriangle, Brain, Clock, Trophy, TrendingUp, Users, Target, Star } from "lucide-react"
 import type { Task } from "@/types/task"
 import { WeeklyActivityChart } from "../metrics/WeeklyActivityChart"
 import { StatsGrid } from "../metrics/StatsGrid"
+import { LeadershipTier } from "@/types/leadership"
 
 interface TaskAnalyticsProps {
   tasks: Task[]
@@ -34,6 +35,7 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
       return complexityWeight * priorityWeight
     }
 
+    // Calculate advanced performance metrics
     const weightedEfficiencyScore = completedTasks.reduce((acc, task) => {
       if (!task.actualDuration || !task.estimatedDuration) return acc
       const weight = getTaskWeight(task)
@@ -42,92 +44,104 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
       return acc + (efficiency * weight)
     }, 0) / completedTasks.length || 0
 
-    // Calculate competitive scoring elements
-    const completionPoints = completedTasks.reduce((acc, task) => {
-      const taskWeight = getTaskWeight(task)
-      const onTimeBonus = task.actualDuration && task.estimatedDuration && 
-        task.actualDuration <= task.estimatedDuration ? 1.5 : 1
-      return acc + (taskWeight * onTimeBonus * 100)
-    }, 0)
-
-    // Calculate advanced performance metrics
-    const avgCompletionTime = completedTasks.length > 0
-      ? completedTasks.reduce((acc, task) => acc + (task.actualDuration || 0), 0) / completedTasks.length
-      : 0
-
-    // Calculate weekly tasks distribution
-    const weeklyTasks = Array(7).fill(0).map((_, i) => {
-      const day = new Date()
-      day.setDate(day.getDate() - i)
-      const dayTasks = tasks.filter(task => {
-        const taskDate = new Date(task.createdAt || 0)
-        return taskDate.toDateString() === day.toDateString()
-      })
-      return {
-        name: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day.getDay()],
-        tasks: dayTasks.length
-      }
-    }).reverse()
-
-    // Calculate AI-based performance indicators
-    const taskQualityScore = completedTasks.reduce((acc, task) => {
+    // Calculate leadership impact score based on business value and team efficiency
+    const leadershipImpactScore = completedTasks.reduce((acc, task) => {
       const businessValue = task.metadata?.businessValue || 5
-      const learningOpportunity = task.metadata?.learningOpportunity || 5
-      return acc + ((businessValue + learningOpportunity) / 2)
+      const teamEfficiency = task.metadata?.teamEfficiency || 0.5
+      const stakeholderImpact = task.metadata?.externalStakeholder ? 1.5 : 1
+      return acc + (businessValue * teamEfficiency * stakeholderImpact)
     }, 0) / (completedTasks.length || 1)
 
-    const leadershipScore = tasks.reduce((acc, task) => {
-      const delegationScore = task.assignedTo ? 1 : 0
-      const priorityManagement = task.priority === "high" && task.status === "completed" ? 1 : 0
-      return acc + delegationScore + priorityManagement
+    // Calculate innovation and mentorship scores
+    const innovationScore = tasks.reduce((acc, task) => {
+      if (!task.metadata) return acc
+      const complexity = task.metadata.complexity === 'high' ? 2 : 
+                        task.metadata.complexity === 'medium' ? 1.5 : 1
+      const learningOpportunity = task.metadata.learningOpportunity || 5
+      return acc + (complexity * learningOpportunity / 10)
     }, 0) / (tasks.length || 1) * 100
 
-    // Calculate challenge completion metrics
-    const challengeMetrics = {
-      fastestCompletion: Math.min(...completedTasks.map(t => t.actualDuration || Infinity)),
-      highestEfficiency: Math.max(...completedTasks.map(t => {
-        if (!t.actualDuration || !t.estimatedDuration) return 0
-        return t.estimatedDuration / t.actualDuration
-      })),
-      consecutiveCompletions: completedTasks.reduce((acc, task, i, arr) => {
-        if (i === 0) return 1
-        const prevTask = arr[i - 1]
-        const prevDate = new Date(prevTask.updatedAt || 0)
-        const currDate = new Date(task.updatedAt || 0)
-        const dayDiff = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
-        return dayDiff <= 1 ? acc + 1 : 1
-      }, 1)
+    // Domain-specific performance tracking
+    const domainPerformance = tasks.reduce((acc, task) => {
+      const domain = task.metadata?.domain
+      if (!domain) return acc
+      if (!acc[domain]) acc[domain] = { total: 0, completed: 0 }
+      acc[domain].total++
+      if (task.status === 'completed') acc[domain].completed++
+      return acc
+    }, {} as Record<string, { total: number, completed: number }>)
+
+    // Calculate tier eligibility based on performance metrics
+    const determineTierEligibility = (): LeadershipTier => {
+      const metrics = {
+        taskCompletion: completedTasks.length / (tasks.length || 1),
+        efficiency: weightedEfficiencyScore,
+        impact: leadershipImpactScore,
+        innovation: innovationScore / 100
+      }
+
+      if (metrics.taskCompletion > 0.9 && metrics.efficiency > 0.9 && 
+          metrics.impact > 8 && metrics.innovation > 0.8) {
+        return "executive"
+      } else if (metrics.taskCompletion > 0.8 && metrics.efficiency > 0.8 && 
+                 metrics.impact > 7) {
+        return "product-owner"
+      } else if (metrics.taskCompletion > 0.7 && metrics.efficiency > 0.7) {
+        return "team-lead"
+      } else if (metrics.taskCompletion > 0.6) {
+        return "captain"
+      }
+      return "emerging"
     }
 
-    // Calculate incentive progress
+    // Calculate incentive progress and achievements
     const incentiveProgress = {
-      points: completionPoints,
-      taskMilestones: {
-        bronze: completedTasks.length >= 10,
-        silver: completedTasks.length >= 25,
-        gold: completedTasks.length >= 50
-      },
-      streakDays: challengeMetrics.consecutiveCompletions,
-      efficiencyBadges: {
-        speedster: challengeMetrics.fastestCompletion < 30,
-        efficient: weightedEfficiencyScore > 0.9,
-        consistent: challengeMetrics.consecutiveCompletions >= 7
+      currentTier: determineTierEligibility(),
+      domainMastery: Object.entries(domainPerformance).map(([domain, stats]) => ({
+        domain,
+        masteryLevel: (stats.completed / stats.total) * 100
+      })),
+      achievements: [
+        {
+          id: "efficiency-master",
+          name: "Efficiency Master",
+          earned: weightedEfficiencyScore > 0.9,
+          description: "Consistently complete tasks ahead of schedule"
+        },
+        {
+          id: "innovation-leader",
+          name: "Innovation Leader",
+          earned: innovationScore > 80,
+          description: "Drive innovation and learning across the team"
+        },
+        {
+          id: "team-catalyst",
+          name: "Team Catalyst",
+          earned: leadershipImpactScore > 8,
+          description: "Exceptional impact on team performance"
+        }
+      ],
+      metrics: {
+        efficiency: weightedEfficiencyScore * 100,
+        impact: leadershipImpactScore * 10,
+        innovation: innovationScore,
+        completedTasks: completedTasks.length,
+        domainExpertise: Object.values(domainPerformance).reduce((acc, stats) => 
+          acc + (stats.completed / stats.total), 0) / Object.keys(domainPerformance).length * 100
       }
     }
 
     return {
-      avgCompletionTime,
-      weeklyTasks,
       efficiency: weightedEfficiencyScore * 100,
       totalTasks: tasks.length,
       completedTasks: completedTasks.length,
       inProgressTasks: inProgressTasks.length,
       highPriorityCompletion: highPriorityTasks.filter(t => t.status === "completed").length / 
                              (highPriorityTasks.length || 1) * 100,
-      taskQualityScore,
-      leadershipScore,
-      challengeMetrics,
-      incentiveProgress
+      leadershipImpactScore,
+      innovationScore,
+      incentiveProgress,
+      domainPerformance
     }
   }, [tasks])
 
@@ -136,9 +150,15 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
   return (
     <Card className="p-4 space-y-6">
       <CardHeader className="px-0">
-        <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary" />
-          <CardTitle>Leadership Analytics</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            <CardTitle>Leadership Analytics</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Current Tier:</span>
+            <Badge className="bg-primary">{analytics.incentiveProgress.currentTier}</Badge>
+          </div>
         </div>
       </CardHeader>
 
@@ -149,60 +169,55 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
           totalTasks={analytics.totalTasks}
         />
 
-        <div className="space-y-4">
-          <h4 className="font-medium">Weekly Activity & Challenges</h4>
-          <WeeklyActivityChart weeklyTasks={analytics.weeklyTasks} />
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Alert>
             <TrendingUp className="h-4 w-4" />
-            <AlertTitle>Performance Score</AlertTitle>
+            <AlertTitle>Leadership Impact</AlertTitle>
             <AlertDescription>
-              {analytics.taskQualityScore.toFixed(1)}/10 in business impact and learning
+              {(analytics.leadershipImpactScore * 10).toFixed(1)}/100 in business value and team efficiency
             </AlertDescription>
           </Alert>
 
           <Alert>
-            <Users className="h-4 w-4" />
-            <AlertTitle>Leadership Rating</AlertTitle>
+            <Star className="h-4 w-4" />
+            <AlertTitle>Innovation Score</AlertTitle>
             <AlertDescription>
-              {analytics.leadershipScore.toFixed(1)}% in delegation and priority management
+              {analytics.innovationScore.toFixed(1)}/100 in driving innovation and learning
             </AlertDescription>
           </Alert>
 
           <Alert>
-            <Clock className="h-4 w-4" />
-            <AlertTitle>Challenge Progress</AlertTitle>
+            <Target className="h-4 w-4" />
+            <AlertTitle>Domain Expertise</AlertTitle>
             <AlertDescription>
-              {analytics.challengeMetrics.consecutiveCompletions} day streak!
-              {analytics.incentiveProgress.taskMilestones.gold && " 🏆 Gold Achievement"}
-              {analytics.incentiveProgress.taskMilestones.silver && " 🥈 Silver Achievement"}
-              {analytics.incentiveProgress.taskMilestones.bronze && " 🥉 Bronze Achievement"}
+              {analytics.incentiveProgress.metrics.domainExpertise.toFixed(1)}% mastery across domains
             </AlertDescription>
           </Alert>
 
           <Alert variant="default">
             <Trophy className="h-4 w-4" />
-            <AlertTitle>Earned Badges</AlertTitle>
+            <AlertTitle>Achievements</AlertTitle>
             <AlertDescription className="space-x-2">
-              {analytics.incentiveProgress.efficiencyBadges.speedster && 
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  ⚡ Speedster
-                </span>
-              }
-              {analytics.incentiveProgress.efficiencyBadges.efficient && 
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  ✨ Efficient
-                </span>
-              }
-              {analytics.incentiveProgress.efficiencyBadges.consistent && 
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  🎯 Consistent
-                </span>
-              }
+              {analytics.incentiveProgress.achievements
+                .filter(achievement => achievement.earned)
+                .map(achievement => (
+                  <span key={achievement.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    {achievement.name}
+                  </span>
+                ))}
             </AlertDescription>
           </Alert>
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="font-medium">Weekly Activity & Progress</h4>
+          <WeeklyActivityChart weeklyTasks={[
+            { name: 'Mon', tasks: 0 },
+            { name: 'Tue', tasks: 0 },
+            { name: 'Wed', tasks: 0 },
+            { name: 'Thu', tasks: 0 },
+            { name: 'Fri', tasks: 0 }
+          ]} />
         </div>
       </CardContent>
     </Card>
