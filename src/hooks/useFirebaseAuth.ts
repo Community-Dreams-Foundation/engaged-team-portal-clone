@@ -25,11 +25,17 @@ export const useFirebaseAuth = (
       try {
         if (user) {
           console.log('Fetching user document for:', user.email);
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          console.log('User document exists:', userDoc.exists());
+          let userDoc;
+          try {
+            userDoc = await getDoc(doc(db, 'users', user.uid));
+            console.log('User document exists:', userDoc.exists());
+          } catch (firestoreError) {
+            console.error('Error fetching user document:', firestoreError);
+            throw new Error('Failed to fetch user data');
+          }
           
           if (!userDoc.exists()) {
-            console.warn('User document missing, creating one...');
+            console.warn('User document missing');
             const role: UserRole = 'member';
             const extendedUser = Object.assign(user, { role });
             setCurrentUser(extendedUser);
@@ -47,12 +53,16 @@ export const useFirebaseAuth = (
           setCurrentUser(null);
           setUserRole(undefined);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error in auth state change:', error);
+        const errorMessage = error.code 
+          ? `Authentication error (${error.code}): ${error.message}`
+          : error.message || 'Failed to load user data';
+        
         toast({
           variant: "destructive",
           title: "Authentication Error",
-          description: "Failed to load user data. Please try logging in again."
+          description: errorMessage
         });
         setCurrentUser(null);
         setUserRole(undefined);

@@ -32,10 +32,11 @@ export const useAuthOperations = () => {
       toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
     } catch (error: any) {
       console.error('Signup error:', error);
+      const errorMessage = error.code ? `Error (${error.code}): ${error.message}` : error.message;
       toast({ 
         variant: "destructive", 
         title: "Error creating account", 
-        description: error.message || "Failed to create account. Please check your internet connection."
+        description: errorMessage || "Failed to create account. Please check your internet connection."
       });
       throw error;
     }
@@ -47,23 +48,41 @@ export const useAuthOperations = () => {
       
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
+        console.error('Firebase connection check failed');
         throw new Error('Firebase is offline. Please check your internet connection.');
       }
       
-      console.log('Attempting Firebase authentication...');
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Firebase login successful for:', result.user.email);
+      console.log('Firebase connection check passed, attempting authentication...');
+      let result;
+      try {
+        result = await signInWithEmailAndPassword(auth, email, password);
+        console.log('Firebase login successful for:', result.user.email);
+      } catch (authError: any) {
+        console.error('Firebase authentication error:', authError);
+        throw authError;
+      }
       
       console.log('Fetching user document...');
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      console.log('User document exists:', userDoc.exists());
+      let userDoc;
+      try {
+        userDoc = await getDoc(doc(db, 'users', result.user.uid));
+        console.log('User document exists:', userDoc.exists());
+      } catch (firestoreError) {
+        console.error('Firestore fetch error:', firestoreError);
+        throw new Error('Failed to fetch user data from Firestore');
+      }
       
       let role: UserRole;
       
       if (!userDoc.exists()) {
         console.log('Creating user document for new user');
-        await createUserDocument(result.user.uid, email);
-        role = 'member';
+        try {
+          await createUserDocument(result.user.uid, email);
+          role = 'member';
+        } catch (createDocError) {
+          console.error('Error creating user document:', createDocError);
+          throw new Error('Failed to create user document');
+        }
       } else {
         const userData = userDoc.data();
         role = userData?.role as UserRole;
@@ -71,7 +90,12 @@ export const useAuthOperations = () => {
       }
       
       if (role === 'super_admin') {
-        await logAuditEvent(result.user.uid, 'super_admin_login', { email });
+        try {
+          await logAuditEvent(result.user.uid, 'super_admin_login', { email });
+        } catch (auditError) {
+          console.error('Failed to log audit event:', auditError);
+          // Continue login process even if audit logging fails
+        }
       }
 
       console.log('Login successful, returning role:', role);
@@ -87,6 +111,8 @@ export const useAuthOperations = () => {
         errorMessage = 'Unable to connect to authentication service. Please check your internet connection.';
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = 'Too many failed login attempts. Please try again later.';
+      } else if (error.code) {
+        errorMessage = `Authentication error (${error.code}): ${error.message}`;
       }
       
       toast({ 
