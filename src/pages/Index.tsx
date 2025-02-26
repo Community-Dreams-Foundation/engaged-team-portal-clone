@@ -15,6 +15,8 @@ import { NetworkConnections } from "@/components/dashboard/community/NetworkConn
 import { CommunityMemberProfile } from "@/components/dashboard/community/CommunityMemberProfile"
 import { TeamChallengesBoard } from "@/components/dashboard/gamification/TeamChallengesBoard"
 import { VisaStatusTracker } from "@/components/dashboard/immigration/VisaStatusTracker"
+import type { TeamChallenge } from "@/types/gamification"
+import type { VisaStatus } from "@/types/immigration"
 
 const mockKnowledgeData = {
   nodes: [
