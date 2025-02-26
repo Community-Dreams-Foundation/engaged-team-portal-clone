@@ -1,14 +1,14 @@
 
-import { TrendingUp, CheckCircle, LayoutList } from "lucide-react"
+import { TrendingUp, Trophy, Users } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface StatsGridProps {
   efficiency: number
-  completedTasks: number
-  totalTasks: number
+  leaderboardRank: number
+  totalParticipants: number
 }
 
-export function StatsGrid({ efficiency, completedTasks, totalTasks }: StatsGridProps) {
+export function StatsGrid({ efficiency, leaderboardRank, totalParticipants }: StatsGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
@@ -23,19 +23,19 @@ export function StatsGrid({ efficiency, completedTasks, totalTasks }: StatsGridP
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium">Completed</span>
+            <Trophy className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">Leaderboard Rank</span>
           </div>
-          <p className="text-2xl font-bold">{completedTasks}</p>
+          <p className="text-2xl font-bold">#{leaderboardRank}</p>
         </CardContent>
       </Card>
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <LayoutList className="h-4 w-4 text-purple-500" />
-            <span className="text-sm font-medium">Total Tasks</span>
+            <Users className="h-4 w-4 text-purple-500" />
+            <span className="text-sm font-medium">Total Participants</span>
           </div>
-          <p className="text-2xl font-bold">{totalTasks}</p>
+          <p className="text-2xl font-bold">{totalParticipants}</p>
         </CardContent>
       </Card>
     </div>
