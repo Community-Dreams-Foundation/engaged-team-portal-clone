@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { UserPlus, UserMinus, ChartLineUp } from "lucide-react"
+import { UserPlus, UserMinus, ChartLine } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import type { Team, LeadershipDomain } from "@/types/leadership"
 import { getDatabase, ref, update, get } from "firebase/database"
@@ -192,7 +191,7 @@ export function TeamPerformanceTracking({ teamId }: { teamId: string }) {
             innovationScore: Math.min(100, (team.performance?.innovationScore || 0) + 5)
           })}
         >
-          <ChartLineUp className="w-4 h-4 mr-2" />
+          <ChartLine className="w-4 h-4 mr-2" />
           Update Metrics
         </Button>
       </div>
