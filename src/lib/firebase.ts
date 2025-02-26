@@ -1,7 +1,7 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -21,8 +21,13 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 auth.useDeviceLanguage(); // Set language to device default
 
-// Initialize Firestore
+// Initialize Firestore with persistence
 export const db = getFirestore(app);
+
+// Enable offline persistence for Firestore
+enableIndexedDbPersistence(db).catch((err) => {
+  console.error('Failed to enable offline persistence:', err);
+});
 
 // Initialize analytics only if supported
 const analyticsPromise = isSupported().then(yes => yes ? getAnalytics(app) : null);
@@ -31,11 +36,24 @@ export const analytics = analyticsPromise;
 // Function to check Firebase connection status
 export const checkFirebaseConnection = async () => {
   try {
-    await disableNetwork(db); // First disable the network
-    await enableNetwork(db); // Then try to enable it
+    // First try to disable network to clear any existing connection
+    await disableNetwork(db);
+    
+    // Then try to enable network and wait for it to complete
+    await enableNetwork(db);
+    
+    // If we get here, the connection was successful
+    console.log('Firebase connection successful');
     return true;
   } catch (error) {
-    console.error('Firebase connection error:', error);
+    console.error('Firebase connection check failed:', error);
+    // Re-enable network in case of error to ensure we don't leave it disabled
+    try {
+      await enableNetwork(db);
+    } catch (enableError) {
+      console.error('Failed to re-enable network:', enableError);
+    }
     return false;
   }
 };
+
