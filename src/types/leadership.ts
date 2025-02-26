@@ -1,4 +1,3 @@
-
 export type LeadershipTier = "emerging" | "captain" | "team-lead" | "product-owner" | "executive";
 
 export type LeadershipDomain = "strategy" | "product-design" | "data-engineering" | "software-development" | "engagement";
@@ -20,6 +19,11 @@ export interface LeadershipMetrics {
   mentorshipScore?: number;
   communicationScore?: number;
   innovationScore?: number;
+  competitiveScore?: number;
+  resourceOptimization?: number;
+  strategicImpact?: number;
+  crossTeamCollaboration?: number;
+  costEfficiency?: number;
 }
 
 export interface LeadershipAssessment {
@@ -30,11 +34,26 @@ export interface LeadershipAssessment {
   endDate: number;
   metrics: LeadershipMetrics;
   status: "in-progress" | "completed";
+  simulationScore?: number;
   mentorFeedback?: {
     mentorId: string;
     rating: number;
     comments: string;
     timestamp: number;
+    areas?: {
+      technicalSkills?: number;
+      leadership?: number;
+      communication?: number;
+      innovation?: number;
+      teamwork?: number;
+    };
+  }[];
+  challengeResults?: {
+    challengeId: string;
+    score: number;
+    rank: number;
+    feedback: string;
+    completedAt: number;
   }[];
 }
 
@@ -52,6 +71,14 @@ export interface Team {
     collaborationRate: number;
     communicationScore?: number;
     projectSuccessRate?: number;
+    costOptimization?: number;
+    crossTeamProjects?: number;
+    resourceUtilization?: number;
+    competitiveChallenges?: {
+      participated: number;
+      won: number;
+      averageRank: number;
+    };
   };
 }
 
@@ -64,8 +91,23 @@ export interface LeadershipTraining {
   certificationEarned: boolean;
   feedback?: string;
   mentorId?: string;
-  moduleType: "technical" | "soft-skills" | "management" | "strategy";
+  moduleType: "technical" | "soft-skills" | "management" | "strategy" | "simulation";
   requiredForPromotion?: boolean;
+  simulationData?: {
+    scenarioType: string;
+    decisions: Array<{
+      timestamp: number;
+      decision: string;
+      outcome: string;
+      impact: number;
+    }>;
+    performanceMetrics: {
+      decisionQuality: number;
+      timeManagement: number;
+      resourceAllocation: number;
+      teamSatisfaction: number;
+    };
+  };
 }
 
 export interface LeadershipProfile {
@@ -84,7 +126,7 @@ export interface LeadershipProfile {
     communicationScore?: number;
     projectDeliveryRate?: number;
     teamGrowthRate?: number;
-    teamEfficiency?: number;  // Added this property
+    teamEfficiency?: number;
   };
   achievements: Array<{
     id: string;
@@ -122,4 +164,3 @@ export interface PromotionRequest {
     mentorshipRequired: boolean;
   };
 }
-
