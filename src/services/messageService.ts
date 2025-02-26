@@ -9,24 +9,30 @@ import {
   serverTimestamp,
   query,
   orderByChild,
-  update
+  update,
+  get
 } from "firebase/database"
-import { Message } from "@/types/communication"
+import { Message, CommunityMember, NetworkConnection, Group } from "@/types/communication"
 
-export const fetchMessages = async (): Promise<Message[]> => {
+export const fetchMessages = async (groupId?: string): Promise<Message[]> => {
   return new Promise((resolve, reject) => {
     const db = getDatabase()
-    const messagesRef = query(ref(db, 'messages'), orderByChild('timestamp'))
+    const messagesRef = query(
+      ref(db, 'messages'), 
+      orderByChild(groupId ? 'groupId' : 'timestamp')
+    )
 
     onValue(messagesRef, (snapshot) => {
       const messages: Message[] = []
       snapshot.forEach((childSnapshot) => {
         const message = childSnapshot.val()
-        messages.push({
-          id: childSnapshot.key || '',
-          ...message,
-          timestamp: message.timestamp || new Date().toISOString()
-        })
+        if (!groupId || message.groupId === groupId) {
+          messages.push({
+            id: childSnapshot.key || '',
+            ...message,
+            timestamp: message.timestamp || new Date().toISOString()
+          })
+        }
       })
       resolve(messages.reverse())
     }, (error) => {
@@ -70,4 +76,64 @@ export const markAsRead = async (messageId: string) => {
   return update(messageRef, {
     isRead: true
   })
+}
+
+// Network connections
+export const createConnection = async (userId: string, connectionId: string) => {
+  const db = getDatabase()
+  const connectionRef = ref(db, `connections/${userId}/${connectionId}`)
+  return set(connectionRef, {
+    status: 'pending',
+    createdAt: serverTimestamp(),
+  })
+}
+
+export const updateConnectionStatus = async (
+  userId: string, 
+  connectionId: string, 
+  status: 'pending' | 'connected' | 'blocked'
+) => {
+  const db = getDatabase()
+  const connectionRef = ref(db, `connections/${userId}/${connectionId}`)
+  return update(connectionRef, { status })
+}
+
+// Community member profiles
+export const updateProfile = async (userId: string, profileData: Partial<CommunityMember>) => {
+  const db = getDatabase()
+  const profileRef = ref(db, `profiles/${userId}`)
+  return update(profileRef, profileData)
+}
+
+export const fetchProfile = async (userId: string): Promise<CommunityMember | null> => {
+  const db = getDatabase()
+  const profileRef = ref(db, `profiles/${userId}`)
+  const snapshot = await get(profileRef)
+  return snapshot.val()
+}
+
+// Groups
+export const createGroup = async (groupData: Omit<Group, 'id'>) => {
+  const db = getDatabase()
+  const groupsRef = ref(db, 'groups')
+  return push(groupsRef, {
+    ...groupData,
+    createdAt: serverTimestamp()
+  })
+}
+
+export const joinGroup = async (groupId: string, userId: string) => {
+  const db = getDatabase()
+  const groupRef = ref(db, `groups/${groupId}/memberIds`)
+  const members = await get(groupRef)
+  const currentMembers = members.val() || []
+  return set(groupRef, [...currentMembers, userId])
+}
+
+export const leaveGroup = async (groupId: string, userId: string) => {
+  const db = getDatabase()
+  const groupRef = ref(db, `groups/${groupId}/memberIds`)
+  const members = await get(groupRef)
+  const currentMembers = members.val() || []
+  return set(groupRef, currentMembers.filter((id: string) => id !== userId))
 }

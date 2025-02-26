@@ -1,19 +1,21 @@
 
 import { Card } from "@/components/ui/card"
-import { ListChecks } from "lucide-react"
+import { ListChecks, Users } from "lucide-react"
 import { Message } from "@/types/communication"
 import { MessageContent } from "./MessageContent"
 import { useState } from "react"
 import { addReply } from "@/services/messageService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 
 interface MessageThreadProps {
   threadId: string;
   messages: Message[];
+  groupName?: string;
 }
 
-export function MessageThread({ threadId, messages }: MessageThreadProps) {
+export function MessageThread({ threadId, messages, groupName }: MessageThreadProps) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
 
@@ -35,9 +37,18 @@ export function MessageThread({ threadId, messages }: MessageThreadProps) {
   return (
     <Card className="p-4">
       {threadId !== "standalone" && (
-        <div className="flex items-center gap-2 mb-2">
-          <ListChecks className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Thread</span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">Thread</span>
+          </div>
+          
+          {groupName && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {groupName}
+            </Badge>
+          )}
         </div>
       )}
       

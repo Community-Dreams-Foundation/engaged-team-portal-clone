@@ -24,6 +24,7 @@ export interface Message {
     url: string;
     name: string;
   }[];
+  groupId?: string;
 }
 
 export interface Thread {
@@ -35,6 +36,7 @@ export interface Thread {
   participantIds: string[];
   tags?: string[];
   isAnnouncement?: boolean;
+  groupId?: string;
 }
 
 export interface CommunityMember {
@@ -46,6 +48,8 @@ export interface CommunityMember {
   badges?: string[];
   connections: string[];
   expertise: string[];
+  bio?: string;
+  avatarUrl?: string;
 }
 
 export interface NetworkConnection {
@@ -56,4 +60,16 @@ export interface NetworkConnection {
   lastInteraction?: string;
   mutualConnections?: number;
   sharedGroups?: string[];
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  memberIds: string[];
+  moderatorIds: string[];
+  isPrivate: boolean;
+  tags?: string[];
 }

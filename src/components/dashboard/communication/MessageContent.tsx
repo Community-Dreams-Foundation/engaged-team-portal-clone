@@ -1,8 +1,9 @@
 
 import { Message } from "@/types/communication"
 import { Button } from "@/components/ui/button"
-import { ThumbsUp, MessageCircle } from "lucide-react"
+import { ThumbsUp, MessageCircle, Tag, AtSign } from "lucide-react"
 import { toggleLike } from "@/services/messageService"
+import { Badge } from "@/components/ui/badge"
 
 interface MessageContentProps {
   message: Message;
@@ -14,6 +15,18 @@ export function MessageContent({ message, onReply }: MessageContentProps) {
     if (message.id) {
       await toggleLike(message.id, message.likes || 0)
     }
+  }
+
+  const parseContent = (content: string) => {
+    // Parse mentions (@username)
+    const mentionRegex = /@(\w+)/g
+    content = content.replace(mentionRegex, '<span class="text-blue-500">@$1</span>')
+
+    // Parse tags (#tag)
+    const tagRegex = /#(\w+)/g
+    content = content.replace(tagRegex, '<span class="text-green-500">#$1</span>')
+
+    return <div dangerouslySetInnerHTML={{ __html: content }} />
   }
 
   const content = () => {
@@ -28,14 +41,14 @@ export function MessageContent({ message, onReply }: MessageContentProps) {
     if (message.format?.quote) {
       return (
         <blockquote className="border-l-4 border-primary/50 pl-4 italic">
-          {message.content}
+          {parseContent(message.content)}
         </blockquote>
       )
     }
 
     return (
       <p className={`text-sm ${message.format?.bold ? 'font-bold' : ''} ${message.format?.italic ? 'italic' : ''}`}>
-        {message.content}
+        {parseContent(message.content)}
       </p>
     )
   }
@@ -43,6 +56,30 @@ export function MessageContent({ message, onReply }: MessageContentProps) {
   return (
     <div className="space-y-2">
       {content()}
+      
+      {/* Tags */}
+      {message.tags && message.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {message.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+              <Tag className="h-3 w-3" />
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Mentions */}
+      {message.mentionedUsers && message.mentionedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {message.mentionedUsers.map((user) => (
+            <Badge key={user} variant="outline" className="flex items-center gap-1">
+              <AtSign className="h-3 w-3" />
+              {user}
+            </Badge>
+          ))}
+        </div>
+      )}
       
       {/* Attachments */}
       {message.attachments && message.attachments.length > 0 && (
@@ -92,7 +129,7 @@ export function MessageContent({ message, onReply }: MessageContentProps) {
           {message.replies.map((reply) => (
             <div key={reply.id} className="text-sm">
               <span className="font-medium">{reply.userName}</span>
-              <p className="mt-1">{reply.content}</p>
+              <p className="mt-1">{parseContent(reply.content)}</p>
             </div>
           ))}
         </div>
