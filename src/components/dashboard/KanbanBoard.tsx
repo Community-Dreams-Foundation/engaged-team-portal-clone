@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
@@ -7,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { TaskColumn } from "@/components/tasks/TaskColumn"
 import { TaskMonitor } from "./monitoring/TaskMonitor"
+import { TaskAnalytics } from "./monitoring/TaskAnalytics"
 
 export function KanbanBoard() {
   const { currentUser } = useAuth()
@@ -180,6 +182,7 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-6">
+      <TaskAnalytics tasks={tasks} />
       <TaskMonitor tasks={tasks} />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
