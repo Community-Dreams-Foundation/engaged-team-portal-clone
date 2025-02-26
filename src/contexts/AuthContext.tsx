@@ -9,6 +9,7 @@ import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import type { UserRole, ExtendedUser } from '@/types/auth';
 import type { AuthContextType } from '@/types/authContext';
+import { SocketProvider } from './SocketContext';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -97,7 +98,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      <SocketProvider>
+        {!loading && children}
+      </SocketProvider>
     </AuthContext.Provider>
   );
 };
