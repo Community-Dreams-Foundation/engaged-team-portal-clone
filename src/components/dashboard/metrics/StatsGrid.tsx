@@ -1,38 +1,43 @@
 
-import { TrendingUp, Award } from "lucide-react"
+import { TrendingUp, CheckCircle, LayoutList } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface StatsGridProps {
   efficiency: number
-  leaderboardRank: number
-  totalParticipants: number
+  completedTasks: number
+  totalTasks: number
 }
 
-export function StatsGrid({ efficiency, leaderboardRank, totalParticipants }: StatsGridProps) {
+export function StatsGrid({ efficiency, completedTasks, totalTasks }: StatsGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-green-500" />
             <span className="text-sm font-medium">Efficiency</span>
           </div>
-          <p className="text-2xl font-bold">{efficiency}%</p>
+          <p className="text-2xl font-bold">{Math.round(efficiency)}%</p>
         </CardContent>
       </Card>
       <Card>
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Award className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium">Rank</span>
+            <CheckCircle className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">Completed</span>
           </div>
-          <p className="text-2xl font-bold">#{leaderboardRank}</p>
-          <p className="text-xs text-muted-foreground">
-            of {totalParticipants} participants
-          </p>
+          <p className="text-2xl font-bold">{completedTasks}</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <LayoutList className="h-4 w-4 text-purple-500" />
+            <span className="text-sm font-medium">Total Tasks</span>
+          </div>
+          <p className="text-2xl font-bold">{totalTasks}</p>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
-
