@@ -2,12 +2,14 @@
 import { 
   getDatabase, 
   ref, 
-  push, 
+  push,
+  set, 
   onValue, 
   off,
   serverTimestamp,
   query,
-  orderByChild 
+  orderByChild,
+  update
 } from "firebase/database"
 import { Message } from "@/types/communication"
 
@@ -39,6 +41,33 @@ export const sendMessage = async (messageData: Omit<Message, 'id'>) => {
   const messagesRef = ref(db, 'messages')
   return push(messagesRef, {
     ...messageData,
+    timestamp: serverTimestamp(),
+    likes: 0,
+    replies: []
+  })
+}
+
+export const toggleLike = async (messageId: string, currentLikes: number) => {
+  const db = getDatabase()
+  const messageRef = ref(db, `messages/${messageId}`)
+  return update(messageRef, {
+    likes: currentLikes + 1
+  })
+}
+
+export const addReply = async (messageId: string, replyData: Omit<Message, 'id'>) => {
+  const db = getDatabase()
+  const repliesRef = ref(db, `messages/${messageId}/replies`)
+  return push(repliesRef, {
+    ...replyData,
     timestamp: serverTimestamp()
+  })
+}
+
+export const markAsRead = async (messageId: string) => {
+  const db = getDatabase()
+  const messageRef = ref(db, `messages/${messageId}`)
+  return update(messageRef, {
+    isRead: true
   })
 }

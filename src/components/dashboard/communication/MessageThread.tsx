@@ -3,6 +3,10 @@ import { Card } from "@/components/ui/card"
 import { ListChecks } from "lucide-react"
 import { Message } from "@/types/communication"
 import { MessageContent } from "./MessageContent"
+import { useState } from "react"
+import { addReply } from "@/services/messageService"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface MessageThreadProps {
   threadId: string;
@@ -10,6 +14,24 @@ interface MessageThreadProps {
 }
 
 export function MessageThread({ threadId, messages }: MessageThreadProps) {
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState("")
+
+  const handleReply = async (messageId: string) => {
+    if (!replyContent.trim()) return
+
+    await addReply(messageId, {
+      userId: "current-user", // This should come from auth
+      userName: "Current User", // This should come from auth
+      content: replyContent,
+      timestamp: new Date().toISOString(),
+      isRead: true
+    })
+
+    setReplyContent("")
+    setReplyingTo(null)
+  }
+
   return (
     <Card className="p-4">
       {threadId !== "standalone" && (
@@ -39,7 +61,27 @@ export function MessageThread({ threadId, messages }: MessageThreadProps) {
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </span>
               </div>
-              <MessageContent message={message} />
+              <MessageContent 
+                message={message} 
+                onReply={() => setReplyingTo(message.id)}
+              />
+              
+              {replyingTo === message.id && (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    placeholder="Write a reply..."
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    size="sm"
+                    onClick={() => handleReply(message.id)}
+                  >
+                    Reply
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ))}
