@@ -78,7 +78,7 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
         )}
 
         {analytics.blockedTasks.length > 0 && (
-          <Alert variant="warning">
+          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Dependency Blockers</AlertTitle>
             <AlertDescription>
