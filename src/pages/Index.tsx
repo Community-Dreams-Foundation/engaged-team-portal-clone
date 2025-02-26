@@ -184,6 +184,12 @@ export default function Index() {
           </Card>
         </div>
 
+        {/* Community Features Section */}
+        <div className="col-span-full lg:col-span-2 space-y-4">
+          <NetworkConnections />
+          <CommunityMemberProfile />
+        </div>
+
         {/* Portfolio Integration Section */}
         <div className="col-span-full lg:col-span-2 space-y-4">
           <Card className="p-6">
