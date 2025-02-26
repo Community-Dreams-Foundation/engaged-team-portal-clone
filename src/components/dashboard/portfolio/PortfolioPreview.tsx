@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Github, Linkedin, Share2, Award, Briefcase, Certificate } from "lucide-react"
+import { Github, Linkedin, Share2, Award, Briefcase } from "lucide-react"
 import { ProjectHighlights } from "./ProjectHighlights"
 import { ImpactMetrics } from "./ImpactMetrics"
 import { VisualSummary } from "./VisualSummary"
@@ -82,7 +82,7 @@ export function PortfolioPreview({ portfolio, onShare }: PortfolioPreviewProps) 
               Achievements
             </TabsTrigger>
             <TabsTrigger value="certifications">
-              <Certificate className="h-4 w-4 mr-2" />
+              <Award className="h-4 w-4 mr-2" />
               Certifications
             </TabsTrigger>
           </TabsList>
@@ -100,7 +100,7 @@ export function PortfolioPreview({ portfolio, onShare }: PortfolioPreviewProps) 
           <TabsContent value="certifications" className="mt-4">
             <Card className="p-4">
               <div className="text-center text-muted-foreground">
-                <Certificate className="h-12 w-12 mx-auto mb-2" />
+                <Award className="h-12 w-12 mx-auto mb-2" />
                 <p>Professional certification tracking coming soon</p>
               </div>
             </Card>
