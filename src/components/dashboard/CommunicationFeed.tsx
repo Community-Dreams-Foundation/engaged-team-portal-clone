@@ -1,65 +1,18 @@
 
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { MessageSquare, Filter, Bell, ListChecks, Code, Quote, Bold, Italic } from "lucide-react"
+import { MessageSquare, Filter, Bell } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNotifications } from "@/contexts/NotificationContext"
-import { 
-  getDatabase, 
-  ref, 
-  push, 
-  onValue, 
-  off,
-  serverTimestamp,
-  query,
-  orderByChild 
-} from "firebase/database"
-
-interface MessageFormat {
-  bold?: boolean
-  italic?: boolean
-  code?: boolean
-  quote?: boolean
-}
-
-interface Message {
-  id: string
-  userId: string
-  userName: string
-  content: string
-  timestamp: string
-  threadId?: string
-  isRead: boolean
-  format?: MessageFormat
-}
-
-const fetchMessages = async (): Promise<Message[]> => {
-  return new Promise((resolve, reject) => {
-    const db = getDatabase()
-    const messagesRef = query(ref(db, 'messages'), orderByChild('timestamp'))
-
-    onValue(messagesRef, (snapshot) => {
-      const messages: Message[] = []
-      snapshot.forEach((childSnapshot) => {
-        const message = childSnapshot.val()
-        messages.push({
-          id: childSnapshot.key || '',
-          ...message,
-          timestamp: message.timestamp || new Date().toISOString()
-        })
-      })
-      resolve(messages.reverse())
-    }, (error) => {
-      console.error("Error fetching messages:", error)
-      reject(error)
-    })
-  })
-}
+import { getDatabase, ref, onValue, off } from "firebase/database"
+import { Message, MessageFormat } from "@/types/communication"
+import { fetchMessages, sendMessage } from "@/services/messageService"
+import { FormatControls } from "./communication/FormatControls"
+import { MessageThread } from "./communication/MessageThread"
 
 export function CommunicationFeed() {
   const [newMessage, setNewMessage] = useState("")
@@ -70,6 +23,7 @@ export function CommunicationFeed() {
     code: false,
     quote: false
   })
+  
   const { toast } = useToast()
   const { currentUser } = useAuth()
   const { addNotification } = useNotifications()
@@ -108,15 +62,12 @@ export function CommunicationFeed() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !currentUser) return
 
-    const db = getDatabase()
-    const messagesRef = ref(db, 'messages')
-
     try {
-      await push(messagesRef, {
+      await sendMessage({
         userId: currentUser.uid,
         userName: currentUser.displayName || 'Anonymous',
         content: newMessage,
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         isRead: false,
         format: messageFormat
       })
@@ -148,32 +99,6 @@ export function CommunicationFeed() {
       ...prev,
       [type]: !prev[type]
     }))
-  }
-
-  const renderMessageContent = (message: Message) => {
-    let content = message.content
-
-    if (message.format?.code) {
-      return (
-        <pre className="bg-muted p-2 rounded-md font-mono text-sm overflow-x-auto">
-          <code>{content}</code>
-        </pre>
-      )
-    }
-
-    if (message.format?.quote) {
-      return (
-        <blockquote className="border-l-4 border-primary/50 pl-4 italic">
-          {content}
-        </blockquote>
-      )
-    }
-
-    return (
-      <p className={`text-sm ${message.format?.bold ? 'font-bold' : ''} ${message.format?.italic ? 'italic' : ''}`}>
-        {content}
-      </p>
-    )
   }
 
   const filteredMessages = messages.filter(msg => 
@@ -224,78 +149,19 @@ export function CommunicationFeed() {
 
       <div className="space-y-4 max-h-[400px] overflow-y-auto">
         {Object.entries(groupedMessages).map(([threadId, threadMessages]) => (
-          <Card key={threadId} className="p-4">
-            {threadId !== "standalone" && (
-              <div className="flex items-center gap-2 mb-2">
-                <ListChecks className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Thread</span>
-              </div>
-            )}
-            
-            <div className="space-y-3">
-              {threadMessages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    !message.isRead ? "bg-muted/50 p-2 rounded-lg" : ""
-                  }`}
-                >
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    {message.userName[0]}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">
-                        {message.userName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    {renderMessageContent(message)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <MessageThread 
+            key={threadId} 
+            threadId={threadId} 
+            messages={threadMessages} 
+          />
         ))}
       </div>
 
       <div className="space-y-2">
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toggleFormat('bold')}
-            className={messageFormat.bold ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toggleFormat('italic')}
-            className={messageFormat.italic ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toggleFormat('code')}
-            className={messageFormat.code ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <Code className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toggleFormat('quote')}
-            className={messageFormat.quote ? 'bg-primary text-primary-foreground' : ''}
-          >
-            <Quote className="h-4 w-4" />
-          </Button>
-        </div>
+        <FormatControls 
+          messageFormat={messageFormat} 
+          onToggleFormat={toggleFormat} 
+        />
         
         <div className="flex gap-2">
           <Textarea
@@ -312,4 +178,3 @@ export function CommunicationFeed() {
     </div>
   )
 }
-
