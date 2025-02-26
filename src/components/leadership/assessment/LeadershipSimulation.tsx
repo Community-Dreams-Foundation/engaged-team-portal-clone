@@ -1,11 +1,8 @@
 
-import { useState } from "react"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Monitor, Brain, Trophy } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import type { LeadershipMetrics, LeadershipDomain } from "@/types/leadership"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import React from "react"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import type { LeadershipDomain } from "@/types/leadership"
 
 interface SimulationScenario {
   id: string
@@ -13,7 +10,14 @@ interface SimulationScenario {
   description: string
   domain: LeadershipDomain
   difficulty: "beginner" | "intermediate" | "advanced"
-  metrics: Partial<LeadershipMetrics>
+  metrics: {
+    delegationAccuracy?: number
+    teamEfficiency?: number
+    communicationScore?: number
+    overallScore?: number
+    innovationScore?: number
+    mentorshipScore?: number
+  }
 }
 
 const defaultScenarios: SimulationScenario[] = [
@@ -21,7 +25,7 @@ const defaultScenarios: SimulationScenario[] = [
     id: "scenario-1",
     title: "Team Conflict Resolution",
     description: "Handle a conflict between team members while maintaining productivity",
-    domain: "team-coordination",
+    domain: "strategy",
     difficulty: "intermediate",
     metrics: {
       delegationAccuracy: 85,
@@ -44,38 +48,24 @@ const defaultScenarios: SimulationScenario[] = [
 ]
 
 export function LeadershipSimulation() {
-  const [activeScenario, setActiveScenario] = useState<SimulationScenario | null>(null)
-  const [isSimulating, setIsSimulating] = useState(false)
-  const { toast } = useToast()
+  const [activeScenario, setActiveScenario] = React.useState<SimulationScenario | null>(null)
+  const [isSimulating, setIsSimulating] = React.useState(false)
 
   const startSimulation = (scenario: SimulationScenario) => {
     setActiveScenario(scenario)
     setIsSimulating(true)
-    toast({
-      title: "Simulation Started",
-      description: `Starting ${scenario.title} simulation...`
-    })
   }
 
   const completeSimulation = () => {
-    if (!activeScenario) return
-    
     setIsSimulating(false)
-    toast({
-      title: "Simulation Completed",
-      description: "Your performance data has been recorded."
-    })
     setActiveScenario(null)
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items
+-center justify-between">
         <h2 className="text-2xl font-bold">Leadership Simulation</h2>
-        <div className="flex items-center gap-2">
-          <Monitor className="h-5 w-5" />
-          <span>Real-time Assessment</span>
-        </div>
       </div>
 
       <Tabs defaultValue="scenarios" className="w-full">
@@ -87,7 +77,7 @@ export function LeadershipSimulation() {
 
         <TabsContent value="scenarios" className="space-y-4">
           {defaultScenarios.map((scenario) => (
-            <Card key={scenario.id} className="p-4">
+            <div key={scenario.id} className="rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">{scenario.title}</h3>
@@ -97,20 +87,20 @@ export function LeadershipSimulation() {
                     <Badge variant="outline">{scenario.difficulty}</Badge>
                   </div>
                 </div>
-                <Button
+                <button
                   onClick={() => startSimulation(scenario)}
                   disabled={isSimulating}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
                 >
-                  <Brain className="h-4 w-4 mr-2" />
                   Start Simulation
-                </Button>
+                </button>
               </div>
-            </Card>
+            </div>
           ))}
         </TabsContent>
 
         <TabsContent value="metrics">
-          <Card className="p-4">
+          <div className="rounded-lg border p-4">
             {activeScenario ? (
               <div className="space-y-4">
                 <h3 className="font-semibold">Current Simulation Metrics</h3>
@@ -122,26 +112,26 @@ export function LeadershipSimulation() {
                     </div>
                   ))}
                 </div>
-                <Button onClick={completeSimulation} className="w-full">
-                  <Trophy className="h-4 w-4 mr-2" />
+                <button
+                  onClick={completeSimulation}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded"
+                >
                   Complete Simulation
-                </Button>
+                </button>
               </div>
             ) : (
               <p className="text-muted-foreground">No active simulation</p>
             )}
-          </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="insights">
-          <Card className="p-4">
+          <div className="rounded-lg border p-4">
             <h3 className="font-semibold mb-4">AI-Driven Insights</h3>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Real-time AI analysis of your leadership performance will appear here during simulations.
-              </p>
-            </div>
-          </Card>
+            <p className="text-sm text-muted-foreground">
+              Real-time AI analysis of your leadership performance will appear here during simulations.
+            </p>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
