@@ -14,7 +14,8 @@ import {
 } from "firebase/database"
 import { Message, CommunityMember, NetworkConnection, Group } from "@/types/communication"
 
-export const fetchMessages = async (groupId?: string): Promise<Message[]> => {
+export const fetchMessages = async ({ queryKey }: { queryKey: string[] }): Promise<Message[]> => {
+  const [_key, groupId] = queryKey
   return new Promise((resolve, reject) => {
     const db = getDatabase()
     const messagesRef = query(

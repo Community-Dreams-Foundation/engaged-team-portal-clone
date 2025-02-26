@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { MessageSquare, Filter, Bell } from "lucide-react"
@@ -30,9 +29,8 @@ export function CommunicationFeed() {
   const queryClient = useQueryClient()
 
   const { data: messages = [] } = useQuery({
-    queryKey: ["messages"],
-    queryFn: fetchMessages,
-    refetchOnWindowFocus: false
+    queryKey: ['messages', undefined],
+    queryFn: fetchMessages
   })
 
   useEffect(() => {
