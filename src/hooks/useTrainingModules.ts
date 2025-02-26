@@ -67,3 +67,4 @@ export const useTrainingModules = () => {
     isAuthenticated: !!currentUser
   }
 }
+
