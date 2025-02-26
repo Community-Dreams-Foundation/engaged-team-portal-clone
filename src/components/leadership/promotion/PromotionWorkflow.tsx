@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { getDatabase, ref, push, get, update } from "firebase/database"
@@ -11,26 +10,30 @@ import type { LeadershipTier, LeadershipProfile, PromotionRequest } from "@/type
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-const TIER_REQUIREMENTS = {
+const TIER_REQUIREMENTS: Record<Exclude<LeadershipTier, 'emerging'>, {
+  overallScore: number;
+  tasksCompleted: number;
+  teamEfficiency: number;
+}> = {
   captain: {
-    minimumScore: 70,
-    minimumTasks: 50,
-    minimumEfficiency: 0.7
+    overallScore: 70,
+    tasksCompleted: 50,
+    teamEfficiency: 0.7
   },
   "team-lead": {
-    minimumScore: 80,
-    minimumTasks: 100,
-    minimumEfficiency: 0.8
+    overallScore: 80,
+    tasksCompleted: 100,
+    teamEfficiency: 0.8
   },
   "product-owner": {
-    minimumScore: 85,
-    minimumTasks: 200,
-    minimumEfficiency: 0.85
+    overallScore: 85,
+    tasksCompleted: 200,
+    teamEfficiency: 0.85
   },
   executive: {
-    minimumScore: 90,
-    minimumTasks: 500,
-    minimumEfficiency: 0.9
+    overallScore: 90,
+    tasksCompleted: 500,
+    teamEfficiency: 0.9
   }
 }
 
@@ -70,9 +73,9 @@ export function PromotionWorkflow() {
   const requirements = nextTier ? TIER_REQUIREMENTS[nextTier as keyof typeof TIER_REQUIREMENTS] : null
 
   const isEligible = profile && requirements && (
-    profile.metrics.overallScore >= requirements.minimumScore &&
-    profile.assessments.reduce((sum, a) => sum + a.metrics.tasksCompleted, 0) >= requirements.minimumTasks &&
-    profile.metrics.projectDeliveryRate >= requirements.minimumEfficiency
+    profile.metrics.overallScore >= requirements.overallScore &&
+    profile.assessments.reduce((sum, a) => sum + a.metrics.tasksCompleted, 0) >= requirements.tasksCompleted &&
+    profile.metrics.teamEfficiency >= requirements.teamEfficiency
   )
 
   const handlePromotionRequest = async () => {
@@ -91,7 +94,11 @@ export function PromotionWorkflow() {
         feedback: "",
         requirements: {
           trainingModules: [],
-          minimumMetrics: requirements,
+          minimumMetrics: {
+            overallScore: requirements.overallScore,
+            tasksCompleted: requirements.tasksCompleted,
+            teamEfficiency: requirements.teamEfficiency
+          },
           timeInCurrentTier: Date.now() - profile.joinedAt,
           mentorshipRequired: nextTier === "team-lead" || nextTier === "product-owner"
         }
@@ -138,10 +145,10 @@ export function PromotionWorkflow() {
           <div>
             <div className="flex justify-between text-sm">
               <span>Overall Score</span>
-              <span>{profile.metrics.overallScore}/{requirements.minimumScore}</span>
+              <span>{profile.metrics.overallScore}/{requirements.overallScore}</span>
             </div>
             <Progress
-              value={(profile.metrics.overallScore / requirements.minimumScore) * 100}
+              value={(profile.metrics.overallScore / requirements.overallScore) * 100}
               className="mt-2"
             />
           </div>
@@ -151,11 +158,11 @@ export function PromotionWorkflow() {
               <span>Tasks Completed</span>
               <span>
                 {profile.assessments.reduce((sum, a) => sum + a.metrics.tasksCompleted, 0)}/
-                {requirements.minimumTasks}
+                {requirements.tasksCompleted}
               </span>
             </div>
             <Progress
-              value={(profile.assessments.reduce((sum, a) => sum + a.metrics.tasksCompleted, 0) / requirements.minimumTasks) * 100}
+              value={(profile.assessments.reduce((sum, a) => sum + a.metrics.tasksCompleted, 0) / requirements.tasksCompleted) * 100}
               className="mt-2"
             />
           </div>
@@ -163,10 +170,10 @@ export function PromotionWorkflow() {
           <div>
             <div className="flex justify-between text-sm">
               <span>Project Delivery Rate</span>
-              <span>{(profile.metrics.projectDeliveryRate * 100).toFixed(0)}%/{(requirements.minimumEfficiency * 100).toFixed(0)}%</span>
+              <span>{(profile.metrics.teamEfficiency * 100).toFixed(0)}%/{(requirements.teamEfficiency * 100).toFixed(0)}%</span>
             </div>
             <Progress
-              value={(profile.metrics.projectDeliveryRate / requirements.minimumEfficiency) * 100}
+              value={(profile.metrics.teamEfficiency / requirements.teamEfficiency) * 100}
               className="mt-2"
             />
           </div>
