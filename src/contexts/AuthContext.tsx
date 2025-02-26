@@ -25,7 +25,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>();
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
-  const { signup, login, signInWithGoogle, handleLogout, resetPassword } = useAuthOperations();
+  const { 
+    signup, 
+    login, 
+    signInWithGoogle, 
+    handleLogout, 
+    resetPassword,
+    resendVerificationEmail,
+    setupMFA,
+    completeMFASetup 
+  } = useAuthOperations();
 
   useEffect(() => {
     console.log('Setting up Firebase persistence...');
@@ -80,6 +89,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await logAuditEvent(currentUser.uid, action, details);
       }
     },
+    resendVerificationEmail,
+    setupMFA,
+    completeMFASetup,
     ...checkRole(userRole)
   };
 
@@ -89,3 +101,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
