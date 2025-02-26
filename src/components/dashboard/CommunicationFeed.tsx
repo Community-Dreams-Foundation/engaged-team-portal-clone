@@ -12,7 +12,7 @@ import { Message, MessageFormat } from "@/types/communication"
 import { fetchMessages, sendMessage } from "@/services/messageService"
 import { FormatControls } from "./communication/FormatControls"
 import { MessageThread } from "./communication/MessageThread"
-import { GroupDiscussion } from "@/components/GroupDiscussion"
+import { GroupDiscussion } from "./communication/GroupDiscussion"
 
 export function CommunicationFeed() {
   const [newMessage, setNewMessage] = useState("")
