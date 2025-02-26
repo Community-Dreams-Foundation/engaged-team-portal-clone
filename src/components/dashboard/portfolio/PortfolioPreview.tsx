@@ -9,6 +9,7 @@ import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
 import { PortfolioTemplate } from "./PortfolioTemplate"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 import type { Portfolio } from "@/types/portfolio"
 
 interface PortfolioPreviewProps {
@@ -43,7 +44,12 @@ export function PortfolioPreview({ portfolio, onShare }: PortfolioPreviewProps) 
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>Professional Portfolio</span>
+          <div className="flex items-center gap-2">
+            <span>Professional Portfolio</span>
+            <Badge variant="secondary" className="ml-2">
+              {portfolio.metadata.format === 'linkedin' ? 'Leadership' : 'Technical'}
+            </Badge>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -87,7 +93,7 @@ export function PortfolioPreview({ portfolio, onShare }: PortfolioPreviewProps) 
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="overview" className="mt-4">
+          <TabsContent value="overview" className="mt-4 space-y-4">
             <PortfolioTemplate portfolio={portfolio} />
             <ProjectHighlights items={portfolio.items} />
           </TabsContent>
@@ -98,12 +104,40 @@ export function PortfolioPreview({ portfolio, onShare }: PortfolioPreviewProps) 
           </TabsContent>
           
           <TabsContent value="certifications" className="mt-4">
-            <Card className="p-4">
-              <div className="text-center text-muted-foreground">
-                <Award className="h-12 w-12 mx-auto mb-2" />
-                <p>Professional certification tracking coming soon</p>
-              </div>
-            </Card>
+            <div className="grid gap-4 md:grid-cols-2">
+              {portfolio.items.map((item) => (
+                item.achievements.map((achievement, index) => (
+                  <Card key={`${item.id}-${index}`} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Award className="h-8 w-8 text-primary shrink-0" />
+                      <div className="space-y-1">
+                        <h4 className="font-semibold">{achievement}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                        {item.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {item.skills.slice(0, 3).map((skill, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              ))}
+              {!portfolio.items.some(item => item.achievements.length > 0) && (
+                <Card className="md:col-span-2 p-4">
+                  <div className="text-center text-muted-foreground">
+                    <Award className="h-12 w-12 mx-auto mb-2" />
+                    <p>No certifications or achievements yet</p>
+                  </div>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
