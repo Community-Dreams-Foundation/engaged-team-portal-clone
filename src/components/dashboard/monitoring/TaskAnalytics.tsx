@@ -15,8 +15,34 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
   const analytics = useMemo(() => {
     const completedTasks = tasks.filter(t => t.status === "completed")
     const inProgressTasks = tasks.filter(t => t.status === "in-progress")
+    const highPriorityTasks = tasks.filter(t => t.priority === "high")
     
-    // Calculate average completion time
+    // Calculate weighted efficiency score based on task complexity and priority
+    const getTaskWeight = (task: Task) => {
+      const complexityWeight = {
+        low: 1,
+        medium: 1.5,
+        high: 2
+      }[task.metadata?.complexity || "medium"]
+
+      const priorityWeight = {
+        low: 1,
+        medium: 1.5,
+        high: 2
+      }[task.priority || "medium"]
+
+      return complexityWeight * priorityWeight
+    }
+
+    const weightedEfficiencyScore = completedTasks.reduce((acc, task) => {
+      if (!task.actualDuration || !task.estimatedDuration) return acc
+      const weight = getTaskWeight(task)
+      const efficiency = task.actualDuration <= task.estimatedDuration ? 1 : 
+        task.estimatedDuration / task.actualDuration
+      return acc + (efficiency * weight)
+    }, 0) / completedTasks.length || 0
+
+    // Calculate advanced performance metrics
     const avgCompletionTime = completedTasks.length > 0
       ? completedTasks.reduce((acc, task) => acc + (task.actualDuration || 0), 0) / completedTasks.length
       : 0
@@ -35,36 +61,49 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
       }
     }).reverse()
 
-    // Calculate efficiency score
-    const efficiency = completedTasks.length > 0
-      ? (completedTasks.filter(task => 
-          task.actualDuration && task.estimatedDuration && 
-          task.actualDuration <= task.estimatedDuration * 1.1
-        ).length / completedTasks.length) * 100
-      : 0
+    // Calculate AI-based performance indicators
+    const taskQualityScore = completedTasks.reduce((acc, task) => {
+      const businessValue = task.metadata?.businessValue || 5
+      const learningOpportunity = task.metadata?.learningOpportunity || 5
+      return acc + ((businessValue + learningOpportunity) / 2)
+    }, 0) / (completedTasks.length || 1)
 
-    // Identify bottlenecks
+    const leadershipScore = tasks.reduce((acc, task) => {
+      const delegationScore = task.assignedTo ? 1 : 0
+      const priorityManagement = task.priority === "high" && task.status === "completed" ? 1 : 0
+      return acc + delegationScore + priorityManagement
+    }, 0) / (tasks.length || 1) * 100
+
+    // Identify bottlenecks and improvements
     const bottlenecks = tasks.filter(task => 
       task.actualDuration && task.estimatedDuration && 
       task.actualDuration > task.estimatedDuration * 1.2
     )
 
-    // Analyze dependencies for potential blockers
     const blockedTasks = tasks.filter(task => 
       task.dependencies?.some(depId => 
         !tasks.find(t => t.id === depId && t.status === "completed")
       )
     )
 
+    const improvementOpportunities = tasks
+      .filter(task => task.metadata?.autoSplitEligible)
+      .length
+
     return {
       avgCompletionTime,
       weeklyTasks,
-      efficiency,
+      efficiency: weightedEfficiencyScore * 100,
       bottlenecks,
       blockedTasks,
       totalTasks: tasks.length,
       completedTasks: completedTasks.length,
-      inProgressTasks: inProgressTasks.length
+      inProgressTasks: inProgressTasks.length,
+      highPriorityCompletion: highPriorityTasks.filter(t => t.status === "completed").length / 
+                             (highPriorityTasks.length || 1) * 100,
+      taskQualityScore,
+      leadershipScore,
+      improvementOpportunities
     }
   }, [tasks])
 
@@ -75,7 +114,7 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
       <CardHeader className="px-0">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
-          <CardTitle>Performance Analytics</CardTitle>
+          <CardTitle>AI Performance Analytics</CardTitle>
         </div>
       </CardHeader>
 
@@ -87,17 +126,36 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
         />
 
         <div className="space-y-4">
-          <h4 className="font-medium">Weekly Activity</h4>
+          <h4 className="font-medium">Weekly Activity & AI Insights</h4>
           <WeeklyActivityChart weeklyTasks={analytics.weeklyTasks} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Alert>
+            <TrendingUp className="h-4 w-4" />
+            <AlertTitle>Task Quality Score</AlertTitle>
+            <AlertDescription>
+              {analytics.taskQualityScore.toFixed(1)}/10 based on business value and learning impact
+            </AlertDescription>
+          </Alert>
+
+          <Alert>
+            <Users className="h-4 w-4" />
+            <AlertTitle>Leadership Performance</AlertTitle>
+            <AlertDescription>
+              {analytics.leadershipScore.toFixed(1)}% effectiveness in delegation and priority management
+            </AlertDescription>
+          </Alert>
+
           {analytics.avgCompletionTime > 0 && (
             <Alert>
               <Clock className="h-4 w-4" />
-              <AlertTitle>Average Completion Time</AlertTitle>
+              <AlertTitle>Average Task Time</AlertTitle>
               <AlertDescription>
                 {Math.round(analytics.avgCompletionTime)} minutes per task
+                {analytics.improvementOpportunities > 0 && (
+                  <> ({analytics.improvementOpportunities} tasks eligible for optimization)</>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -107,17 +165,7 @@ export function TaskAnalytics({ tasks }: TaskAnalyticsProps) {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Performance Bottlenecks</AlertTitle>
               <AlertDescription>
-                {analytics.bottlenecks.length} tasks taking longer than estimated
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {analytics.blockedTasks.length > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Dependency Blockers</AlertTitle>
-              <AlertDescription>
-                {analytics.blockedTasks.length} tasks blocked by dependencies
+                {analytics.bottlenecks.length} tasks significantly exceeding estimates
               </AlertDescription>
             </Alert>
           )}
