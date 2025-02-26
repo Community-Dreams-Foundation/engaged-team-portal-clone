@@ -1,4 +1,3 @@
-
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -7,9 +6,14 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   getIdTokenResult,
-  AuthError
+  AuthError,
+  sendEmailVerification,
+  multiFactor,
+  PhoneAuthProvider,
+  PhoneMultiFactorGenerator,
+  RecaptchaVerifier
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, checkFirebaseConnection } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import { createUserDocument, logAuditEvent } from '@/utils/authUtils';
@@ -27,16 +31,25 @@ export const useAuthOperations = () => {
       
       const result = await createUserWithEmailAndPassword(auth, email, password);
       console.log('User created in Firebase Auth:', result.user.uid);
+      
+      // Send email verification
+      await sendEmailVerification(result.user);
+      console.log('Verification email sent');
+      
       await createUserDocument(result.user.uid, email);
       console.log('User document created in Firestore');
-      toast({ title: "Account created successfully", description: "Welcome to DreamStream!" });
+      
+      toast({ 
+        title: "Account created successfully", 
+        description: "Please check your email to verify your account." 
+      });
     } catch (error: any) {
       console.error('Signup error:', error);
       const errorMessage = error.code ? `Error (${error.code}): ${error.message}` : error.message;
       toast({ 
         variant: "destructive", 
         title: "Error creating account", 
-        description: errorMessage || "Failed to create account. Please check your internet connection."
+        description: errorMessage
       });
       throw error;
     }
@@ -57,6 +70,16 @@ export const useAuthOperations = () => {
       try {
         result = await signInWithEmailAndPassword(auth, email, password);
         console.log('Firebase login successful for:', result.user.email);
+        
+        if (!result.user.emailVerified) {
+          toast({
+            variant: "destructive",
+            title: "Email not verified",
+            description: "Please verify your email before logging in."
+          });
+          await signOut(auth);
+          throw new Error('Email not verified');
+        }
       } catch (authError: any) {
         console.error('Firebase authentication error:', authError);
         throw authError;
@@ -94,7 +117,6 @@ export const useAuthOperations = () => {
           await logAuditEvent(result.user.uid, 'super_admin_login', { email });
         } catch (auditError) {
           console.error('Failed to log audit event:', auditError);
-          // Continue login process even if audit logging fails
         }
       }
 
@@ -119,6 +141,92 @@ export const useAuthOperations = () => {
         variant: "destructive", 
         title: "Login failed", 
         description: errorMessage
+      });
+      throw error;
+    }
+  };
+
+  const resendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      try {
+        await sendEmailVerification(auth.currentUser);
+        toast({
+          title: "Verification email sent",
+          description: "Please check your inbox"
+        });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error sending verification email",
+          description: error.message
+        });
+      }
+    }
+  };
+
+  const setupMFA = async (phoneNumber: string) => {
+    if (!auth.currentUser) {
+      throw new Error('User must be logged in to setup MFA');
+    }
+
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
+
+      const multiFactorSession = await multiFactor(auth.currentUser).getSession();
+      
+      const phoneInfoOptions = {
+        phoneNumber,
+        session: multiFactorSession
+      };
+      
+      const phoneAuthProvider = new PhoneAuthProvider(auth);
+      const verificationId = await phoneAuthProvider.verifyPhoneNumber(phoneInfoOptions, recaptchaVerifier);
+      
+      toast({
+        title: "Verification code sent",
+        description: "Please enter the code sent to your phone"
+      });
+      
+      return verificationId;
+    } catch (error: any) {
+      console.error('MFA setup error:', error);
+      toast({
+        variant: "destructive",
+        title: "MFA setup failed",
+        description: error.message
+      });
+      throw error;
+    }
+  };
+
+  const completeMFASetup = async (verificationId: string, verificationCode: string) => {
+    if (!auth.currentUser) {
+      throw new Error('User must be logged in to complete MFA setup');
+    }
+
+    try {
+      const cred = PhoneAuthProvider.credential(verificationId, verificationCode);
+      const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
+      
+      await multiFactor(auth.currentUser).enroll(multiFactorAssertion, "Phone number for 2FA");
+      
+      // Update user document to reflect MFA status
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        mfaEnabled: true
+      });
+
+      toast({
+        title: "MFA setup complete",
+        description: "Two-factor authentication has been enabled for your account"
+      });
+    } catch (error: any) {
+      console.error('MFA completion error:', error);
+      toast({
+        variant: "destructive",
+        title: "MFA setup failed",
+        description: error.message
       });
       throw error;
     }
@@ -182,6 +290,9 @@ export const useAuthOperations = () => {
     login,
     signInWithGoogle,
     handleLogout,
-    resetPassword
+    resetPassword,
+    resendVerificationEmail,
+    setupMFA,
+    completeMFASetup
   };
 };

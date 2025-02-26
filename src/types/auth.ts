@@ -12,9 +12,17 @@ export interface AuditLog {
 
 export interface CustomClaims {
   role?: UserRole;
+  mfaEnabled?: boolean;
+  emailVerified?: boolean;
 }
 
 export interface ExtendedUser extends User {
   role?: UserRole;
+  mfaEnabled?: boolean;
+}
+
+export interface MFASetupData {
+  qrCodeUrl: string;
+  secret: string;
 }
 
