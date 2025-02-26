@@ -12,6 +12,7 @@ import { Message, MessageFormat } from "@/types/communication"
 import { fetchMessages, sendMessage } from "@/services/messageService"
 import { FormatControls } from "./communication/FormatControls"
 import { MessageThread } from "./communication/MessageThread"
+import { GroupDiscussion } from "@/components/GroupDiscussion"
 
 export function CommunicationFeed() {
   const [newMessage, setNewMessage] = useState("")
@@ -145,7 +146,13 @@ export function CommunicationFeed() {
         </div>
       </div>
 
-      <div className="space-y-4 max-h-[400px] overflow-y-auto">
+      <GroupDiscussion 
+        groupId="general"
+        groupName="General Discussion"
+      />
+
+      <div className="space-y-4 mt-4">
+        <h4 className="text-sm font-medium">Other Threads</h4>
         {Object.entries(groupedMessages).map(([threadId, threadMessages]) => (
           <MessageThread 
             key={threadId} 
