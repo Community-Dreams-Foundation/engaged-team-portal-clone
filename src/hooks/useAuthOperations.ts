@@ -1,3 +1,4 @@
+
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -5,7 +6,8 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
-  getIdTokenResult
+  getIdTokenResult,
+  AuthError
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db, checkFirebaseConnection } from '@/lib/firebase';
@@ -18,7 +20,6 @@ export const useAuthOperations = () => {
     try {
       console.log('Starting signup operation...');
       
-      // Check connection before attempting signup
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
         throw new Error('Firebase is offline. Please check your internet connection.');
@@ -42,21 +43,31 @@ export const useAuthOperations = () => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Starting login operation...');
+      console.log('Starting login operation for email:', email);
       
-      // Check connection before attempting login
       const isConnected = await checkFirebaseConnection();
       if (!isConnected) {
         throw new Error('Firebase is offline. Please check your internet connection.');
       }
       
+      // Attempt to sign in
+      console.log('Attempting Firebase authentication...');
       const result = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Firebase login success:', result.user.email);
+      console.log('Firebase login successful for:', result.user.email);
       
+      // Fetch user document
+      console.log('Fetching user document...');
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      console.log('Retrieved user document:', userDoc.exists());
+      console.log('User document exists:', userDoc.exists());
+      
+      if (!userDoc.exists()) {
+        console.warn('User document not found, creating one...');
+        await createUserDocument(result.user.uid, result.user.email);
+      }
+      
       const userData = userDoc.data();
       const role = userData?.role as UserRole;
+      console.log('User role:', role);
       
       if (role === 'super_admin') {
         await logAuditEvent(result.user.uid, 'super_admin_login', { email });
@@ -66,9 +77,15 @@ export const useAuthOperations = () => {
       return role;
     } catch (error: any) {
       console.error('Login error:', error);
-      const errorMessage = error.code === 'auth/network-request-failed'
-        ? 'Unable to connect to authentication service. Please check your internet connection.'
-        : error.message;
+      let errorMessage = 'An unexpected error occurred during login.';
+      
+      if (error.code === 'auth/invalid-credential') {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Unable to connect to authentication service. Please check your internet connection.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed login attempts. Please try again later.';
+      }
       
       toast({ 
         variant: "destructive", 
