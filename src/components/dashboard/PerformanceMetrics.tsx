@@ -120,8 +120,8 @@ export function PerformanceMetrics() {
             
             <StatsGrid
               efficiency={performance.efficiency}
-              leaderboardRank={performance.leaderboardRank}
-              totalParticipants={performance.totalParticipants}
+              completedTasks={performance.tasksThisWeek}
+              totalTasks={performance.totalTasks}
             />
             
             <WeeklyActivityChart weeklyTasks={performance.weeklyTasks} />
