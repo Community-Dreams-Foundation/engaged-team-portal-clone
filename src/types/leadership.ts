@@ -84,6 +84,7 @@ export interface LeadershipProfile {
     communicationScore?: number;
     projectDeliveryRate?: number;
     teamGrowthRate?: number;
+    teamEfficiency?: number;  // Added this property
   };
   achievements: Array<{
     id: string;
