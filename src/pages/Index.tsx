@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { TrainingModules } from "@/components/dashboard/TrainingModules"
 import { CosAgent } from "@/components/dashboard/CosAgent"
@@ -11,6 +12,8 @@ import { GitHubPortfolioPreview } from "@/components/dashboard/portfolio/GitHubP
 import { LinkedInIntegration } from "@/components/dashboard/portfolio/LinkedInIntegration"
 import { PortfolioPreview } from "@/components/dashboard/portfolio/PortfolioPreview"
 import { Card } from "@/components/ui/card"
+import { NetworkConnections } from "@/components/dashboard/community/NetworkConnections"
+import { CommunityMemberProfile } from "@/components/dashboard/community/CommunityMemberProfile"
 
 export default function Index() {
   const mockKnowledgeData = {
@@ -225,3 +228,4 @@ export default function Index() {
     </DashboardLayout>
   );
 }
+
