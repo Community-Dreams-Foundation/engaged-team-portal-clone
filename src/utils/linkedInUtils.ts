@@ -5,11 +5,7 @@ import type { LinkedInSuggestion, LinkedInGroup, FormattedLinkedInPost } from "@
 const LINKEDIN_API_VERSION = 'v2';
 const LINKEDIN_BASE_URL = 'https://api.linkedin.com';
 
-interface LinkedInApiHeaders {
-  'Authorization': string;
-  'cache-control': string;
-  'X-Restli-Protocol-Version': string;
-}
+type LinkedInApiHeaders = Record<string, string>;
 
 const getHeaders = (accessToken: string): LinkedInApiHeaders => ({
   'Authorization': `Bearer ${accessToken}`,
