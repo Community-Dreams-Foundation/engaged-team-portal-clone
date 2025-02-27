@@ -58,28 +58,30 @@ export async function generateTranscription(
     // Get a direct download link
     const audioUri = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
-    // Create the speech recognition config
-    const request = {
-      audio: {
-        uri: audioUri
-      },
-      config: {
-        encoding: 'MP3',  // Assuming MP3 format, adjust as needed
-        sampleRateHertz: 16000,
-        languageCode: 'en-US',
-        enableAutomaticPunctuation: true,
-        model: 'video',
-        useEnhanced: true,
-        enableSpeakerDiarization: true,
-        diarizationSpeakerCount: 2,
-        enableWordTimeOffsets: true,
+    // Create the speech recognition request params according to the API requirements
+    const params = {
+      resource: {
+        audio: {
+          uri: audioUri
+        },
+        config: {
+          encoding: 'MP3',  // Assuming MP3 format, adjust as needed
+          sampleRateHertz: 16000,
+          languageCode: 'en-US',
+          enableAutomaticPunctuation: true,
+          model: 'video',
+          useEnhanced: true,
+          enableSpeakerDiarization: true,
+          diarizationSpeakerCount: 2,
+          enableWordTimeOffsets: true,
+        }
       }
     };
     
     console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
     
     // For long audio files, we need to use longrunningrecognize
-    const [operation] = await speechClient.speech.longrunningrecognize(request);
+    const [operation] = await speechClient.speech.longrunningrecognize(params);
     
     // Wait for the operation to complete
     const [response] = await operation.promise();
