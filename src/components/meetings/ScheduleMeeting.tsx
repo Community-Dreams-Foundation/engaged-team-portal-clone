@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
+import { Badge } from "@/components/ui/badge"
 import { CalendarPlus, Users, Clock } from "lucide-react"
 import {
   Select,
@@ -111,7 +112,11 @@ export function ScheduleMeeting() {
         hostName: currentUser.displayName || "Unknown Host",
         participants: participantDetails,
         meetingType: values.meetingType,
-        location: values.location,
+        location: {
+          type: values.location.type, // Ensure type is required
+          link: values.location.link,
+          address: values.location.address,
+        },
       }
       
       const meetingId = await createMeeting(meetingData)

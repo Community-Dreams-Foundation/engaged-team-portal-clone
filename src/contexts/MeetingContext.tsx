@@ -293,6 +293,12 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     
     const endTime = addMinutes(startTime, template.duration)
     
+    // Add status property to each participant
+    const participantsWithStatus = participants.map(p => ({
+      ...p,
+      status: "pending" as const
+    }))
+    
     const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
       title: template.title,
       description: template.description,
@@ -300,7 +306,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       endTime: formatISO(endTime),
       hostId: currentUser.uid,
       hostName: currentUser.displayName || "Unknown Host",
-      participants,
+      participants: participantsWithStatus,
       meetingType: template.meetingType,
       location: {
         type: "virtual",
@@ -321,6 +327,12 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     
     const meetingIds: string[] = []
     const now = new Date()
+
+    // Add status property to each participant
+    const participantsWithStatus = participants.map(p => ({
+      ...p,
+      status: "pending" as const
+    }))
     
     // Different meeting patterns based on role
     if (role === "captain") {
@@ -346,7 +358,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
           endTime: formatISO(endTime),
           hostId: currentUser.uid,
           hostName: currentUser.displayName || "Unknown Host",
-          participants,
+          participants: participantsWithStatus,
           meetingType: "team",
           location: {
             type: "virtual",
@@ -384,7 +396,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         endTime: formatISO(endTime),
         hostId: currentUser.uid,
         hostName: currentUser.displayName || "Unknown Host",
-        participants,
+        participants: participantsWithStatus,
         meetingType: "leadership",
         location: {
           type: "virtual",
@@ -422,7 +434,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         endTime: formatISO(endTime),
         hostId: currentUser.uid,
         hostName: currentUser.displayName || "Unknown Host",
-        participants,
+        participants: participantsWithStatus,
         meetingType: "leadership",
         location: {
           type: "virtual",
@@ -460,7 +472,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         endTime: formatISO(endTime),
         hostId: currentUser.uid,
         hostName: currentUser.displayName || "Unknown Host",
-        participants,
+        participants: participantsWithStatus,
         meetingType: "organization",
         location: {
           type: "virtual",
@@ -495,7 +507,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         endTime: formatISO(quarterlyEndTime),
         hostId: currentUser.uid,
         hostName: currentUser.displayName || "Unknown Host",
-        participants,
+        participants: participantsWithStatus,
         meetingType: "organization",
         location: {
           type: "virtual",
