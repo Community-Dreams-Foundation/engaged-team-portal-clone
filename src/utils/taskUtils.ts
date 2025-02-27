@@ -26,13 +26,13 @@ export const fetchTasks = async (userId: string): Promise<Task[]> => {
   })
 }
 
-export const createTask = async (userId: string, task: TaskInput) => {
+export const createTask = async (userId: string, task: TaskInput): Promise<string> => {
   const db = getDatabase()
   const tasksRef = ref(db, `users/${userId}/tasks`)
   const newTaskRef = push(tasksRef)
   const now = Date.now()
   
-  return set(newTaskRef, {
+  await set(newTaskRef, {
     ...task,
     isTimerRunning: false,
     totalElapsedTime: 0,
@@ -45,6 +45,8 @@ export const createTask = async (userId: string, task: TaskInput) => {
       details: "Task created"
     }
   })
+
+  return newTaskRef.key as string
 }
 
 export const updateTaskStatus = async (

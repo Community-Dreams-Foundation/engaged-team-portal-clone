@@ -26,12 +26,12 @@ export const parseDocument = async (
   
   for (const taskInput of taskInputs) {
     // First create the task
-    const taskRef = await createTask(userId, taskInput);
-    if (!taskRef.key) continue;
+    const taskId = await createTask(userId, taskInput);
+    if (!taskId) continue;
     
     // Check if it needs to be split
     if (taskInput.estimatedDuration > config.maxTaskDuration) {
-      const splitResult = await autoSplitTask(userId, taskRef.key);
+      const splitResult = await autoSplitTask(userId, taskId);
       if (splitResult && typeof splitResult !== 'boolean') {
         generatedTasks.push(splitResult);
       }
