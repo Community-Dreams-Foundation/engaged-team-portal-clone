@@ -6,92 +6,39 @@ import { Bot, Trophy, Timer, Activity, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import type { Agent } from "@/types/task"
-import { useAuth } from "@/contexts/AuthContext"
-import { getDatabase, ref, update, get } from "firebase/database"
 
 interface AgentsListProps {
-  agents: Agent[];
+  agents: Agent[]
+  onDeploy?: (agentId: string, targetId: string) => void
+  deploymentTarget?: string | null
+  setDeploymentTarget?: (targetId: string | null) => void
 }
 
-export function AgentsList({ agents }: AgentsListProps) {
+export function AgentsList({ 
+  agents,
+  onDeploy,
+  deploymentTarget,
+  setDeploymentTarget
+}: AgentsListProps) {
   const { toast } = useToast()
-  const { currentUser } = useAuth()
 
-  const calculateAgentMatch = (agent: Agent, taskDomain: string) => {
-    // Calculate match score based on specialization and current workload
-    const specializationScore = agent.specializationScore[taskDomain] || 0
-    const workloadFactor = 1 - (agent.currentLoad / 100)
-    return specializationScore * workloadFactor
-  }
-
-  const findBestAgent = async (taskDomain: string) => {
-    if (!agents.length) return null
-
-    const availableAgents = agents.filter(agent => 
-      agent.status !== "inactive" && agent.currentLoad < 80
-    )
-
-    if (!availableAgents.length) return null
-
-    const agentScores = availableAgents.map(agent => ({
-      agent,
-      score: calculateAgentMatch(agent, taskDomain)
-    }))
-
-    return agentScores.reduce((best, current) => 
-      current.score > best.score ? current : best
-    ).agent
-  }
-
-  const handleDelegateTask = async (agent: Agent) => {
-    if (!currentUser?.uid) return
+  const handleDeploy = async (agent: Agent) => {
+    if (!onDeploy || !deploymentTarget) return
     
     if (agent.currentLoad >= 80) {
       toast({
         title: "Agent Overloaded",
-        description: "This agent's workload is too high. Consider delegating to another agent.",
+        description: "This agent's workload is too high. Consider deploying another agent.",
         variant: "destructive"
       })
       return
     }
 
-    try {
-      const db = getDatabase()
-      const agentRef = ref(db, `users/${currentUser.uid}/agents/${agent.id}`)
-      const delegationHistoryRef = ref(db, `users/${currentUser.uid}/delegationHistory/${Date.now()}`)
-      
-      // Calculate new load based on current tasks
-      const newLoad = Math.min(agent.currentLoad + 20, 100)
-      
-      // Update agent data
-      await update(agentRef, {
-        currentLoad: newLoad,
-        lastActive: Date.now(),
-        status: newLoad >= 80 ? "overloaded" : "active"
-      })
-
-      // Record delegation history
-      await update(delegationHistoryRef, {
-        agentId: agent.id,
-        agentName: agent.name,
-        timestamp: Date.now(),
-        workloadBefore: agent.currentLoad,
-        workloadAfter: newLoad,
-        type: "manual_delegation"
-      })
-
-      toast({
-        title: "Task Delegated",
-        description: `Task successfully assigned to ${agent.name}`,
-      })
-    } catch (error) {
-      console.error("Error delegating task:", error)
-      toast({
-        title: "Delegation Failed",
-        description: "Failed to delegate task. Please try again.",
-        variant: "destructive"
-      })
-    }
+    onDeploy(agent.id, deploymentTarget)
+    toast({
+      title: "Agent Deployed",
+      description: `${agent.name} has been deployed successfully.`,
+    })
   }
 
   const getStatusColor = (status: string) => {
@@ -124,16 +71,18 @@ export function AgentsList({ agents }: AgentsListProps) {
                 </Badge>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDelegateTask(agent)}
-              disabled={agent.status === "inactive" || agent.status === "overloaded"}
-              className="ml-2"
-            >
-              <UserPlus className="h-4 w-4 mr-1" />
-              Delegate
-            </Button>
+            {onDeploy && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeploy(agent)}
+                disabled={agent.status === "inactive" || agent.status === "overloaded" || !deploymentTarget}
+                className="ml-2"
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Deploy
+              </Button>
+            )}
           </div>
           
           <Progress 
@@ -168,6 +117,13 @@ export function AgentsList({ agents }: AgentsListProps) {
               ))}
             </div>
           </div>
+
+          {agent.assignedTasks.length > 0 && (
+            <div className="mt-2 text-sm">
+              <span className="text-muted-foreground">Assigned Tasks: </span>
+              <span className="font-medium">{agent.assignedTasks.length}</span>
+            </div>
+          )}
         </Card>
       ))}
     </div>

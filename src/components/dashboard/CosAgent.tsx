@@ -19,6 +19,7 @@ export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
   const { preferences, agents: fetchedAgents } = useCosData()
   const { recommendations, setRecommendations, handleFeedback } = useCosRecommendations()
+  const [deploymentTarget, setDeploymentTarget] = useState<string | null>(null)
   const [metrics] = useState<PerformanceMetrics>({
     taskCompletionRate: 0.85,
     avgTaskTime: 45,
@@ -81,6 +82,21 @@ export function CosAgent() {
     setAgents(prev => [...prev, newAgent])
   }
 
+  const handleAgentDeployment = (agentId: string, targetId: string) => {
+    setAgents(prev => prev.map(agent => {
+      if (agent.id === agentId) {
+        return {
+          ...agent,
+          assignedTasks: [...agent.assignedTasks, targetId],
+          currentLoad: Math.min(agent.currentLoad + 20, 100),
+          status: agent.currentLoad >= 80 ? "overloaded" : "active"
+        }
+      }
+      return agent
+    }))
+    setDeploymentTarget(null)
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -131,7 +147,12 @@ export function CosAgent() {
             <h4 className="font-medium">Active Agents</h4>
             <CreateAgentDialog onAgentCreated={handleAgentCreated} />
           </div>
-          <AgentsList agents={agents} />
+          <AgentsList 
+            agents={agents}
+            onDeploy={handleAgentDeployment}
+            deploymentTarget={deploymentTarget}
+            setDeploymentTarget={setDeploymentTarget}
+          />
         </TabsContent>
 
         <TabsContent value="team" className="space-y-4">
