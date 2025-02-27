@@ -80,12 +80,42 @@ export async function generateTranscription(
     };
     
     // Call the API using the correct structure
-    const [operation] = await speechClient.speech.longrunningrecognize({
+    const operation = await speechClient.speech.longrunningrecognize({
       requestBody: request
     });
     
-    // Wait for the operation to complete
-    const [response] = await operation.promise();
+    // Wait for the operation to complete - note the different structure here
+    const operationName = operation.data.name;
+    
+    if (!operationName) {
+      throw new Error('Operation name not found in response');
+    }
+    
+    console.log('Operation started with name:', operationName);
+    
+    // Poll until the operation is complete
+    let operationResponse;
+    let complete = false;
+    
+    while (!complete) {
+      // Wait for a few seconds between checks
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Check operation status
+      operationResponse = await speechClient.operations.get({
+        name: operationName
+      });
+      
+      complete = operationResponse.data.done || false;
+      console.log('Operation status:', complete ? 'complete' : 'in progress');
+    }
+    
+    // Process the completed operation
+    if (!operationResponse || !operationResponse.data.response) {
+      throw new Error('No response data in completed operation');
+    }
+    
+    const response = operationResponse.data.response;
     
     if (!response.results || response.results.length === 0) {
       throw new Error('No transcription results returned');
