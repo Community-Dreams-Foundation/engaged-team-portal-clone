@@ -268,164 +268,62 @@ export async function exchangeCodeForTokens(code: string): Promise<CalendarCrede
   }
 }
 
-// Recording API Integration - Zoom API
-const ZOOM_API_KEY = process.env.ZOOM_API_KEY;
-const ZOOM_API_SECRET = process.env.ZOOM_API_SECRET;
-
-// Get Zoom access token
-async function getZoomAccessToken(): Promise<string> {
-  try {
-    const tokenResponse = await fetch('https://zoom.us/oauth/token', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${ZOOM_API_KEY}:${ZOOM_API_SECRET}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: 'grant_type=client_credentials'
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error(`Failed to get Zoom token: ${tokenResponse.statusText}`);
-    }
-
-    const tokenData = await tokenResponse.json();
-    return tokenData.access_token;
-  } catch (error) {
-    console.error('Error getting Zoom access token:', error);
-    throw error;
-  }
-}
-
+// Google Meet Recording API Integration
 export async function startMeetingRecording(meetingId: string, conferenceLink: string): Promise<boolean> {
   try {
-    // Extract Zoom meeting ID from conference link
-    const zoomMeetingIdMatch = conferenceLink.match(/\/j\/(\d+)/);
-    if (!zoomMeetingIdMatch) {
-      console.error('Could not extract Zoom meeting ID from link:', conferenceLink);
+    // Extract Google Meet ID from conference link
+    const meetIdMatch = conferenceLink.match(/\/([a-z0-9\-]+)(?:\?|$)/);
+    if (!meetIdMatch) {
+      console.error('Could not extract Google Meet ID from link:', conferenceLink);
       return false;
     }
     
-    const zoomMeetingId = zoomMeetingIdMatch[1];
-    const accessToken = await getZoomAccessToken();
+    const meetId = meetIdMatch[1];
     
-    // Start recording via Zoom API
-    const response = await fetch(`https://api.zoom.us/v2/meetings/${zoomMeetingId}/recordings/start`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // In a production app, you would use the Google Meet API to start recording
+    // Note: Google Meet recording requires Google Workspace Enterprise edition
+    console.log(`Starting recording for Google Meet with ID: ${meetId}`);
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Failed to start recording:', errorData);
-      return false;
-    }
-    
+    // Mock success for demonstration purposes
+    // This is where you would implement the actual API call to Google Meet
     return true;
   } catch (error) {
-    console.error('Error starting meeting recording:', error);
+    console.error('Error starting Google Meet recording:', error);
     return false;
   }
 }
 
 export async function getMeetingRecording(meetingId: string): Promise<RecordingDetails | null> {
   try {
-    // In a real implementation, you would look up the associated Zoom meeting ID
-    // from your database using the internal meetingId
-    const accessToken = await getZoomAccessToken();
+    // In a production app, you would query the Google Drive API
+    // to find recordings associated with this Meet session
+    console.log(`Fetching recording for meeting ID: ${meetingId}`);
     
-    // Query Zoom API for recordings
-    // This is a simplified example - you would need to store the Zoom meeting ID when creating the meeting
-    const zoomMeetingId = await lookupZoomMeetingId(meetingId);
-    
-    if (!zoomMeetingId) {
-      console.error('No Zoom meeting ID found for meeting:', meetingId);
-      return null;
-    }
-    
-    const response = await fetch(`https://api.zoom.us/v2/meetings/${zoomMeetingId}/recordings`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to get recordings:', await response.text());
-      return null;
-    }
-    
-    const data = await response.json();
-    
-    // Check if recording files exist
-    if (!data.recording_files || data.recording_files.length === 0) {
-      console.log('No recording files found for meeting:', meetingId);
-      return null;
-    }
-    
-    // Find the MP4 recording file
-    const videoRecording = data.recording_files.find((file: any) => file.file_type === 'MP4');
-    if (!videoRecording) {
-      console.log('No video recording found for meeting:', meetingId);
-      return null;
-    }
-    
-    // Get transcript if available
-    const transcript = data.recording_files.find((file: any) => file.file_type === 'TRANSCRIPT');
-    
-    return {
-      recordingUrl: videoRecording.download_url,
-      transcriptUrl: transcript ? transcript.download_url : undefined,
-      duration: videoRecording.recording_end ? 
-        (new Date(videoRecording.recording_end).getTime() - new Date(videoRecording.recording_start).getTime()) / 1000 : 0,
+    // Mock recording data for demonstration purposes
+    // In a real implementation, you would query Google Drive for the recording
+    const mockRecording: RecordingDetails = {
+      recordingUrl: `https://drive.google.com/file/d/mock-recording-${meetingId}`,
+      transcriptUrl: `https://drive.google.com/file/d/mock-transcript-${meetingId}`,
+      duration: 3600, // 1 hour in seconds
       generatedAt: new Date().toISOString()
     };
+    
+    return mockRecording;
   } catch (error) {
-    console.error('Error getting meeting recording:', error);
+    console.error('Error getting Google Meet recording:', error);
     return null;
   }
 }
 
-// Mock function to look up Zoom meeting ID - in a real app, this would query your database
-async function lookupZoomMeetingId(meetingId: string): Promise<string | null> {
-  // This is a placeholder - in a real implementation, you would query your database
-  // to find the Zoom meeting ID associated with your internal meeting ID
-  console.log(`Looking up Zoom meeting ID for meeting: ${meetingId}`);
-  return null; // Return null for now since this is just a placeholder
-}
-
 export async function generateTranscription(recordingUrl: string): Promise<string> {
   try {
-    // In a real implementation, you would use a service like AssemblyAI, Google Speech-to-Text, etc.
-    const accessToken = await getZoomAccessToken();
+    // In a production app, you would use Google Cloud Speech-to-Text API
+    console.log(`Generating transcription for recording: ${recordingUrl}`);
     
-    // This is a simplified example - Zoom actually provides transcripts directly
-    // but for customization, you might want to use a dedicated transcription service
-    
-    // Mock API call to a transcription service
-    const response = await fetch('https://api.transcription-service.example/transcribe', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        media_url: recordingUrl,
-        language_code: 'en-US'
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Transcription service error: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data.transcript || "No transcript available";
+    // Mock transcription data
+    return "This is a mock transcription of the meeting. In a real implementation, you would use Google Cloud Speech-to-Text API to transcribe the recording.";
   } catch (error) {
-    console.error('Error generating transcription:', error);
+    console.error('Error generating transcription with Google Speech-to-Text:', error);
     return "Error generating transcription. Please try again later.";
   }
 }
@@ -468,14 +366,11 @@ export async function generateMeetingAgenda(meetingType: Meeting["meetingType"])
 export function generateConferenceLink(provider: "google" | "zoom" | "teams"): string {
   const randomId = Math.random().toString(36).substring(2, 10)
   
-  switch (provider) {
-    case "google":
-      return `https://meet.google.com/${randomId}`
-    case "zoom":
-      return `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`
-    case "teams":
-      return `https://teams.microsoft.com/l/meetup-join/${randomId}`
-    default:
-      return `https://meet.google.com/${randomId}`
+  if (provider === "google") {
+    return `https://meet.google.com/${randomId}`
   }
+  
+  // Fallback to Google Meet regardless of provider to ensure Google-only solution
+  return `https://meet.google.com/${randomId}`
 }
+
