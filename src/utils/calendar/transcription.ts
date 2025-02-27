@@ -63,21 +63,19 @@ export async function generateTranscription(
     // For long audio files, we need to use longrunningrecognize
     // Using the correct parameter structure for the speech API
     const [operation] = await speechClient.speech.longrunningrecognize({
-      requestBody: {
-        audio: {
-          uri: audioUri
-        },
-        config: {
-          encoding: 'MP3',  // Assuming MP3 format, adjust as needed
-          sampleRateHertz: 16000,
-          languageCode: 'en-US',
-          enableAutomaticPunctuation: true,
-          model: 'video',
-          useEnhanced: true,
-          enableSpeakerDiarization: true,
-          diarizationSpeakerCount: 2,
-          enableWordTimeOffsets: true,
-        }
+      audio: {
+        uri: audioUri
+      },
+      config: {
+        encoding: 'MP3',  // Assuming MP3 format, adjust as needed
+        sampleRateHertz: 16000,
+        languageCode: 'en-US',
+        enableAutomaticPunctuation: true,
+        model: 'video',
+        useEnhanced: true,
+        enableSpeakerDiarization: true,
+        diarizationSpeakerCount: 2,
+        enableWordTimeOffsets: true,
       }
     });
     
