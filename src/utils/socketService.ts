@@ -54,6 +54,16 @@ class SocketService {
     return this.connected && !!this.socket
   }
 
+  // Add a public emit method to allow access to the socket's emit function
+  public emit(event: string, data: any): void {
+    if (!this.socket || !this.connected) {
+      console.error("Cannot emit event: Socket not connected");
+      return;
+    }
+    
+    this.socket.emit(event, data);
+  }
+
   public subscribeToMeetingUpdates(meetingId: string): void {
     if (!this.socket || !this.connected) return
     

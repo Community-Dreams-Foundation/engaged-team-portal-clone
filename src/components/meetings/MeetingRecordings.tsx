@@ -136,7 +136,8 @@ export function MeetingRecordings() {
         
         // Notify other users that a transcript is available
         if (SocketService.isConnected()) {
-          SocketService.socket?.emit("meeting:transcript", {
+          // Use the emit method through the socket service instead of directly accessing socket
+          SocketService.emit("meeting:transcript", {
             meetingId: selectedRecording,
             transcriptUrl,
             timestamp: new Date().toISOString()

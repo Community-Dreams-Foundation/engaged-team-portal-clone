@@ -1,7 +1,7 @@
 
 import { calendar, auth, calendar_v3 } from '@googleapis/calendar'
 import { drive_v3, drive } from '@googleapis/drive'
-import { speech, speech_v1p1beta1 } from '@googleapis/speech'
+import { speech } from '@googleapis/speech'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
@@ -484,7 +484,7 @@ export async function generateTranscription(
     const audioUri = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
     // Create the speech recognition config
-    const request: speech_v1p1beta1.Protos.google.cloud.speech.v1p1beta1.IRecognizeRequest = {
+    const request = {
       config: {
         encoding: 'MP3',  // Assuming MP3 format, adjust as needed
         sampleRateHertz: 16000,
@@ -503,8 +503,8 @@ export async function generateTranscription(
     
     console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
     
-    // Submit the recognition request
-    // For long audio (>1 minute), we should use longRunningRecognize
+    // For long audio files, we need to use longRunningRecognize
+    // Since the Speech API has changed, we need to adjust our approach
     const [operation] = await speechClient.longRunningRecognize(request);
     
     // Wait for the operation to complete
@@ -522,16 +522,19 @@ export async function generateTranscription(
       if (result.alternatives && result.alternatives[0]) {
         const alternative = result.alternatives[0];
         
-        // If speaker diarization results are available
-        if (result.speakerDiarizationInfo && result.speakerDiarizationInfo.speakerTags) {
-          result.speakerDiarizationInfo.speakerTags.forEach(tag => {
-            if (tag.speakerTag !== currentSpeaker) {
-              currentSpeaker = tag.speakerTag || 0;
+        // Process speaker diarization if available
+        if (result.alternatives[0].words && result.alternatives[0].words.length > 0) {
+          // Extract speaker information from words
+          const words = result.alternatives[0].words;
+          words.forEach(wordInfo => {
+            const speakerTag = wordInfo.speakerTag || 0;
+            if (speakerTag !== currentSpeaker) {
+              currentSpeaker = speakerTag;
               transcription += `\n\nSpeaker ${currentSpeaker}: `;
             }
             
-            if (tag.word) {
-              transcription += `${tag.word} `;
+            if (wordInfo.word) {
+              transcription += `${wordInfo.word} `;
             }
           });
         } else {
