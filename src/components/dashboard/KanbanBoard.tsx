@@ -1,10 +1,10 @@
+
 import { useEffect, useState, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
-import { updateTaskStatus } from "@/utils/tasks/progressOperations"
+import { updateTaskStatus, checkDependencies } from "@/utils/tasks/progressOperations"
 import { updateTaskTimer } from "@/utils/tasks/timerOperations"
-import { checkDependencies } from "@/utils/tasks/metadataOperations"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"

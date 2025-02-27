@@ -1,6 +1,6 @@
 
 import { getDatabase, ref, get, update } from "firebase/database"
-import type { Task } from "@/types/task"
+import type { Task, TaskStatus } from "@/types/task"
 
 export const checkDependencies = async (userId: string, taskId: string): Promise<boolean> => {
   const db = getDatabase()
@@ -39,3 +39,20 @@ export const updateTaskProgress = async (
   })
 }
 
+export const updateTaskStatus = async (
+  userId: string,
+  taskId: string,
+  status: TaskStatus
+) => {
+  const db = getDatabase()
+  const now = Date.now()
+  return update(ref(db, `users/${userId}/tasks/${taskId}`), {
+    status,
+    updatedAt: now,
+    lastActivity: {
+      type: "status_change",
+      timestamp: now,
+      details: `Status updated to ${status}`
+    }
+  })
+}
