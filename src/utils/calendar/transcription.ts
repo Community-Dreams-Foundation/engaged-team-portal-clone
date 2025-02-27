@@ -60,6 +60,9 @@ export async function generateTranscription(
     
     // Create the speech recognition config
     const request = {
+      audio: {
+        uri: audioUri
+      },
       config: {
         encoding: 'MP3',  // Assuming MP3 format, adjust as needed
         sampleRateHertz: 16000,
@@ -70,18 +73,13 @@ export async function generateTranscription(
         enableSpeakerDiarization: true,
         diarizationSpeakerCount: 2,
         enableWordTimeOffsets: true,
-      },
-      audio: {
-        uri: audioUri
       }
     };
     
     console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
     
-    // For long audio files, we need to use longrunningrecognize (note the lowercase)
-    // The correct method name is longrunningrecognize not longRunningRecognize
-    const speechService = speechClient.speech;
-    const [operation] = await speechService.longrunningrecognize(request);
+    // For long audio files, we need to use longrunningrecognize
+    const [operation] = await speechClient.speech.longrunningrecognize(request);
     
     // Wait for the operation to complete
     const [response] = await operation.promise();
