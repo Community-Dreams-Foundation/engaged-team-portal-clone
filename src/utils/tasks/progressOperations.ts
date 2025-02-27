@@ -1,5 +1,5 @@
 
-import { getDatabase, ref, get, update } from "firebase/database"
+import { getDatabase, ref, get, update, push } from "firebase/database"
 import type { Task, TaskStatus } from "@/types/task"
 
 export const checkDependencies = async (userId: string, taskId: string): Promise<boolean> => {
@@ -55,4 +55,36 @@ export const updateTaskStatus = async (
       details: `Status updated to ${status}`
     }
   })
+}
+
+export const requestCostApproval = async (
+  userId: string,
+  taskId: string,
+  amount: number,
+  justification: string
+): Promise<string> => {
+  const db = getDatabase()
+  const approvalRef = push(ref(db, `users/${userId}/costApprovals`))
+  const now = Date.now()
+  
+  await update(approvalRef, {
+    taskId,
+    amount,
+    justification,
+    status: "pending",
+    createdAt: now,
+    updatedAt: now,
+    requestedBy: userId
+  })
+
+  await update(ref(db, `users/${userId}/tasks/${taskId}`), {
+    costApprovalId: approvalRef.key,
+    lastActivity: {
+      type: "cost_approval",
+      timestamp: now,
+      details: `Cost approval requested for $${amount}`
+    }
+  })
+
+  return approvalRef.key as string
 }
