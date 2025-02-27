@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { KanbanSection } from "@/components/dashboard/sections/KanbanSection"
 import { TrainingSection } from "@/components/dashboard/sections/TrainingSection"
@@ -153,13 +152,13 @@ const mockChallenges = [
     id: "1",
     title: "Sprint Excellence Challenge",
     description: "Complete all sprint tasks before deadline with high quality",
-    type: "team",
+    type: "team" as const,
     startDate: Date.now(),
     endDate: Date.now() + 14 * 24 * 60 * 60 * 1000,
     participants: ["user1", "user2"],
     teamSize: 5,
     rewards: {
-      tier: "gold",
+      tier: "gold" as const,
       points: 1000,
       badges: ["Sprint Champion"]
     },
@@ -179,7 +178,7 @@ const mockChallenges = [
         completed: false
       }
     ],
-    status: "active"
+    status: "active" as const
   }
 ];
 
@@ -190,12 +189,12 @@ const mockVisaStatus = {
   documents: [
     {
       name: "Work Authorization",
-      status: "valid",
+      status: "valid" as const,
       expiryDate: Date.now() + 180 * 24 * 60 * 60 * 1000
     },
     {
       name: "Passport",
-      status: "expiring",
+      status: "expiring" as const,
       expiryDate: Date.now() + 30 * 24 * 60 * 60 * 1000
     }
   ],
@@ -238,4 +237,3 @@ export default function Index() {
     </DashboardLayout>
   );
 }
-
