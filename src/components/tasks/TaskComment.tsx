@@ -1,11 +1,23 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
-import { Edit, Trash2, Reply, Check, X } from "lucide-react"
+import { 
+  Edit, 
+  Trash2, 
+  Reply, 
+  Check, 
+  X, 
+  Smile,
+  ThumbsUp,
+  Heart,
+  Laugh,
+  MessageCircle,
+  Paperclip
+} from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,9 +28,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
-import { deleteComment, addCommentReply, editComment } from "@/utils/tasks/commentOperations"
+import { 
+  deleteComment, 
+  addCommentReply, 
+  editComment,
+  addReactionToComment,
+  removeReactionFromComment
+} from "@/utils/tasks/commentOperations"
 
 interface CommentWithReplies {
   id: string
@@ -30,6 +53,8 @@ interface CommentWithReplies {
   taskId: string
   lastEdited?: number
   replies?: CommentWithReplies[]
+  mentions?: string[]
+  reactions?: Record<string, string[]>
 }
 
 interface TaskCommentProps {
@@ -44,7 +69,18 @@ interface TaskCommentProps {
   parentId?: string
   replies?: CommentWithReplies[]
   lastEdited?: number
+  mentions?: string[]
+  reactions?: Record<string, string[]>
 }
+
+const reactionEmojis = [
+  { emoji: "👍", key: "thumbsup", icon: ThumbsUp },
+  { emoji: "❤️", key: "heart", icon: Heart },
+  { emoji: "😄", key: "laugh", icon: Laugh },
+  { emoji: "🎉", key: "celebrate", icon: MessageCircle },
+  { emoji: "🚀", key: "rocket", icon: MessageCircle },
+  { emoji: "🔥", key: "fire", icon: MessageCircle },
+]
 
 export function TaskComment({
   id,
@@ -58,6 +94,8 @@ export function TaskComment({
   parentId,
   replies,
   lastEdited,
+  mentions = [],
+  reactions = {},
 }: TaskCommentProps) {
   const { currentUser } = useAuth()
   const { toast } = useToast()
@@ -66,6 +104,7 @@ export function TaskComment({
   const [replyText, setReplyText] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const isOwner = currentUser?.uid === userId
 
   const handleDelete = async () => {
@@ -131,6 +170,50 @@ export function TaskComment({
         description: "There was an error updating your comment. Please try again.",
       })
     }
+  }
+
+  const handleReaction = async (emoji: string) => {
+    if (!currentUser?.uid) return
+    
+    try {
+      const userReacted = reactions[emoji]?.includes(currentUser.uid)
+      
+      if (userReacted) {
+        await removeReactionFromComment(currentUser.uid, taskId, id, emoji)
+      } else {
+        await addReactionToComment(currentUser.uid, taskId, id, emoji)
+      }
+      
+      setShowEmojiPicker(false)
+    } catch (error) {
+      console.error("Error handling reaction:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was an error updating your reaction. Please try again.",
+      })
+    }
+  }
+
+  // Function to render text with highlighted mentions
+  const renderTextWithMentions = (text: string) => {
+    // Find mentions in the format @[name](userId)
+    const parts = text.split(/(@\[[^\]]+\]\([^)]+\))/g)
+    
+    return parts.map((part, index) => {
+      const mentionMatch = part.match(/@\[([^\]]+)\]\(([^)]+)\)/)
+      
+      if (mentionMatch) {
+        const [_, name, id] = mentionMatch
+        return (
+          <span key={index} className="bg-blue-100 dark:bg-blue-800 rounded px-1 py-0.5">
+            @{name}
+          </span>
+        )
+      }
+      
+      return part
+    })
   }
 
   return (
@@ -210,20 +293,73 @@ export function TaskComment({
             className="mb-2"
           />
         ) : (
-          <p className="text-sm whitespace-pre-wrap">{text}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {renderTextWithMentions(text)}
+          </p>
         )}
         
-        {!isEditing && currentUser && !parentId && (
-          <div className="mt-2 flex justify-end">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-7 text-xs" 
-              onClick={() => onReplyToggle(id)}
-            >
-              <Reply className="h-3 w-3 mr-1" />
-              Reply
-            </Button>
+        {/* Reactions display */}
+        {!isEditing && Object.keys(reactions).length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {Object.entries(reactions).map(([emoji, users]) => (
+              <Button
+                key={emoji}
+                variant="outline"
+                size="sm"
+                className={`h-6 px-2 text-xs ${
+                  currentUser && users.includes(currentUser.uid) 
+                    ? "bg-gray-200 dark:bg-gray-700" 
+                    : ""
+                }`}
+                onClick={() => handleReaction(emoji)}
+              >
+                {emoji} {users.length}
+              </Button>
+            ))}
+          </div>
+        )}
+        
+        {!isEditing && currentUser && (
+          <div className="mt-2 flex justify-end gap-1">
+            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 text-xs" 
+                >
+                  <Smile className="h-3 w-3 mr-1" />
+                  React
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-1">
+                <div className="flex gap-1">
+                  {reactionEmojis.map(({emoji, key}) => (
+                    <Button
+                      key={key}
+                      variant="ghost"
+                      size="sm"
+                      className="text-lg p-1 h-8 w-8"
+                      onClick={() => handleReaction(emoji)}
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {!parentId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 text-xs" 
+                onClick={() => onReplyToggle(id)}
+              >
+                <Reply className="h-3 w-3 mr-1" />
+                Reply
+              </Button>
+            )}
           </div>
         )}
       </Card>
@@ -273,6 +409,8 @@ export function TaskComment({
               showReplyForm={false}
               parentId={id}
               lastEdited={reply.lastEdited}
+              mentions={reply.mentions}
+              reactions={reply.reactions}
             />
           ))}
         </div>
