@@ -438,7 +438,7 @@ export async function generateTranscription(
       refresh_token: credentials.refreshToken
     });
 
-    // Create the speech client with proper version
+    // Create the speech client
     const speechClient = speech({
       version: 'v1p1beta1',
       auth: oauth2Client
@@ -504,9 +504,9 @@ export async function generateTranscription(
     
     console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
     
-    // For long audio files, we need to use the appropriate method
-    // The Speech v1p1beta1 API provides this through the client's methods
-    const [operation] = await speechClient.v1p1beta1.longRunningRecognize(request);
+    // For long audio files, we need to use longRunningRecognize
+    // Using the standard method as documented in the Google Cloud Speech API
+    const [operation] = await speechClient.longRunningRecognize(request);
     
     // Wait for the operation to complete
     const [response] = await operation.promise();
