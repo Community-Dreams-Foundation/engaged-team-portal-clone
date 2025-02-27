@@ -268,27 +268,166 @@ export async function exchangeCodeForTokens(code: string): Promise<CalendarCrede
   }
 }
 
+// Recording API Integration - Zoom API
+const ZOOM_API_KEY = process.env.ZOOM_API_KEY;
+const ZOOM_API_SECRET = process.env.ZOOM_API_SECRET;
+
+// Get Zoom access token
+async function getZoomAccessToken(): Promise<string> {
+  try {
+    const tokenResponse = await fetch('https://zoom.us/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${ZOOM_API_KEY}:${ZOOM_API_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error(`Failed to get Zoom token: ${tokenResponse.statusText}`);
+    }
+
+    const tokenData = await tokenResponse.json();
+    return tokenData.access_token;
+  } catch (error) {
+    console.error('Error getting Zoom access token:', error);
+    throw error;
+  }
+}
+
 export async function startMeetingRecording(meetingId: string, conferenceLink: string): Promise<boolean> {
-  console.log(`Starting recording for meeting: ${meetingId} at ${conferenceLink}`);
-  
-  return true;
+  try {
+    // Extract Zoom meeting ID from conference link
+    const zoomMeetingIdMatch = conferenceLink.match(/\/j\/(\d+)/);
+    if (!zoomMeetingIdMatch) {
+      console.error('Could not extract Zoom meeting ID from link:', conferenceLink);
+      return false;
+    }
+    
+    const zoomMeetingId = zoomMeetingIdMatch[1];
+    const accessToken = await getZoomAccessToken();
+    
+    // Start recording via Zoom API
+    const response = await fetch(`https://api.zoom.us/v2/meetings/${zoomMeetingId}/recordings/start`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Failed to start recording:', errorData);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error starting meeting recording:', error);
+    return false;
+  }
 }
 
 export async function getMeetingRecording(meetingId: string): Promise<RecordingDetails | null> {
-  console.log(`Fetching recording for meeting: ${meetingId}`);
-  
-  return {
-    recordingUrl: `https://storage.example.com/meetings/${meetingId}/recording.mp4`,
-    transcriptUrl: `https://storage.example.com/meetings/${meetingId}/transcript.txt`,
-    duration: 3600, // 1 hour in seconds
-    generatedAt: new Date().toISOString()
-  };
+  try {
+    // In a real implementation, you would look up the associated Zoom meeting ID
+    // from your database using the internal meetingId
+    const accessToken = await getZoomAccessToken();
+    
+    // Query Zoom API for recordings
+    // This is a simplified example - you would need to store the Zoom meeting ID when creating the meeting
+    const zoomMeetingId = await lookupZoomMeetingId(meetingId);
+    
+    if (!zoomMeetingId) {
+      console.error('No Zoom meeting ID found for meeting:', meetingId);
+      return null;
+    }
+    
+    const response = await fetch(`https://api.zoom.us/v2/meetings/${zoomMeetingId}/recordings`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to get recordings:', await response.text());
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    // Check if recording files exist
+    if (!data.recording_files || data.recording_files.length === 0) {
+      console.log('No recording files found for meeting:', meetingId);
+      return null;
+    }
+    
+    // Find the MP4 recording file
+    const videoRecording = data.recording_files.find((file: any) => file.file_type === 'MP4');
+    if (!videoRecording) {
+      console.log('No video recording found for meeting:', meetingId);
+      return null;
+    }
+    
+    // Get transcript if available
+    const transcript = data.recording_files.find((file: any) => file.file_type === 'TRANSCRIPT');
+    
+    return {
+      recordingUrl: videoRecording.download_url,
+      transcriptUrl: transcript ? transcript.download_url : undefined,
+      duration: videoRecording.recording_end ? 
+        (new Date(videoRecording.recording_end).getTime() - new Date(videoRecording.recording_start).getTime()) / 1000 : 0,
+      generatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error getting meeting recording:', error);
+    return null;
+  }
+}
+
+// Mock function to look up Zoom meeting ID - in a real app, this would query your database
+async function lookupZoomMeetingId(meetingId: string): Promise<string | null> {
+  // This is a placeholder - in a real implementation, you would query your database
+  // to find the Zoom meeting ID associated with your internal meeting ID
+  console.log(`Looking up Zoom meeting ID for meeting: ${meetingId}`);
+  return null; // Return null for now since this is just a placeholder
 }
 
 export async function generateTranscription(recordingUrl: string): Promise<string> {
-  console.log(`Generating transcription for recording: ${recordingUrl}`);
-  
-  return "This is a mock transcription of the meeting. In a real implementation, this would be the actual transcribed text from the recording.";
+  try {
+    // In a real implementation, you would use a service like AssemblyAI, Google Speech-to-Text, etc.
+    const accessToken = await getZoomAccessToken();
+    
+    // This is a simplified example - Zoom actually provides transcripts directly
+    // but for customization, you might want to use a dedicated transcription service
+    
+    // Mock API call to a transcription service
+    const response = await fetch('https://api.transcription-service.example/transcribe', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        media_url: recordingUrl,
+        language_code: 'en-US'
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Transcription service error: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.transcript || "No transcript available";
+  } catch (error) {
+    console.error('Error generating transcription:', error);
+    return "Error generating transcription. Please try again later.";
+  }
 }
 
 export async function generateMeetingAgenda(meetingType: Meeting["meetingType"]): Promise<string[]> {
