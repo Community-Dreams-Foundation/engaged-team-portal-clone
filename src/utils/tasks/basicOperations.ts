@@ -1,6 +1,6 @@
 
-import { getDatabase, ref, onValue, update, push, set, get } from "firebase/database"
-import { Task, TaskStatus, TaskInput } from "@/types/task"
+import { getDatabase, ref, onValue, push, set } from "firebase/database"
+import { Task, TaskInput } from "@/types/task"
 
 export const fetchTasks = async (userId: string): Promise<Task[]> => {
   return new Promise((resolve, reject) => {
@@ -49,22 +49,3 @@ export const createTask = async (userId: string, task: TaskInput): Promise<strin
 
   return newTaskRef.key as string
 }
-
-export const updateTaskStatus = async (
-  userId: string,
-  taskId: string,
-  newStatus: TaskStatus
-) => {
-  const db = getDatabase()
-  const now = Date.now()
-  return update(ref(db, `users/${userId}/tasks/${taskId}`), {
-    status: newStatus,
-    updatedAt: now,
-    lastActivity: {
-      type: "status_change",
-      timestamp: now,
-      details: `Status changed to ${newStatus}`
-    }
-  })
-}
-
