@@ -1,6 +1,6 @@
 
 import { io, Socket } from "socket.io-client"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "@/hooks/use-toast"
 
 // Socket.IO singleton service
 class SocketService {
@@ -101,7 +101,6 @@ class SocketService {
     // Meeting related events
     this.socket.on("meeting:updated", (data) => {
       console.log("Meeting updated:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Updated",
         description: `${data.title} has been updated by ${data.updatedBy}`,
@@ -113,7 +112,6 @@ class SocketService {
 
     this.socket.on("meeting:reminder", (data) => {
       console.log("Meeting reminder:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Reminder",
         description: `${data.title} starts in ${data.timeRemaining} minutes`,
@@ -124,7 +122,6 @@ class SocketService {
 
     this.socket.on("meeting:started", (data) => {
       console.log("Meeting started:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Started",
         description: `${data.title} has started. Click to join.`,
@@ -135,7 +132,6 @@ class SocketService {
 
     this.socket.on("meeting:ended", (data) => {
       console.log("Meeting ended:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Ended",
         description: `${data.title} has ended.`,
@@ -146,7 +142,6 @@ class SocketService {
 
     this.socket.on("meeting:recording", (data) => {
       console.log("Meeting recording:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Recording Available",
         description: `Recording for ${data.title} is now available.`,
@@ -157,7 +152,6 @@ class SocketService {
 
     this.socket.on("meeting:transcript", (data) => {
       console.log("Meeting transcript:", data)
-      const { toast } = useToast()
       toast({
         title: "Meeting Transcript Available",
         description: `Transcript for ${data.title} is now available.`,
