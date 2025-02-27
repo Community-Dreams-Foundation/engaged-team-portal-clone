@@ -1,5 +1,5 @@
 
-import { calendar, auth } from '@googleapis/calendar'
+import { calendar, auth, calendar_v3 } from '@googleapis/calendar'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
@@ -47,7 +47,8 @@ export async function createCalendarEvent(meeting: Meeting, credentials?: Calend
 
     const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
 
-    const event = {
+    // Define the event with the correct type
+    const event: calendar_v3.Schema$Event = {
       summary: meeting.title,
       description: meeting.description,
       start: {
@@ -123,7 +124,8 @@ export async function updateCalendarEvent(
 
     const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
 
-    const event = {
+    // Define the event with the correct type
+    const event: calendar_v3.Schema$Event = {
       summary: meeting.title,
       description: meeting.description,
       start: {
