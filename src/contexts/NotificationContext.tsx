@@ -8,7 +8,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver" | "payment" | "comment";
+  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver" | "payment" | "comment" | "leadership";
   status: "unread" | "read";
   timestamp: number;
   metadata?: {
@@ -37,6 +37,8 @@ interface NotificationContextType {
   addNotification: (notification: Omit<Notification, "id" | "status" | "timestamp">) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
+  getNotificationsByType: (type: Notification["type"]) => Notification[];
+  getMeetingNotifications: () => Notification[];
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined)
@@ -122,6 +124,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return notifications.filter(notification => types.includes(notification.type))
   }
 
+  const getNotificationsByType = (type: Notification["type"]) => {
+    return notifications.filter(notification => notification.type === type)
+  }
+
+  const getMeetingNotifications = () => {
+    return notifications.filter(notification => notification.type === "meeting")
+      .sort((a, b) => b.timestamp - a.timestamp)
+  }
+
   return (
     <NotificationContext.Provider 
       value={{ 
@@ -131,7 +142,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         markAsRead, 
         addNotification, 
         markAllAsRead, 
-        deleteNotification 
+        deleteNotification,
+        getNotificationsByType,
+        getMeetingNotifications
       }}
     >
       {children}

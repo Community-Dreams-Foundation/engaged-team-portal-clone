@@ -1,99 +1,70 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import SubmitIdea from "./pages/SubmitIdea";
-import Intake from "./pages/Intake";
-import CustomizeCoS from "./pages/CustomizeCoS";
-import SimulateCoS from "./pages/SimulateCoS";
-import Landing from "./pages/Landing";
-import Settings from "./pages/Settings";
+import { useEffect } from "react"
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom"
+import Landing from "./pages/Landing"
+import Index from "./pages/Index"
+import Intake from "./pages/Intake"
+import NotFound from "./pages/NotFound"
+import Settings from "./pages/Settings"
+import Completion from "./pages/Completion"
+import SimulateCoS from "./pages/SimulateCoS"
+import SubmitIdea from "./pages/SubmitIdea"
+import FeeTracking from "./pages/FeeTracking"
+import CustomizeCoS from "./pages/CustomizeCoS"
+import AdminIndex from "./pages/admin/Index"
+import AdminWaiverDashboard from "./pages/admin/waiver/WaiverDashboard"
+import { AuthProvider } from "./contexts/AuthContext"
+import { NotificationProvider } from "./contexts/NotificationContext"
+import { Toaster } from "./components/ui/toaster"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { SocketProvider } from "./contexts/SocketContext"
+import { MeetingProvider } from "./contexts/MeetingContext"
+import MeetingsPage from "./pages/Meetings"
 
-const queryClient = new QueryClient();
+import "./App.css"
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser, loading, isNewUser } = useAuth();
-  
-  console.log('ProtectedRoute render:', { 
-    currentUser: currentUser?.email,
-    loading,
-    isNewUser,
-    path: window.location.pathname
-  });
+function App() {
+  useEffect(() => {
+    // Handle theme
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+    
+    if (isDark) {
+      document.documentElement.classList.add("dark")
+    }
+  }, [])
 
-  if (loading) {
-    console.log('Still loading auth state...');
-    return <div>Loading...</div>;
-  }
-  
-  if (!currentUser) {
-    console.log('No user, redirecting to landing...');
-    return <Navigate to="/landing" />;
-  }
+  const queryClient = new QueryClient()
 
-  // Redirect new users to the intake page
-  if (isNewUser && window.location.pathname !== '/intake') {
-    console.log('New user, redirecting to intake...');
-    return <Navigate to="/intake" />;
-  }
-
-  // Redirect returning users to dashboard if they try to access intake
-  if (!isNewUser && window.location.pathname === '/intake') {
-    console.log('Returning user trying to access intake, redirecting to dashboard...');
-    return <Navigate to="/" />;
-  }
-
-  console.log('Rendering protected content...');
-  return <>{children}</>;
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  return (
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/landing" element={<Landing />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/intake"
-              element={
-                <ProtectedRoute>
-                  <Intake />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/submit-idea" element={<SubmitIdea />} />
-            <Route path="/customize-cos" element={<CustomizeCoS />} />
-            <Route path="/simulate-cos" element={<SimulateCoS />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <NotificationProvider>
+          <MeetingProvider>
+            <SocketProvider>
+              <Router>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/dashboard" element={<Index />} />
+                  <Route path="/intake" element={<Intake />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/completion" element={<Completion />} />
+                  <Route path="/submit-idea" element={<SubmitIdea />} />
+                  <Route path="/simulate" element={<SimulateCoS />} />
+                  <Route path="/fees" element={<FeeTracking />} />
+                  <Route path="/customize" element={<CustomizeCoS />} />
+                  <Route path="/admin" element={<AdminIndex />} />
+                  <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
+                  <Route path="/meetings" element={<MeetingsPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+              </Router>
+            </SocketProvider>
+          </MeetingProvider>
+        </NotificationProvider>
       </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  )
+}
 
-export default App;
+export default App
