@@ -44,7 +44,7 @@ function App() {
               <Router>
                 <Routes>
                   <Route path="/" element={<Landing />} />
-                  <Route path="/index" element={<Navigate to="/" replace />} />
+                  <Route path="/index" element={<Index />} />
                   <Route path="/dashboard" element={<Index />} />
                   <Route path="/intake" element={<Intake />} />
                   <Route path="/settings" element={<Settings />} />

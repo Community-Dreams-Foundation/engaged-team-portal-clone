@@ -58,9 +58,12 @@ export async function generateTranscription(
     // Get a direct download link
     const audioUri = `https://drive.google.com/uc?export=download&id=${fileId}`;
     
-    // Create the speech recognition request params according to the API requirements
-    const params = {
-      resource: {
+    console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
+    
+    // For long audio files, we need to use longrunningrecognize
+    // Using the correct parameter structure for the speech API
+    const [operation] = await speechClient.speech.longrunningrecognize({
+      requestBody: {
         audio: {
           uri: audioUri
         },
@@ -76,12 +79,7 @@ export async function generateTranscription(
           enableWordTimeOffsets: true,
         }
       }
-    };
-    
-    console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
-    
-    // For long audio files, we need to use longrunningrecognize
-    const [operation] = await speechClient.speech.longrunningrecognize(params);
+    });
     
     // Wait for the operation to complete
     const [response] = await operation.promise();
