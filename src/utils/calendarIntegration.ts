@@ -1,4 +1,5 @@
-import { google, calendar_v3 } from '@googleapis/calendar'
+
+import { calendar, auth } from '@googleapis/calendar'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
@@ -38,15 +39,15 @@ export async function createCalendarEvent(meeting: Meeting, credentials?: Calend
   }
 
   try {
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: credentials.accessToken,
       refresh_token: credentials.refreshToken
     });
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
 
-    const event: calendar_v3.Schema$Event = {
+    const event = {
       summary: meeting.title,
       description: meeting.description,
       start: {
@@ -78,7 +79,7 @@ export async function createCalendarEvent(meeting: Meeting, credentials?: Calend
       event.location = meeting.location.address;
     }
 
-    const result = await calendar.events.insert({
+    const result = await calendarClient.events.insert({
       calendarId: 'primary',
       requestBody: event,
       conferenceDataVersion: 1,
@@ -114,15 +115,15 @@ export async function updateCalendarEvent(
   }
 
   try {
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: credentials.accessToken,
       refresh_token: credentials.refreshToken
     });
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
 
-    const event: calendar_v3.Schema$Event = {
+    const event = {
       summary: meeting.title,
       description: meeting.description,
       start: {
@@ -147,7 +148,7 @@ export async function updateCalendarEvent(
       event.location = meeting.location.address;
     }
 
-    const result = await calendar.events.update({
+    const result = await calendarClient.events.update({
       calendarId: 'primary',
       eventId: meeting.calendarEventId,
       requestBody: event,
@@ -183,15 +184,15 @@ export async function deleteCalendarEvent(
   }
 
   try {
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: credentials.accessToken,
       refresh_token: credentials.refreshToken
     });
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
 
-    await calendar.events.delete({
+    await calendarClient.events.delete({
       calendarId: 'primary',
       eventId: eventId,
       sendUpdates: 'all',
@@ -206,16 +207,16 @@ export async function deleteCalendarEvent(
 
 export async function verifyCalendarCredentials(credentials: CalendarCredentials): Promise<boolean> {
   try {
-    const oauth2Client = new google.auth.OAuth2();
+    const oauth2Client = new auth.OAuth2();
     oauth2Client.setCredentials({
       access_token: credentials.accessToken,
       refresh_token: credentials.refreshToken
     });
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const calendarClient = calendar({ version: 'v3', auth: oauth2Client });
     
     // Try to list a single event to verify credentials
-    await calendar.events.list({
+    await calendarClient.events.list({
       calendarId: 'primary',
       maxResults: 1,
     });
@@ -228,7 +229,7 @@ export async function verifyCalendarCredentials(credentials: CalendarCredentials
 }
 
 export function getCalendarAuthUrl(): string {
-  const oauth2Client = new google.auth.OAuth2(
+  const oauth2Client = new auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
     process.env.GOOGLE_REDIRECT_URI
@@ -242,7 +243,7 @@ export function getCalendarAuthUrl(): string {
 
 export async function exchangeCodeForTokens(code: string): Promise<CalendarCredentials | null> {
   try {
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client = new auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.GOOGLE_REDIRECT_URI
