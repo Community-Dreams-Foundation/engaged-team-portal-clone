@@ -1,7 +1,7 @@
 
 import { ParsedDocument, DocumentParsingConfig, ParseDocumentResult, DocumentType } from "@/types/document-parser";
 import { Task, TaskInput } from "@/types/task";
-import { autoSplitTask } from "./taskUtils";
+import { createTask, autoSplitTask } from "./taskUtils";
 
 export const parseDocument = async (
   file: File,
@@ -19,10 +19,27 @@ export const parseDocument = async (
   
   // Extract entities and create tasks
   const entities = extractEntities(text);
-  const tasks = generateTasks(entities, config);
+  const taskInputs = generateTasks(entities, config);
+  
+  // Create tasks and handle auto-splitting
+  const generatedTasks: Task[] = [];
+  
+  for (const taskInput of taskInputs) {
+    // First create the task
+    const taskRef = await createTask(userId, taskInput);
+    if (!taskRef.key) continue;
+    
+    // Check if it needs to be split
+    if (taskInput.estimatedDuration > config.maxTaskDuration) {
+      const splitResult = await autoSplitTask(userId, taskRef.key);
+      if (splitResult && typeof splitResult !== 'boolean') {
+        generatedTasks.push(splitResult);
+      }
+    }
+  }
   
   // Prepare knowledge graph data
-  const graphData = generateKnowledgeGraphData(entities, tasks);
+  const graphData = generateKnowledgeGraphData(entities, taskInputs);
   
   const document: ParsedDocument = {
     id: generateId(),
@@ -43,21 +60,10 @@ export const parseDocument = async (
       technicalDensity: calculateTechnicalDensity(text),
       businessImpact: calculateBusinessImpact(text)
     },
-    suggestedTasks: tasks,
+    suggestedTasks: taskInputs,
     knowledgeGraphNodes: graphData.nodes,
     knowledgeGraphRelationships: graphData.relationships
   };
-
-  // Apply auto-splitting if necessary
-  const generatedTasks: Task[] = await Promise.all(
-    tasks.map(async task => {
-      if (task.estimatedDuration > config.maxTaskDuration) {
-        const splitResult = await autoSplitTask(userId, task.id);
-        return splitResult ? splitResult : task as Task;
-      }
-      return task as Task;
-    })
-  );
 
   return {
     document,
@@ -99,7 +105,7 @@ const generateTasks = (entities: any, config: DocumentParsingConfig): TaskInput[
   return [];
 };
 
-const generateKnowledgeGraphData = (entities: any, tasks: TaskInput[]) => ({
+const generateKnowledgeGraphData = (entities: any, taskInputs: TaskInput[]) => ({
   nodes: [],
   relationships: []
 });
@@ -118,3 +124,4 @@ const calculateBusinessImpact = (text: string): number => {
   // Implement business impact calculation logic
   return 50;
 };
+
