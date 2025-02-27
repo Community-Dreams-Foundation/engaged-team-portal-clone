@@ -1,19 +1,19 @@
 
-import { firebase } from "@/lib/firebase"
+import { db } from "@/lib/firebase"
 import { doc, updateDoc, arrayUnion, getDoc, setDoc } from "firebase/firestore"
 import { Activity } from "@/types/task"
 
 export async function logActivity(userId: string, taskId: string, activity: Activity) {
   try {
     // First, check if the task exists
-    const taskDoc = await getDoc(doc(firebase.firestore(), "tasks", taskId))
+    const taskDoc = await getDoc(doc(db, "tasks", taskId))
     
     if (!taskDoc.exists()) {
       throw new Error("Task not found")
     }
     
     // Update the task with the new activity
-    await updateDoc(doc(firebase.firestore(), "tasks", taskId), {
+    await updateDoc(doc(db, "tasks", taskId), {
       activities: arrayUnion(activity),
       lastActivity: activity
     })
@@ -27,7 +27,7 @@ export async function logActivity(userId: string, taskId: string, activity: Acti
 
 export async function fetchTaskActivities(userId: string, taskId: string): Promise<Activity[]> {
   try {
-    const taskDoc = await getDoc(doc(firebase.firestore(), "tasks", taskId))
+    const taskDoc = await getDoc(doc(db, "tasks", taskId))
     
     if (!taskDoc.exists()) {
       throw new Error("Task not found")
@@ -44,7 +44,7 @@ export async function fetchTaskActivities(userId: string, taskId: string): Promi
 export async function recordStatusChange(userId: string, taskId: string, fromStatus: string, toStatus: string) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     const activity: Activity = {
@@ -76,7 +76,7 @@ export async function recordStatusChange(userId: string, taskId: string, fromSta
 export async function recordTimerUpdate(userId: string, taskId: string, isStarted: boolean, elapsedTime?: number) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     let details = isStarted
@@ -105,7 +105,7 @@ export async function recordTimerUpdate(userId: string, taskId: string, isStarte
 export async function recordPriorityChange(userId: string, taskId: string, fromPriority: string, toPriority: string) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     const activity: Activity = {
@@ -125,7 +125,7 @@ export async function recordPriorityChange(userId: string, taskId: string, fromP
 export async function recordTaskSplit(userId: string, taskId: string, newTaskIds: string[]) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     const activity: Activity = {

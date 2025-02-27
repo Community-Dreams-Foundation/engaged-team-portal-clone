@@ -21,6 +21,7 @@ interface CommentWithReplies {
   timestamp: number
   userName?: string
   parentId?: string
+  taskId: string
   replies?: CommentWithReplies[]
 }
 
@@ -46,7 +47,7 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
         
         // First pass: Create all comment objects
         fetchedComments.forEach(comment => {
-          commentMap.set(comment.id, { ...comment, replies: [] })
+          commentMap.set(comment.id, { ...comment, taskId: task.id, replies: [] })
         })
         
         // Second pass: Organize into parent/child relationships
@@ -103,7 +104,7 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
       const rootComments: CommentWithReplies[] = []
       
       fetchedComments.forEach(comment => {
-        commentMap.set(comment.id, { ...comment, replies: [] })
+        commentMap.set(comment.id, { ...comment, taskId: task.id, replies: [] })
       })
       
       fetchedComments.forEach(comment => {

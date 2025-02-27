@@ -1,5 +1,5 @@
 
-import { firebase } from "@/lib/firebase"
+import { db } from "@/lib/firebase"
 import { collection, addDoc, query, where, getDocs, orderBy, updateDoc, doc, serverTimestamp, getDoc, deleteDoc, arrayUnion } from "firebase/firestore"
 import { nanoid } from 'nanoid'
 import { logActivity } from "./activityOperations"
@@ -16,7 +16,7 @@ export interface TaskComment {
 export async function addComment(userId: string, taskId: string, text: string) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     const commentId = nanoid()
@@ -33,7 +33,7 @@ export async function addComment(userId: string, taskId: string, text: string) {
       parentId: null
     }
     
-    await addDoc(collection(firebase.firestore(), "task_comments"), commentData)
+    await addDoc(collection(db, "task_comments"), commentData)
     
     // Log this activity
     await logActivity(userId, taskId, {
@@ -52,7 +52,7 @@ export async function addComment(userId: string, taskId: string, text: string) {
 export async function addCommentReply(userId: string, taskId: string, text: string, parentId: string) {
   try {
     // Get user's name if available
-    const userDoc = await getDoc(doc(firebase.firestore(), "users", userId))
+    const userDoc = await getDoc(doc(db, "users", userId))
     const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
     
     const commentId = nanoid()
@@ -69,7 +69,7 @@ export async function addCommentReply(userId: string, taskId: string, text: stri
       parentId
     }
     
-    await addDoc(collection(firebase.firestore(), "task_comments"), replyData)
+    await addDoc(collection(db, "task_comments"), replyData)
     
     // Log this activity
     await logActivity(userId, taskId, {
@@ -88,7 +88,7 @@ export async function addCommentReply(userId: string, taskId: string, text: stri
 export async function fetchComments(userId: string, taskId: string): Promise<TaskComment[]> {
   try {
     const commentsQuery = query(
-      collection(firebase.firestore(), "task_comments"),
+      collection(db, "task_comments"),
       where("taskId", "==", taskId),
       orderBy("timestamp", "desc")
     )
@@ -111,7 +111,7 @@ export async function deleteComment(userId: string, taskId: string, commentId: s
   try {
     // Find the comment doc to delete
     const commentsQuery = query(
-      collection(firebase.firestore(), "task_comments"),
+      collection(db, "task_comments"),
       where("id", "==", commentId),
       where("taskId", "==", taskId)
     )
@@ -135,7 +135,7 @@ export async function deleteComment(userId: string, taskId: string, commentId: s
     
     // Also delete all replies to this comment
     const repliesQuery = query(
-      collection(firebase.firestore(), "task_comments"),
+      collection(db, "task_comments"),
       where("parentId", "==", commentId)
     )
     
