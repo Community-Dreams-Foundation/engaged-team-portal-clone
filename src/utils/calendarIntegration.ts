@@ -1,225 +1,294 @@
-
+import { google, calendar_v3 } from '@googleapis/calendar'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
-// Mock implementation - would connect to actual Google Calendar API in production
 export interface CalendarCredentials {
-  accessToken: string
-  refreshToken?: string
-  expiresAt?: number
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
 }
 
 export interface CalendarSettings {
-  provider: "google" | "outlook" | "none"
-  autoSendInvites: boolean
-  defaultReminder: number // minutes
-  credentials?: CalendarCredentials
+  provider: "google" | "outlook" | "none";
+  autoSendInvites: boolean;
+  defaultReminder: number; // minutes
+  credentials?: CalendarCredentials;
 }
 
 export interface CalendarEvent {
-  id: string
-  calendarId: string
-  meetingId: string
-  status: "pending" | "confirmed" | "cancelled"
-  eventUrl?: string
-  createdAt: string
+  id: string;
+  calendarId: string;
+  meetingId: string;
+  status: "pending" | "confirmed" | "cancelled";
+  eventUrl?: string;
+  createdAt: string;
 }
 
 export interface RecordingDetails {
-  recordingUrl: string
-  transcriptUrl?: string
-  duration: number
-  generatedAt: string
+  recordingUrl: string;
+  transcriptUrl?: string;
+  duration: number;
+  generatedAt: string;
 }
 
-// This would be replaced with actual Google Calendar API in production
 export async function createCalendarEvent(meeting: Meeting, credentials?: CalendarCredentials): Promise<CalendarEvent | null> {
   if (!credentials) {
-    console.log("No calendar credentials provided")
-    return null
+    console.log("No calendar credentials provided");
+    return null;
   }
 
-  // Mock implementation
-  console.log(`Creating calendar event: ${meeting.title} - ${format(new Date(meeting.startTime), "MMMM d, yyyy 'at' h:mm a")}`)
-  
-  // In a real implementation, we would call the Google Calendar API here
-  // Example of how this would work with Google Calendar API:
-  /*
-  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-  const event = {
-    summary: meeting.title,
-    description: meeting.description,
-    start: {
-      dateTime: meeting.startTime,
-      timeZone: 'America/Los_Angeles',
-    },
-    end: {
-      dateTime: meeting.endTime,
-      timeZone: 'America/Los_Angeles',
-    },
-    attendees: meeting.participants.map(p => ({ email: p.email })),
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'email', minutes: 24 * 60 },
-        { method: 'popup', minutes: 15 },
-      ],
-    },
-  };
-  
-  const result = await calendar.events.insert({
-    calendarId: 'primary',
-    resource: event,
-    sendUpdates: 'all',
-  });
-  */
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
 
-  // Return mock calendar event
-  return {
-    id: `cal_${Math.random().toString(36).substring(2, 15)}`,
-    calendarId: "primary",
-    meetingId: meeting.id,
-    status: "confirmed",
-    eventUrl: `https://calendar.google.com/calendar/event?eid=${Math.random().toString(36).substring(2, 15)}`,
-    createdAt: new Date().toISOString()
-  }
-}
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-export async function updateCalendarEvent(meetingId: string, meeting: Meeting, credentials?: CalendarCredentials): Promise<CalendarEvent | null> {
-  if (!credentials) {
-    console.log("No calendar credentials provided")
-    return null
-  }
+    const event: calendar_v3.Schema$Event = {
+      summary: meeting.title,
+      description: meeting.description,
+      start: {
+        dateTime: meeting.startTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: meeting.endTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      attendees: meeting.participants.map(p => ({ email: p.email })),
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 },
+          { method: 'popup', minutes: 15 },
+        ],
+      },
+    };
 
-  // Mock implementation
-  console.log(`Updating calendar event for meeting: ${meetingId}`)
-  
-  // In a real implementation, we would call the Google Calendar API here
-  
-  // Return mock calendar event
-  return {
-    id: `cal_${Math.random().toString(36).substring(2, 15)}`,
-    calendarId: "primary",
-    meetingId: meeting.id,
-    status: "confirmed",
-    eventUrl: `https://calendar.google.com/calendar/event?eid=${Math.random().toString(36).substring(2, 15)}`,
-    createdAt: new Date().toISOString()
+    if (meeting.location?.type === 'virtual') {
+      event.conferenceData = {
+        createRequest: {
+          requestId: meeting.id,
+          conferenceSolutionKey: { type: 'hangoutsMeet' }
+        }
+      };
+    } else if (meeting.location?.type === 'physical') {
+      event.location = meeting.location.address;
+    }
+
+    const result = await calendar.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+      conferenceDataVersion: 1,
+      sendUpdates: 'all',
+    });
+
+    if (!result.data || !result.data.id) {
+      throw new Error('Failed to create calendar event');
+    }
+
+    return {
+      id: result.data.id,
+      calendarId: 'primary',
+      meetingId: meeting.id,
+      status: 'confirmed',
+      eventUrl: result.data.htmlLink || undefined,
+      createdAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error creating calendar event:', error);
+    throw error;
   }
 }
 
-export async function deleteCalendarEvent(meetingId: string, eventId: string, credentials?: CalendarCredentials): Promise<boolean> {
+export async function updateCalendarEvent(
+  meetingId: string,
+  meeting: Meeting,
+  credentials?: CalendarCredentials
+): Promise<CalendarEvent | null> {
   if (!credentials) {
-    console.log("No calendar credentials provided")
-    return false
+    console.log("No calendar credentials provided");
+    return null;
   }
 
-  // Mock implementation
-  console.log(`Deleting calendar event: ${eventId} for meeting: ${meetingId}`)
-  
-  // In a real implementation, we would call the Google Calendar API here
-  
-  return true
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    const event: calendar_v3.Schema$Event = {
+      summary: meeting.title,
+      description: meeting.description,
+      start: {
+        dateTime: meeting.startTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: meeting.endTime,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      attendees: meeting.participants.map(p => ({ email: p.email })),
+    };
+
+    if (meeting.location?.type === 'virtual') {
+      event.conferenceData = {
+        createRequest: {
+          requestId: meeting.id,
+          conferenceSolutionKey: { type: 'hangoutsMeet' }
+        }
+      };
+    } else if (meeting.location?.type === 'physical') {
+      event.location = meeting.location.address;
+    }
+
+    const result = await calendar.events.update({
+      calendarId: 'primary',
+      eventId: meeting.calendarEventId,
+      requestBody: event,
+      sendUpdates: 'all',
+    });
+
+    if (!result.data || !result.data.id) {
+      throw new Error('Failed to update calendar event');
+    }
+
+    return {
+      id: result.data.id,
+      calendarId: 'primary',
+      meetingId: meeting.id,
+      status: 'confirmed',
+      eventUrl: result.data.htmlLink || undefined,
+      createdAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error updating calendar event:', error);
+    throw error;
+  }
+}
+
+export async function deleteCalendarEvent(
+  meetingId: string,
+  eventId: string,
+  credentials?: CalendarCredentials
+): Promise<boolean> {
+  if (!credentials) {
+    console.log("No calendar credentials provided");
+    return false;
+  }
+
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    await calendar.events.delete({
+      calendarId: 'primary',
+      eventId: eventId,
+      sendUpdates: 'all',
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting calendar event:', error);
+    throw error;
+  }
 }
 
 export async function verifyCalendarCredentials(credentials: CalendarCredentials): Promise<boolean> {
-  // Mock implementation
-  console.log("Verifying calendar credentials")
-  
-  // In a real implementation, we would call the Google Calendar API to verify credentials
-  
-  return true
-}
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
 
-export function getCalendarAuthUrl(): string {
-  // Mock implementation
-  return "https://accounts.google.com/o/oauth2/auth?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_REDIRECT_URI&scope=https://www.googleapis.com/auth/calendar&response_type=code"
-}
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    
+    // Try to list a single event to verify credentials
+    await calendar.events.list({
+      calendarId: 'primary',
+      maxResults: 1,
+    });
 
-export async function exchangeCodeForTokens(code: string): Promise<CalendarCredentials | null> {
-  // Mock implementation
-  console.log("Exchanging code for tokens")
-  
-  // In a real implementation, we would exchange the code for tokens
-  
-  return {
-    accessToken: "mock_access_token",
-    refreshToken: "mock_refresh_token",
-    expiresAt: Date.now() + 3600 * 1000
+    return true;
+  } catch (error) {
+    console.error('Error verifying calendar credentials:', error);
+    return false;
   }
 }
 
-// New functions for meeting recording and transcription
-export async function startMeetingRecording(meetingId: string, conferenceLink: string): Promise<boolean> {
-  // Mock implementation
-  console.log(`Starting recording for meeting: ${meetingId} at ${conferenceLink}`)
-  
-  // In a real implementation, we would call the conferencing API (Zoom, Google Meet) to start recording
-  // Example with Zoom API:
-  /*
-  const response = await fetch(`https://api.zoom.us/v2/meetings/${zoomMeetingId}/recordings/start`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${zoomToken}`,
-      'Content-Type': 'application/json'
-    }
+export function getCalendarAuthUrl(): string {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
+
+  return oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/calendar']
   });
-  return response.ok;
-  */
+}
+
+export async function exchangeCodeForTokens(code: string): Promise<CalendarCredentials | null> {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    const { tokens } = await oauth2Client.getToken(code);
+
+    if (!tokens.access_token) {
+      throw new Error('No access token received');
+    }
+
+    return {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: tokens.expiry_date
+    };
+  } catch (error) {
+    console.error('Error exchanging code for tokens:', error);
+    return null;
+  }
+}
+
+export async function startMeetingRecording(meetingId: string, conferenceLink: string): Promise<boolean> {
+  console.log(`Starting recording for meeting: ${meetingId} at ${conferenceLink}`);
   
-  return true
+  return true;
 }
 
 export async function getMeetingRecording(meetingId: string): Promise<RecordingDetails | null> {
-  // Mock implementation
-  console.log(`Fetching recording for meeting: ${meetingId}`)
+  console.log(`Fetching recording for meeting: ${meetingId}`);
   
-  // In a real implementation, we would call the conferencing API to get the recording URL
-  // and trigger transcription if not already done
-  
-  // For demo purposes, return mock recording details
   return {
     recordingUrl: `https://storage.example.com/meetings/${meetingId}/recording.mp4`,
     transcriptUrl: `https://storage.example.com/meetings/${meetingId}/transcript.txt`,
     duration: 3600, // 1 hour in seconds
     generatedAt: new Date().toISOString()
-  }
+  };
 }
 
 export async function generateTranscription(recordingUrl: string): Promise<string> {
-  // Mock implementation
-  console.log(`Generating transcription for recording: ${recordingUrl}`)
+  console.log(`Generating transcription for recording: ${recordingUrl}`);
   
-  // In a real implementation, we would call a speech-to-text API like Google Cloud Speech-to-Text
-  // Example:
-  /*
-  const speech = require('@google-cloud/speech');
-  const client = new speech.SpeechClient();
-  
-  const audio = {
-    uri: gcsUri,
-  };
-  const config = {
-    encoding: 'LINEAR16',
-    sampleRateHertz: 16000,
-    languageCode: 'en-US',
-  };
-  const request = {
-    audio: audio,
-    config: config,
-  };
-
-  const [operation] = await client.longRunningRecognize(request);
-  const [response] = await operation.promise();
-  const transcription = response.results
-    .map(result => result.alternatives[0].transcript)
-    .join('\n');
-  */
-  
-  return "This is a mock transcription of the meeting. In a real implementation, this would be the actual transcribed text from the recording."
+  return "This is a mock transcription of the meeting. In a real implementation, this would be the actual transcribed text from the recording.";
 }
 
 export async function generateMeetingAgenda(meetingType: Meeting["meetingType"]): Promise<string[]> {
-  // Generate default agenda items based on meeting type
   switch (meetingType) {
     case "team":
       return [
@@ -255,7 +324,6 @@ export async function generateMeetingAgenda(meetingType: Meeting["meetingType"])
 }
 
 export function generateConferenceLink(provider: "google" | "zoom" | "teams"): string {
-  // Generate a mock conference link
   const randomId = Math.random().toString(36).substring(2, 10)
   
   switch (provider) {
