@@ -111,7 +111,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       await set(ref(db, `users/${currentUser.uid}/calendarCredentials`), mockCredentials)
       
       // Update settings
-      const updatedSettings = { 
+      const updatedSettings: CalendarSettings = { 
         ...calendarSettings,
         provider 
       }
@@ -145,7 +145,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       await set(ref(db, `users/${currentUser.uid}/calendarCredentials`), null)
       
       // Update settings
-      const updatedSettings = { 
+      const updatedSettings: CalendarSettings = { 
         ...calendarSettings,
         provider: "none" 
       }
@@ -173,7 +173,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return
     
     try {
-      const updatedSettings = { ...calendarSettings, ...settings }
+      const updatedSettings: CalendarSettings = { ...calendarSettings, ...settings }
       
       const db = getDatabase()
       await set(ref(db, `users/${currentUser.uid}/calendarSettings`), updatedSettings)
