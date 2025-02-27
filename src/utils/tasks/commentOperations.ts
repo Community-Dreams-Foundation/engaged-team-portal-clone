@@ -3,6 +3,8 @@ import { db } from "@/lib/firebase"
 import { collection, addDoc, query, where, getDocs, orderBy, updateDoc, doc, serverTimestamp, getDoc, deleteDoc, arrayUnion } from "firebase/firestore"
 import { nanoid } from 'nanoid'
 import { logActivity } from "./activityOperations"
+import { CommentAttachment } from "@/components/tasks/TaskCommentSection"
+import { addAttachmentRecord } from "./attachmentOperations"
 
 export interface TaskComment {
   id: string
@@ -14,9 +16,15 @@ export interface TaskComment {
   lastEdited?: number
   mentions?: string[] // Array of user IDs that are mentioned
   reactions?: Record<string, string[]> // Emoji -> array of user IDs
+  attachments?: CommentAttachment[] // File attachments
 }
 
-export async function addComment(userId: string, taskId: string, text: string) {
+export async function addComment(
+  userId: string, 
+  taskId: string, 
+  text: string, 
+  attachments: CommentAttachment[] = []
+) {
   try {
     // Get user's name if available
     const userDoc = await getDoc(doc(db, "users", userId))
@@ -37,10 +45,18 @@ export async function addComment(userId: string, taskId: string, text: string) {
       userName,
       taskId,
       parentId: null,
-      mentions: mentions.length > 0 ? mentions : null
+      mentions: mentions.length > 0 ? mentions : null,
+      attachments: attachments.length > 0 ? attachments : null
     }
     
-    await addDoc(collection(db, "task_comments"), commentData)
+    const commentRef = await addDoc(collection(db, "task_comments"), commentData)
+    
+    // Process attachments if any
+    if (attachments.length > 0) {
+      for (const attachment of attachments) {
+        await addAttachmentRecord(userId, taskId, commentId, attachment)
+      }
+    }
     
     // Log this activity
     await logActivity(userId, taskId, {
@@ -51,7 +67,7 @@ export async function addComment(userId: string, taskId: string, text: string) {
     
     // Send notifications to mentioned users
     if (mentions.length > 0) {
-      await sendMentionNotifications(userId, userName, taskId, mentions)
+      await sendMentionNotifications(userId, userName, taskId, mentions, commentId)
     }
     
     return commentId
@@ -61,7 +77,13 @@ export async function addComment(userId: string, taskId: string, text: string) {
   }
 }
 
-export async function addCommentReply(userId: string, taskId: string, text: string, parentId: string) {
+export async function addCommentReply(
+  userId: string, 
+  taskId: string, 
+  text: string, 
+  parentId: string,
+  attachments: CommentAttachment[] = []
+) {
   try {
     // Get user's name if available
     const userDoc = await getDoc(doc(db, "users", userId))
@@ -82,10 +104,18 @@ export async function addCommentReply(userId: string, taskId: string, text: stri
       userName,
       taskId,
       parentId,
-      mentions: mentions.length > 0 ? mentions : null
+      mentions: mentions.length > 0 ? mentions : null,
+      attachments: attachments.length > 0 ? attachments : null
     }
     
-    await addDoc(collection(db, "task_comments"), replyData)
+    const replyRef = await addDoc(collection(db, "task_comments"), replyData)
+    
+    // Process attachments if any
+    if (attachments.length > 0) {
+      for (const attachment of attachments) {
+        await addAttachmentRecord(userId, taskId, commentId, attachment)
+      }
+    }
     
     // Find parent comment author to notify them
     const parentCommentQuery = query(
@@ -106,7 +136,7 @@ export async function addCommentReply(userId: string, taskId: string, text: stri
     
     // Send notifications to mentioned users
     if (mentions.length > 0) {
-      await sendMentionNotifications(userId, userName, taskId, mentions)
+      await sendMentionNotifications(userId, userName, taskId, mentions, commentId)
     }
     
     // Log this activity
@@ -166,7 +196,7 @@ export async function editComment(userId: string, taskId: string, commentId: str
     
     // Send notifications to newly mentioned users
     if (newMentions.length > 0) {
-      await sendMentionNotifications(userId, userName, taskId, newMentions)
+      await sendMentionNotifications(userId, userName, taskId, newMentions, commentId)
     }
     
     // Log this activity
@@ -384,7 +414,8 @@ async function sendMentionNotifications(
   fromUserId: string,
   fromUserName: string,
   taskId: string,
-  mentionedUserIds: string[]
+  mentionedUserIds: string[],
+  commentId: string
 ) {
   try {
     const db = getDatabase()
@@ -404,6 +435,7 @@ async function sendMentionNotifications(
         timestamp: Date.now(),
         metadata: {
           taskId,
+          commentId,
           actionRequired: true,
           priority: "medium" as "medium",
           action: {
@@ -441,6 +473,7 @@ async function sendReplyNotification(
       timestamp: Date.now(),
       metadata: {
         taskId,
+        commentId,
         actionRequired: false,
         priority: "medium" as "medium",
         action: {
@@ -478,6 +511,7 @@ async function sendReactionNotification(
       timestamp: Date.now(),
       metadata: {
         taskId,
+        commentId,
         actionRequired: false,
         priority: "low" as "low",
         action: {

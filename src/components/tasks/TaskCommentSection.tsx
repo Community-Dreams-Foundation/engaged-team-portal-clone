@@ -17,6 +17,10 @@ import { useNotifications } from "@/contexts/NotificationContext"
 import { Task } from "@/types/task"
 import { addComment, fetchComments } from "@/utils/tasks/commentOperations"
 import { fetchUsers, UserSummary } from "@/utils/userOperations"
+import { Input } from "@/components/ui/input"
+import { Search, Paperclip, Type, Bold, Italic, Code, FileText, Image } from "lucide-react"
+import { Markdown } from "./Markdown"
+import { uploadCommentAttachment } from "@/utils/tasks/attachmentOperations"
 
 interface TaskCommentSectionProps {
   task: Task
@@ -34,6 +38,16 @@ interface CommentWithReplies {
   mentions?: string[]
   reactions?: Record<string, string[]>
   lastEdited?: number
+  attachments?: CommentAttachment[]
+}
+
+export interface CommentAttachment {
+  id: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  url: string
+  uploadedAt: number
 }
 
 export function TaskCommentSection({ task }: TaskCommentSectionProps) {
@@ -48,7 +62,12 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
   const [users, setUsers] = useState<UserSummary[]>([])
   const [showUserSearch, setShowUserSearch] = useState(false)
   const [mentionSearchPosition, setMentionSearchPosition] = useState({ top: 0, left: 0 })
+  const [isUploading, setIsUploading] = useState(false)
+  const [attachments, setAttachments] = useState<CommentAttachment[]>([])
+  const [showMarkdownHelp, setShowMarkdownHelp] = useState(false)
+  const [commentFilter, setCommentFilter] = useState("all")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!currentUser?.uid) return
@@ -126,8 +145,25 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
     if (!currentUser?.uid || !commentText.trim()) return
 
     try {
-      await addComment(currentUser.uid, task.id, commentText)
+      // Upload any attachments first
+      const finalAttachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          if (!attachment.url.startsWith('http')) {
+            // This attachment hasn't been uploaded yet
+            const uploadedAttachment = await uploadCommentAttachment(
+              currentUser.uid, 
+              task.id, 
+              attachment
+            )
+            return uploadedAttachment
+          }
+          return attachment
+        })
+      )
+
+      await addComment(currentUser.uid, task.id, commentText, finalAttachments)
       setCommentText("")
+      setAttachments([])
       
       // Refresh comments
       const fetchedComments = await fetchComments(currentUser.uid, task.id)
@@ -239,9 +275,98 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
     setShowUserSearch(false)
   }
 
+  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    
+    const files = Array.from(e.target.files)
+    setIsUploading(true)
+    
+    const newAttachments: CommentAttachment[] = []
+    
+    files.forEach(file => {
+      // Create a temporary URL for preview
+      const temporaryUrl = URL.createObjectURL(file)
+      
+      const newAttachment: CommentAttachment = {
+        id: `temp-${Date.now()}-${file.name}`,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        url: temporaryUrl,
+        uploadedAt: Date.now(),
+      }
+      
+      newAttachments.push(newAttachment)
+    })
+    
+    setAttachments(prev => [...prev, ...newAttachments])
+    setIsUploading(false)
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(attachment => attachment.id !== attachmentId))
+  }
+
+  const handleMarkdownButtonClick = (markdownSymbol: string) => {
+    if (!textareaRef.current) return
+    
+    const start = textareaRef.current.selectionStart
+    const end = textareaRef.current.selectionEnd
+    const text = commentText
+    
+    let newText
+    if (start === end) {
+      // No selection, just insert the symbol
+      newText = text.substring(0, start) + markdownSymbol + markdownSymbol + text.substring(end)
+      setCommentText(newText)
+      
+      // Position cursor between the symbols
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = start + markdownSymbol.length
+          textareaRef.current.selectionEnd = start + markdownSymbol.length
+          textareaRef.current.focus()
+        }
+      }, 0)
+    } else {
+      // Text is selected, wrap it with the symbol
+      newText = text.substring(0, start) + markdownSymbol + text.substring(start, end) + markdownSymbol + text.substring(end)
+      setCommentText(newText)
+      
+      // Focus back on textarea after insertion
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = start + markdownSymbol.length
+          textareaRef.current.selectionEnd = end + markdownSymbol.length
+          textareaRef.current.focus()
+        }
+      }, 0)
+    }
+  }
+
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Filter comments based on search or filter
+  const filteredComments = comments.filter(comment => {
+    const matchesSearch = searchTerm === "" || 
+      comment.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (comment.userName && comment.userName.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+    if (commentFilter === "mentions" && currentUser) {
+      return matchesSearch && (comment.mentions || []).includes(currentUser.uid);
+    } else if (commentFilter === "attachments") {
+      return matchesSearch && comment.attachments && comment.attachments.length > 0;
+    }
+    
+    return matchesSearch;
+  });
 
   return (
     <Tabs defaultValue="comments" className="w-full">
@@ -252,48 +377,183 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
       
       <TabsContent value="comments" className="space-y-4 mt-4">
         <div className="space-y-3 relative">
-          <Textarea 
-            ref={textareaRef}
-            placeholder="Add a comment... Use @ to mention someone"
-            value={commentText}
-            onChange={handleTextareaChange}
-            className="min-h-[100px]"
-          />
-          
-          {showUserSearch && filteredUsers.length > 0 && (
-            <div 
-              className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 z-10 w-64"
-              style={{ 
-                top: `${mentionSearchPosition.top}px`, 
-                left: `${mentionSearchPosition.left}px` 
-              }}
+          <div className="flex gap-2 mb-2">
+            <div className="relative flex-1">
+              <Input
+                placeholder="Search comments..."
+                className="w-full pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <select 
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background"
+              value={commentFilter}
+              onChange={(e) => setCommentFilter(e.target.value)}
             >
-              <ScrollArea className="h-[200px]">
-                <div className="p-2">
-                  {filteredUsers.map(user => (
+              <option value="all">All Comments</option>
+              {currentUser && <option value="mentions">Mentions Me</option>}
+              <option value="attachments">With Attachments</option>
+            </select>
+          </div>
+          
+          <div className="relative">
+            <Textarea 
+              ref={textareaRef}
+              placeholder="Add a comment... Use @ to mention someone or markdown for formatting"
+              value={commentText}
+              onChange={handleTextareaChange}
+              className="min-h-[100px]"
+            />
+            
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => handleMarkdownButtonClick('**')}
+              >
+                <Bold className="h-3.5 w-3.5 mr-1" />
+                Bold
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => handleMarkdownButtonClick('_')}
+              >
+                <Italic className="h-3.5 w-3.5 mr-1" />
+                Italic
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => handleMarkdownButtonClick('`')}
+              >
+                <Code className="h-3.5 w-3.5 mr-1" />
+                Code
+              </Button>
+              <Popover open={showMarkdownHelp} onOpenChange={setShowMarkdownHelp}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-8"
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-1" />
+                    Markdown Help
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Markdown Cheatsheet</h4>
+                    <div className="text-sm space-y-1">
+                      <p><strong>**Bold**</strong> or <strong>__Bold__</strong></p>
+                      <p><em>*Italic*</em> or <em>_Italic_</em></p>
+                      <p><code>`Code`</code></p>
+                      <p>```<br/>Code block<br/>```</p>
+                      <p># Heading 1</p>
+                      <p>## Heading 2</p>
+                      <p>[Link](url)</p>
+                      <p>![Image](url)</p>
+                      <p>* List item</p>
+                      <p>1. Numbered item</p>
+                      <p>&gt; Blockquote</p>
+                      <p>--- Horizontal rule</p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                Attach File
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                onChange={handleAttachmentUpload}
+              />
+            </div>
+            
+            {attachments.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium">Attachments</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {attachments.map((attachment) => (
                     <div 
-                      key={user.id}
-                      className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                      onClick={() => insertMention(user)}
+                      key={attachment.id}
+                      className="flex items-center gap-2 p-2 border rounded-md text-sm"
                     >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                        <AvatarFallback>{user.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <span>{user.name}</span>
+                      {attachment.fileType.startsWith('image/') ? (
+                        <Image className="h-4 w-4" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                      <span className="truncate flex-1">{attachment.fileName}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => removeAttachment(attachment.id)}
+                      >
+                        &times;
+                      </Button>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
-            </div>
-          )}
+              </div>
+            )}
+            
+            {showUserSearch && filteredUsers.length > 0 && (
+              <div 
+                className="absolute bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 z-10 w-64"
+                style={{ 
+                  top: `${mentionSearchPosition.top}px`, 
+                  left: `${mentionSearchPosition.left}px` 
+                }}
+              >
+                <ScrollArea className="h-[200px]">
+                  <div className="p-2">
+                    {filteredUsers.map(user => (
+                      <div 
+                        key={user.id}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                        onClick={() => insertMention(user)}
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
+                          <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span>{user.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
           
           <div className="flex justify-end">
             <Button 
               onClick={handleAddComment}
-              disabled={!commentText.trim() || !currentUser?.uid}
+              disabled={!commentText.trim() || !currentUser?.uid || isUploading}
             >
-              Add Comment
+              {isUploading ? "Uploading..." : "Add Comment"}
             </Button>
           </div>
         </div>
@@ -301,12 +561,12 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
         <div className="space-y-4 mt-6">
           {isLoading ? (
             <div className="text-center py-4">Loading comments...</div>
-          ) : comments.length === 0 ? (
+          ) : filteredComments.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
-              No comments yet. Be the first to comment!
+              {searchTerm ? "No comments match your search" : "No comments yet. Be the first to comment!"}
             </div>
           ) : (
-            comments.map(comment => (
+            filteredComments.map(comment => (
               <TaskComment 
                 key={comment.id}
                 id={comment.id}
@@ -321,6 +581,7 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
                 mentions={comment.mentions}
                 reactions={comment.reactions}
                 lastEdited={comment.lastEdited}
+                attachments={comment.attachments}
               />
             ))
           )}

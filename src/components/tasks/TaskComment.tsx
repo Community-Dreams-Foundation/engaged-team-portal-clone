@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,11 @@ import {
   Heart,
   Laugh,
   MessageCircle,
-  Paperclip
+  Paperclip,
+  FileText,
+  Image,
+  Download,
+  ExternalLink
 } from "lucide-react"
 import {
   AlertDialog,
@@ -42,6 +46,9 @@ import {
   addReactionToComment,
   removeReactionFromComment
 } from "@/utils/tasks/commentOperations"
+import { Markdown } from "./Markdown"
+import { CommentAttachment } from "./TaskCommentSection"
+import { uploadCommentAttachment } from "@/utils/tasks/attachmentOperations"
 
 interface CommentWithReplies {
   id: string
@@ -55,6 +62,7 @@ interface CommentWithReplies {
   replies?: CommentWithReplies[]
   mentions?: string[]
   reactions?: Record<string, string[]>
+  attachments?: CommentAttachment[]
 }
 
 interface TaskCommentProps {
@@ -71,6 +79,7 @@ interface TaskCommentProps {
   lastEdited?: number
   mentions?: string[]
   reactions?: Record<string, string[]>
+  attachments?: CommentAttachment[]
 }
 
 const reactionEmojis = [
@@ -96,6 +105,7 @@ export function TaskComment({
   lastEdited,
   mentions = [],
   reactions = {},
+  attachments = [],
 }: TaskCommentProps) {
   const { currentUser } = useAuth()
   const { toast } = useToast()
@@ -105,6 +115,9 @@ export function TaskComment({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [replyAttachments, setReplyAttachments] = useState<CommentAttachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isOwner = currentUser?.uid === userId
 
   const handleDelete = async () => {
@@ -133,8 +146,25 @@ export function TaskComment({
 
     setIsSubmittingReply(true)
     try {
-      await addCommentReply(currentUser.uid, taskId, replyText, id)
+      // Upload any attachments first
+      const finalAttachments = await Promise.all(
+        replyAttachments.map(async (attachment) => {
+          if (!attachment.url.startsWith('http')) {
+            // This attachment hasn't been uploaded yet
+            const uploadedAttachment = await uploadCommentAttachment(
+              currentUser.uid, 
+              taskId, 
+              attachment
+            )
+            return uploadedAttachment
+          }
+          return attachment
+        })
+      )
+
+      await addCommentReply(currentUser.uid, taskId, replyText, id, finalAttachments)
       setReplyText("")
+      setReplyAttachments([])
       onReplyToggle(id) // Close the reply form
       toast({
         title: "Reply added",
@@ -195,25 +225,59 @@ export function TaskComment({
     }
   }
 
-  // Function to render text with highlighted mentions
-  const renderTextWithMentions = (text: string) => {
-    // Find mentions in the format @[name](userId)
-    const parts = text.split(/(@\[[^\]]+\]\([^)]+\))/g)
+  const handleAttachmentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
     
-    return parts.map((part, index) => {
-      const mentionMatch = part.match(/@\[([^\]]+)\]\(([^)]+)\)/)
+    const files = Array.from(e.target.files)
+    setIsUploading(true)
+    
+    const newAttachments: CommentAttachment[] = []
+    
+    files.forEach(file => {
+      // Create a temporary URL for preview
+      const temporaryUrl = URL.createObjectURL(file)
       
-      if (mentionMatch) {
-        const [_, name, id] = mentionMatch
-        return (
-          <span key={index} className="bg-blue-100 dark:bg-blue-800 rounded px-1 py-0.5">
-            @{name}
-          </span>
-        )
+      const newAttachment: CommentAttachment = {
+        id: `temp-${Date.now()}-${file.name}`,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        url: temporaryUrl,
+        uploadedAt: Date.now(),
       }
       
-      return part
+      newAttachments.push(newAttachment)
     })
+    
+    setReplyAttachments(prev => [...prev, ...newAttachments])
+    setIsUploading(false)
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const removeAttachment = (attachmentId: string) => {
+    setReplyAttachments(prev => prev.filter(attachment => attachment.id !== attachmentId))
+  }
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
+      return <Image className="h-4 w-4" />
+    }
+    return <FileText className="h-4 w-4" />
+  }
+
+  const getFileSizeString = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  // Function to render text with highlighted mentions
+  const renderTextWithMentions = (text: string) => {
+    return <Markdown>{text}</Markdown>
   }
 
   return (
@@ -293,9 +357,37 @@ export function TaskComment({
             className="mb-2"
           />
         ) : (
-          <p className="text-sm whitespace-pre-wrap">
+          <div className="text-sm whitespace-pre-wrap">
             {renderTextWithMentions(text)}
-          </p>
+          </div>
+        )}
+        
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Paperclip className="h-3 w-3" />
+              Attachments
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {attachments.map((file) => (
+                <a 
+                  key={file.id}
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 p-2 border rounded-md text-xs group hover:bg-muted/50"
+                >
+                  {getFileIcon(file.fileType)}
+                  <div className="flex-1 overflow-hidden">
+                    <p className="truncate">{file.fileName}</p>
+                    <p className="text-muted-foreground">{getFileSizeString(file.fileSize)}</p>
+                  </div>
+                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+              ))}
+            </div>
+          </div>
         )}
         
         {/* Reactions display */}
@@ -372,25 +464,73 @@ export function TaskComment({
             onChange={(e) => setReplyText(e.target.value)}
             className="min-h-[80px]"
           />
-          <div className="flex justify-end gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setReplyText("")
-                onReplyToggle(id)
-              }}
+          
+          <div className="flex justify-between items-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs h-8"
+              onClick={() => fileInputRef.current?.click()}
             >
-              Cancel
+              <Paperclip className="h-3.5 w-3.5 mr-1" />
+              Attach File
             </Button>
-            <Button 
-              size="sm" 
-              onClick={handleReply}
-              disabled={!replyText.trim() || isSubmittingReply}
-            >
-              {isSubmittingReply ? "Posting..." : "Post Reply"}
-            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleAttachmentUpload}
+            />
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  setReplyText("")
+                  setReplyAttachments([])
+                  onReplyToggle(id)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleReply}
+                disabled={!replyText.trim() || isSubmittingReply}
+              >
+                {isSubmittingReply ? "Posting..." : "Post Reply"}
+              </Button>
+            </div>
           </div>
+          
+          {replyAttachments.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-medium">Attachments</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {replyAttachments.map((attachment) => (
+                  <div 
+                    key={attachment.id}
+                    className="flex items-center gap-2 p-2 border rounded-md text-sm"
+                  >
+                    {getFileIcon(attachment.fileType)}
+                    <span className="truncate flex-1">{attachment.fileName}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => removeAttachment(attachment.id)}
+                    >
+                      &times;
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -411,6 +551,7 @@ export function TaskComment({
               lastEdited={reply.lastEdited}
               mentions={reply.mentions}
               reactions={reply.reactions}
+              attachments={reply.attachments}
             />
           ))}
         </div>

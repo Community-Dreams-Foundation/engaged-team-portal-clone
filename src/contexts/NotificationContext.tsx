@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { getDatabase, ref, onValue, update, push, get } from "firebase/database"
@@ -7,13 +8,14 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver" | "payment";
+  type: "meeting" | "support" | "system" | "task_alert" | "fee_reminder" | "performance_update" | "waiver" | "payment" | "comment";
   status: "unread" | "read";
   timestamp: number;
   metadata?: {
     meetingId?: string;
     supportTicketId?: string;
     taskId?: string;
+    commentId?: string;
     waiverId?: string;
     paymentId?: string;
     amount?: number;
@@ -30,6 +32,7 @@ export interface Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  filteredNotifications: (types: string[]) => Notification[];
   markAsRead: (notificationId: string) => Promise<void>;
   addNotification: (notification: Omit<Notification, "id" | "status" | "timestamp">) => Promise<void>;
   markAllAsRead: () => Promise<void>;
@@ -115,11 +118,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     })
   }
 
+  const filteredNotifications = (types: string[]) => {
+    return notifications.filter(notification => types.includes(notification.type))
+  }
+
   return (
     <NotificationContext.Provider 
       value={{ 
         notifications, 
         unreadCount, 
+        filteredNotifications,
         markAsRead, 
         addNotification, 
         markAllAsRead, 
