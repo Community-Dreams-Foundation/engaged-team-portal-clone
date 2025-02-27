@@ -1,6 +1,6 @@
 
 import { useEffect } from "react"
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom"
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom"
 import Landing from "./pages/Landing"
 import Index from "./pages/Index"
 import Intake from "./pages/Intake"
@@ -44,6 +44,7 @@ function App() {
               <Router>
                 <Routes>
                   <Route path="/" element={<Landing />} />
+                  <Route path="/index" element={<Navigate to="/" replace />} />
                   <Route path="/dashboard" element={<Index />} />
                   <Route path="/intake" element={<Intake />} />
                   <Route path="/settings" element={<Settings />} />
