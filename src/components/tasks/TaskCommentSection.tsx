@@ -33,6 +33,7 @@ interface CommentWithReplies {
   replies?: CommentWithReplies[]
   mentions?: string[]
   reactions?: Record<string, string[]>
+  lastEdited?: number
 }
 
 export function TaskCommentSection({ task }: TaskCommentSectionProps) {
@@ -319,6 +320,7 @@ export function TaskCommentSection({ task }: TaskCommentSectionProps) {
                 replies={comment.replies}
                 mentions={comment.mentions}
                 reactions={comment.reactions}
+                lastEdited={comment.lastEdited}
               />
             ))
           )}
