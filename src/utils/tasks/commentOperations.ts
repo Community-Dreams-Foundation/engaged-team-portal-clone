@@ -11,6 +11,7 @@ export interface TaskComment {
   timestamp: number
   userName?: string
   parentId?: string
+  lastEdited?: number
 }
 
 export async function addComment(userId: string, taskId: string, text: string) {
@@ -81,6 +82,53 @@ export async function addCommentReply(userId: string, taskId: string, text: stri
     return commentId
   } catch (error) {
     console.error("Error adding reply:", error)
+    throw error
+  }
+}
+
+export async function editComment(userId: string, taskId: string, commentId: string, newText: string) {
+  try {
+    // Find the comment doc to edit
+    const commentsQuery = query(
+      collection(db, "task_comments"),
+      where("id", "==", commentId),
+      where("taskId", "==", taskId)
+    )
+    
+    const snapshot = await getDocs(commentsQuery)
+    
+    if (snapshot.empty) {
+      throw new Error("Comment not found")
+    }
+    
+    // Check if user owns the comment
+    const commentDoc = snapshot.docs[0]
+    const commentData = commentDoc.data()
+    
+    if (commentData.userId !== userId) {
+      throw new Error("Unauthorized to edit this comment")
+    }
+    
+    // Get user's name if available
+    const userDoc = await getDoc(doc(db, "users", userId))
+    const userName = userDoc.exists() ? userDoc.data().name || "User" : "User"
+    
+    // Edit the comment
+    await updateDoc(commentDoc.ref, {
+      text: newText,
+      lastEdited: Date.now()
+    })
+    
+    // Log this activity
+    await logActivity(userId, taskId, {
+      type: "comment",
+      timestamp: Date.now(),
+      details: `${userName} edited a comment`
+    })
+    
+    return true
+  } catch (error) {
+    console.error("Error editing comment:", error)
     throw error
   }
 }

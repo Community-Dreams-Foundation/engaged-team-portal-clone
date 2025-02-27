@@ -46,6 +46,7 @@ export interface Task {
     userId: string
     timestamp: number
     parentId?: string // for threaded discussions
+    lastEdited?: number // timestamp when comment was last edited
   }>
   metadata?: {
     complexity: "low" | "medium" | "high"
