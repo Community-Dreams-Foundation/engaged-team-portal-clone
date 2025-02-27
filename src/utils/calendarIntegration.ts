@@ -505,8 +505,10 @@ export async function generateTranscription(
     console.log('Submitting transcription request to Google Cloud Speech-to-Text API');
     
     // For long audio files, we need to use longRunningRecognize
-    // Using the standard method as documented in the Google Cloud Speech API
-    const [operation] = await speechClient.longRunningRecognize(request);
+    // Access the speechClient methods correctly for v1p1beta1
+    // The Speech API client exposes the methods through a property matching the API version
+    const speechService = speechClient.speech;
+    const [operation] = await speechService.longRunningRecognize(request);
     
     // Wait for the operation to complete
     const [response] = await operation.promise();
@@ -658,3 +660,4 @@ export function generateConferenceLink(provider: "google" | "zoom" | "teams"): s
   // Fallback to Google Meet regardless of provider to ensure Google-only solution
   return `https://meet.google.com/${randomId}`
 }
+
