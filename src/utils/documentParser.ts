@@ -1,7 +1,7 @@
-
 import { ParsedDocument, DocumentParsingConfig, ParseDocumentResult, DocumentType } from "@/types/document-parser";
 import { Task, TaskInput } from "@/types/task";
-import { createTask, autoSplitTask } from "./taskUtils";
+import { createTask } from "@/utils/tasks/basicOperations";
+import { autoSplitTask } from "@/utils/tasks/taskSplitting";
 
 export const parseDocument = async (
   file: File,
@@ -124,4 +124,3 @@ const calculateBusinessImpact = (text: string): number => {
   // Implement business impact calculation logic
   return 50;
 };
-

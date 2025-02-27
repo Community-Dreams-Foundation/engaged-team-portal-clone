@@ -1,4 +1,3 @@
-
 import { Task } from "@/types/task"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -6,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Timer, AlertCircle, Lock, Play, Pause, Clock, Tag, Link2, AlertTriangle, GitFork } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { autoSplitTask } from "@/utils/taskUtils"
+import { autoSplitTask } from "@/utils/tasks/taskSplitting"
 import { useAuth } from "@/contexts/AuthContext"
 
 interface TaskCardProps {

@@ -1,6 +1,7 @@
 
 import { getDatabase, ref, get, update, onValue } from "firebase/database"
 import type { Task } from "@/types/task"
+import { autoSplitTask, checkTaskSplitNeeded } from "./taskSplitting"
 
 export const calculatePersonalizationScore = async (
   userId: string,
