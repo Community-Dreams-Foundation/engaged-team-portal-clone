@@ -228,10 +228,7 @@ export default function Index() {
           visaStatus={mockVisaStatus}
         />
         <CommunitySection />
-        <PortfolioSection 
-          portfolio={mockPortfolio}
-          githubContent={mockGithubContent}
-        />
+        <PortfolioSection portfolio={mockPortfolio} />
         <SupportSection />
       </div>
     </DashboardLayout>
