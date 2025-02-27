@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { getDatabase, ref, get, set } from "firebase/database"
-import { CalendarSettings, CalendarCredentials, verifyCalendarCredentials } from "@/utils/calendarIntegration"
+import { CalendarSettings, CalendarCredentials, verifyCalendarCredentials } from "@/utils/calendar"
 import { useToast } from "@/hooks/use-toast"
 
 interface CalendarContextType {

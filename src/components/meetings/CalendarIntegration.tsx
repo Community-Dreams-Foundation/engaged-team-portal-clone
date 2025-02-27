@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getCalendarAuthUrl } from "@/utils/calendarIntegration"
+import { getCalendarAuthUrl } from "@/utils/calendar"
 import { CalendarClock, RefreshCw, Unlink, Calendar as CalendarIcon } from "lucide-react"
 
 export function CalendarIntegration() {

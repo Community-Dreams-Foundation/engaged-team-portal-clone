@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { format, parseISO } from "date-fns"
 import { FileVideo, FileText, Search, Calendar, Clock, Download, AlertTriangle } from "lucide-react"
-import { getMeetingRecording, RecordingDetails, generateTranscription, saveTranscriptionToDrive } from "@/utils/calendarIntegration"
+import { getMeetingRecording, RecordingDetails, generateTranscription, saveTranscriptionToDrive } from "@/utils/calendar"
 import { useToast } from "@/hooks/use-toast"
 import SocketService from "@/utils/socketService"
 
@@ -136,7 +136,7 @@ export function MeetingRecordings() {
         
         // Notify other users that a transcript is available
         if (SocketService.isConnected()) {
-          // Use the emit method through the socket service instead of directly accessing socket
+          // Use the emit method to send the message
           SocketService.emit("meeting:transcript", {
             meetingId: selectedRecording,
             transcriptUrl,
@@ -150,7 +150,6 @@ export function MeetingRecordings() {
       toast({
         title: "Transcript Generated",
         description: "The transcript has been successfully generated and saved.",
-        variant: "success"
       });
     } catch (error: any) {
       console.error("Error generating transcript:", error);
