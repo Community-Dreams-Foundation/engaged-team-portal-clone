@@ -6,6 +6,9 @@ import { PerformanceSection } from "@/components/dashboard/sections/PerformanceS
 import { CommunitySection } from "@/components/dashboard/sections/CommunitySection"
 import { PortfolioSection } from "@/components/dashboard/sections/PortfolioSection"
 import { SupportSection } from "@/components/dashboard/sections/SupportSection"
+import { useAuth } from "@/contexts/AuthContext"
+import { useEffect } from "react"
+import { useGamification } from "@/hooks/useGamification"
 
 // Mock data imports
 const mockKnowledgeData = {
@@ -224,6 +227,16 @@ const mockVisaStatus = {
 };
 
 export default function Index() {
+  const { currentUser } = useAuth();
+  const { checkStreak } = useGamification();
+  
+  // Check if user has activity today when they load the dashboard
+  useEffect(() => {
+    if (currentUser) {
+      checkStreak();
+    }
+  }, [currentUser, checkStreak]);
+
   return (
     <DashboardLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
