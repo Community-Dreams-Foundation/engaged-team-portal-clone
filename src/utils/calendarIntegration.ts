@@ -1,7 +1,7 @@
 
 import { calendar, auth, calendar_v3 } from '@googleapis/calendar'
 import { drive_v3, drive } from '@googleapis/drive'
-import { speech, speech_v1 } from '@googleapis/speech'
+import { speech } from '@googleapis/speech'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
@@ -451,7 +451,7 @@ export async function generateTranscription(
     // 4. Submit the file to the Speech-to-Text API
 
     // Mock implementation to demonstrate the API usage
-    const request: speech_v1.Protos.google.cloud.speech.v1.IRecognizeRequest = {
+    const request = {
       config: {
         encoding: 'LINEAR16',
         sampleRateHertz: 16000,
