@@ -1,17 +1,18 @@
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Portfolio, LinkedInSuggestion, LinkedInGroup } from "@/types/portfolio";
 import {
-  suggestRelevantConnections,
-  findRelevantGroups,
-  formatLinkedInPost
+  fetchLinkedInConnections,
+  fetchLinkedInGroups,
+  formatLinkedInPost,
+  shareOnLinkedIn
 } from "@/utils/linkedInUtils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy } from "lucide-react";
+import { Copy, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface LinkedInIntegrationProps {
@@ -20,15 +21,36 @@ interface LinkedInIntegrationProps {
 
 export function LinkedInIntegration({ portfolio }: LinkedInIntegrationProps) {
   const { toast } = useToast();
+  const [accessToken, setAccessToken] = useState<string | null>(localStorage.getItem('linkedin_access_token'));
 
-  const { data: connections } = useQuery({
-    queryKey: ["linkedin-connections", portfolio.userId],
-    queryFn: () => suggestRelevantConnections(portfolio),
+  const { data: connections, isLoading: isLoadingConnections } = useQuery({
+    queryKey: ["linkedin-connections", accessToken],
+    queryFn: () => accessToken ? fetchLinkedInConnections(accessToken) : Promise.resolve([]),
+    enabled: !!accessToken
   });
 
-  const { data: groups } = useQuery({
-    queryKey: ["linkedin-groups", portfolio.userId],
-    queryFn: () => findRelevantGroups(portfolio),
+  const { data: groups, isLoading: isLoadingGroups } = useQuery({
+    queryKey: ["linkedin-groups", accessToken],
+    queryFn: () => accessToken ? fetchLinkedInGroups(accessToken) : Promise.resolve([]),
+    enabled: !!accessToken
+  });
+
+  const shareMutation = useMutation({
+    mutationFn: (post: ReturnType<typeof formatLinkedInPost>) => 
+      accessToken ? shareOnLinkedIn(accessToken, post) : Promise.reject('No access token'),
+    onSuccess: () => {
+      toast({
+        title: "Shared successfully",
+        description: "Your portfolio update has been shared on LinkedIn"
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to share",
+        description: error.message
+      });
+    }
   });
 
   const formattedPost = formatLinkedInPost(portfolio);
@@ -41,6 +63,36 @@ export function LinkedInIntegration({ portfolio }: LinkedInIntegrationProps) {
     });
   };
 
+  const handleShare = () => {
+    shareMutation.mutate(formattedPost);
+  };
+
+  if (!accessToken) {
+    return (
+      <Card className="p-6">
+        <CardHeader>
+          <CardTitle>LinkedIn Integration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">
+            Please provide your LinkedIn access token to enable integration features.
+          </p>
+          <Button 
+            onClick={() => {
+              const token = prompt("Enter your LinkedIn access token:");
+              if (token) {
+                localStorage.setItem('linkedin_access_token', token);
+                setAccessToken(token);
+              }
+            }}
+          >
+            Set Access Token
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -50,7 +102,9 @@ export function LinkedInIntegration({ portfolio }: LinkedInIntegrationProps) {
         <CardContent>
           <ScrollArea className="h-[200px]">
             <div className="space-y-4">
-              {connections?.map((connection) => (
+              {isLoadingConnections ? (
+                <p className="text-muted-foreground">Loading connections...</p>
+              ) : connections?.map((connection) => (
                 <div
                   key={connection.id}
                   className="flex items-start justify-between p-4 border rounded-lg"
@@ -81,7 +135,9 @@ export function LinkedInIntegration({ portfolio }: LinkedInIntegrationProps) {
         <CardContent>
           <ScrollArea className="h-[200px]">
             <div className="space-y-4">
-              {groups?.map((group) => (
+              {isLoadingGroups ? (
+                <p className="text-muted-foreground">Loading groups...</p>
+              ) : groups?.map((group) => (
                 <div
                   key={group.id}
                   className="p-4 border rounded-lg"
@@ -124,13 +180,22 @@ export function LinkedInIntegration({ portfolio }: LinkedInIntegrationProps) {
                 </Badge>
               ))}
             </div>
-            <Button
-              className="mt-4"
-              onClick={() => copyToClipboard(`${formattedPost.title}\n\n${formattedPost.content}\n\n${formattedPost.hashtags.join(' ')}`)}
-            >
-              <Copy className="w-4 h-4 mr-2" />
-              Copy to Clipboard
-            </Button>
+            <div className="flex gap-2 mt-4">
+              <Button
+                onClick={() => copyToClipboard(`${formattedPost.title}\n\n${formattedPost.content}\n\n${formattedPost.hashtags.join(' ')}`)}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy to Clipboard
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleShare}
+                disabled={shareMutation.isPending}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                {shareMutation.isPending ? "Sharing..." : "Share on LinkedIn"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

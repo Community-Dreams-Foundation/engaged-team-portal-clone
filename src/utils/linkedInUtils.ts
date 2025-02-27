@@ -2,56 +2,62 @@
 import { Portfolio } from "@/types/portfolio";
 import type { LinkedInSuggestion, LinkedInGroup, FormattedLinkedInPost } from "@/types/portfolio";
 
-export const suggestRelevantConnections = (portfolio: Portfolio): LinkedInSuggestion[] => {
-  // This is a mock implementation - in a real application, this would
-  // integrate with LinkedIn's API to fetch actual suggestions
-  const mockSuggestions: LinkedInSuggestion[] = [
-    {
-      id: "1",
-      name: "Sarah Johnson",
-      title: "Senior Project Manager",
-      relevanceScore: 0.95,
-      matchedSkills: ["Project Management", "Agile"],
-      connectionDegree: "2nd"
-    },
-    {
-      id: "2",
-      name: "David Chen",
-      title: "Technical Lead",
-      relevanceScore: 0.89,
-      matchedSkills: ["React", "TypeScript"],
-      connectionDegree: "2nd"
-    }
-  ];
+const LINKEDIN_API_VERSION = 'v2';
+const LINKEDIN_BASE_URL = 'https://api.linkedin.com';
 
-  return mockSuggestions;
+interface LinkedInApiHeaders {
+  'Authorization': string;
+  'cache-control': string;
+  'X-Restli-Protocol-Version': string;
+}
+
+const getHeaders = (accessToken: string): LinkedInApiHeaders => ({
+  'Authorization': `Bearer ${accessToken}`,
+  'cache-control': 'no-cache',
+  'X-Restli-Protocol-Version': '2.0.0'
+});
+
+export const fetchLinkedInConnections = async (accessToken: string): Promise<LinkedInSuggestion[]> => {
+  const response = await fetch(
+    `${LINKEDIN_BASE_URL}/${LINKEDIN_API_VERSION}/connections?q=viewer&start=0&count=10`,
+    { headers: getHeaders(accessToken) }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch LinkedIn connections');
+  }
+
+  const data = await response.json();
+  return data.elements.map((connection: any) => ({
+    id: connection.id,
+    name: `${connection.firstName} ${connection.lastName}`,
+    title: connection.headline || '',
+    relevanceScore: 0.9,
+    matchedSkills: connection.skills?.slice(0, 3) || [],
+    connectionDegree: connection.connectionInfo?.degree || '2nd'
+  }));
 };
 
-export const findRelevantGroups = (portfolio: Portfolio): LinkedInGroup[] => {
-  // This is a mock implementation - in a real application, this would
-  // integrate with LinkedIn's API to fetch actual groups
-  const mockGroups: LinkedInGroup[] = [
-    {
-      id: "1",
-      name: "Tech Professionals Network",
-      memberCount: 50000,
-      description: "A community for tech professionals to share insights and opportunities",
-      relevanceScore: 0.92,
-      category: "Technology",
-      matchedKeywords: ["React", "TypeScript", "Web Development"]
-    },
-    {
-      id: "2",
-      name: "Project Management Experts",
-      memberCount: 35000,
-      description: "Connect with project management professionals",
-      relevanceScore: 0.87,
-      category: "Project Management",
-      matchedKeywords: ["Agile", "Project Management", "Leadership"]
-    }
-  ];
+export const fetchLinkedInGroups = async (accessToken: string): Promise<LinkedInGroup[]> => {
+  const response = await fetch(
+    `${LINKEDIN_BASE_URL}/${LINKEDIN_API_VERSION}/groups?q=member&start=0&count=10`,
+    { headers: getHeaders(accessToken) }
+  );
 
-  return mockGroups;
+  if (!response.ok) {
+    throw new Error('Failed to fetch LinkedIn groups');
+  }
+
+  const data = await response.json();
+  return data.elements.map((group: any) => ({
+    id: group.id,
+    name: group.name,
+    memberCount: group.memberCount,
+    description: group.description || '',
+    relevanceScore: 0.9,
+    category: group.category?.name || 'Professional',
+    matchedKeywords: group.specialities?.slice(0, 3) || []
+  }));
 };
 
 export const formatLinkedInPost = (portfolio: Portfolio): FormattedLinkedInPost => {
@@ -99,8 +105,32 @@ Would love to connect with other professionals in ${portfolio.summary.topSkills[
   };
 };
 
-export const formatLinkedInMarkdown = (portfolio: Portfolio): string => {
-  const post = formatLinkedInPost(portfolio);
-  return `${post.title}\n\n${post.content}\n\n${post.hashtags.join(' ')}`;
+export const shareOnLinkedIn = async (accessToken: string, post: FormattedLinkedInPost): Promise<void> => {
+  const response = await fetch(
+    `${LINKEDIN_BASE_URL}/${LINKEDIN_API_VERSION}/shares`,
+    {
+      method: 'POST',
+      headers: {
+        ...getHeaders(accessToken),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        owner: 'urn:li:person:{person_id}',
+        subject: post.title,
+        text: {
+          text: `${post.content}\n\n${post.hashtags.join(' ')}`
+        },
+        distribution: {
+          linkedInDistributionTarget: {
+            visibleToGuest: true
+          }
+        }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to share post on LinkedIn');
+  }
 };
 
