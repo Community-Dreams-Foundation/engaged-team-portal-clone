@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { KanbanSection } from "@/components/dashboard/sections/KanbanSection"
 import { TrainingSection } from "@/components/dashboard/sections/TrainingSection"
@@ -190,12 +191,19 @@ const mockVisaStatus = {
     {
       name: "Work Authorization",
       status: "valid" as const,
-      expiryDate: Date.now() + 180 * 24 * 60 * 60 * 1000
+      expiryDate: Date.now() + 180 * 24 * 60 * 60 * 1000,
+      category: "primary" as const,
+      uploadedAt: Date.now() - 30 * 24 * 60 * 60 * 1000,
+      fileUrl: "/documents/work-auth.pdf",
+      notes: "Original document issued by USCIS"
     },
     {
       name: "Passport",
       status: "expiring" as const,
-      expiryDate: Date.now() + 30 * 24 * 60 * 60 * 1000
+      expiryDate: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      category: "primary" as const,
+      uploadedAt: Date.now() - 60 * 24 * 60 * 60 * 1000,
+      fileUrl: "/documents/passport.pdf"
     }
   ],
   nextSteps: [
@@ -203,7 +211,8 @@ const mockVisaStatus = {
       id: "step1",
       description: "Submit I-765 form for EAD renewal",
       deadline: Date.now() + 15 * 24 * 60 * 60 * 1000,
-      completed: false
+      completed: false,
+      requiredDocuments: ["Passport", "I-94", "Previous EAD"]
     },
     {
       id: "step2",
