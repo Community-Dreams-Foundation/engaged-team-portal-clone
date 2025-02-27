@@ -16,8 +16,8 @@ export function Markdown({ children }: MarkdownProps) {
       '<span class="bg-blue-100 dark:bg-blue-800 rounded px-1 py-0.5">@$1</span>'
     )
 
-    // Parse markdown
-    const rawHtml = marked.parse(processedContent, { breaks: true })
+    // Parse markdown - ensure content is string
+    const rawHtml = marked.parse(String(processedContent), { breaks: true })
     
     // Sanitize HTML to prevent XSS
     const cleanHtml = DOMPurify.sanitize(rawHtml, {
