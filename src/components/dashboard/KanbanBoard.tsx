@@ -1,16 +1,17 @@
 
-import { useEffect, useState, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
-import { updateTaskStatus, checkDependencies } from "@/utils/tasks/progressOperations"
-import { updateTaskTimer } from "@/utils/tasks/timerOperations"
+import { checkDependencies } from "@/utils/tasks/progressOperations"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { TaskColumn } from "@/components/tasks/TaskColumn"
 import { TaskMonitor } from "./monitoring/TaskMonitor"
 import { TaskAnalytics } from "./monitoring/TaskAnalytics"
+import { useTaskTimer } from "@/hooks/useTaskTimer"
+import { useTaskDragDrop } from "@/hooks/useTaskDragDrop"
 
 export function KanbanBoard() {
   const { currentUser } = useAuth()
@@ -18,135 +19,8 @@ export function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!currentUser?.uid) return
-
-    const loadTasks = async () => {
-      try {
-        const fetchedTasks = await fetchTasks(currentUser.uid)
-        setTasks(fetchedTasks)
-      } catch (error) {
-        console.error("Error loading tasks:", error)
-        toast({
-          variant: "destructive",
-          title: "Error loading tasks",
-          description: "Please try again later."
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadTasks()
-  }, [currentUser?.uid, toast])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTasks(currentTasks => 
-        currentTasks.map(task => {
-          if (task.isTimerRunning && task.startTime) {
-            const elapsedSinceStart = Date.now() - task.startTime
-            const totalElapsed = (task.totalElapsedTime || 0) + elapsedSinceStart
-            
-            if (totalElapsed > task.estimatedDuration * 60 * 1000) {
-              toast({
-                title: "Task Duration Alert",
-                description: `Task "${task.title}" has exceeded its estimated duration`,
-                variant: "destructive"
-              })
-            }
-
-            return {
-              ...task,
-              totalElapsedTime: totalElapsed
-            }
-          }
-          return task
-        })
-      )
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [toast])
-
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData("taskId", taskId)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
-    e.preventDefault()
-    const taskId = e.dataTransfer.getData("taskId")
-    if (!currentUser?.uid || !taskId) return
-
-    try {
-      const canStart = await checkDependencies(currentUser.uid, taskId)
-      if (newStatus === 'in-progress' && !canStart) {
-        toast({
-          variant: "destructive",
-          title: "Cannot start task",
-          description: "Not all dependencies are completed."
-        })
-        return
-      }
-
-      await updateTaskStatus(currentUser.uid, taskId, newStatus)
-      setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, status: newStatus } : task
-      ))
-    } catch (error) {
-      console.error("Error updating task status:", error)
-      toast({
-        variant: "destructive",
-        title: "Error updating task",
-        description: "Please try again later."
-      })
-    }
-  }
-
-  const toggleTimer = async (taskId: string) => {
-    if (!currentUser?.uid) return
-
-    const task = tasks.find(t => t.id === taskId)
-    if (!task) return
-
-    try {
-      const now = Date.now()
-      const isTimerRunning = !task.isTimerRunning
-      const startTime = isTimerRunning ? now : undefined
-      const totalElapsedTime = !isTimerRunning 
-        ? (task.totalElapsedTime || 0) + (task.startTime ? now - task.startTime : 0)
-        : task.totalElapsedTime
-
-      await updateTaskTimer(
-        currentUser.uid,
-        taskId,
-        isTimerRunning,
-        startTime,
-        totalElapsedTime
-      )
-
-      setTasks(tasks.map(t => 
-        t.id === taskId ? {
-          ...t,
-          isTimerRunning,
-          startTime,
-          totalElapsedTime
-        } : t
-      ))
-
-    } catch (error) {
-      console.error("Error updating timer:", error)
-      toast({
-        variant: "destructive",
-        title: "Error updating timer",
-        description: "Please try again later."
-      })
-    }
-  }
+  const { toggleTimer } = useTaskTimer(tasks, setTasks, currentUser?.uid)
+  const { handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(tasks, setTasks, currentUser?.uid)
 
   const formatDuration = useCallback((milliseconds: number) => {
     const minutes = Math.floor(milliseconds / (1000 * 60))
