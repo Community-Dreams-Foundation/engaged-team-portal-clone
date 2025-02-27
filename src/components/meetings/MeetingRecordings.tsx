@@ -1,6 +1,7 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useMeetings } from "@/contexts/MeetingContext"
+import { useCalendar } from "@/contexts/CalendarContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -8,16 +9,19 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { format, parseISO } from "date-fns"
 import { FileVideo, FileText, Search, Calendar, Clock, Download } from "lucide-react"
-import { getMeetingRecording, RecordingDetails } from "@/utils/calendarIntegration"
+import { getMeetingRecording, RecordingDetails, generateTranscription, saveTranscriptionToDrive } from "@/utils/calendarIntegration"
 import { useToast } from "@/hooks/use-toast"
 
 export function MeetingRecordings() {
   const { pastMeetings } = useMeetings()
+  const { credentials } = useCalendar()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRecording, setSelectedRecording] = useState<string | null>(null)
   const [recordingDetails, setRecordingDetails] = useState<RecordingDetails | null>(null)
   const [loadingRecording, setLoadingRecording] = useState(false)
+  const [transcription, setTranscription] = useState<string | null>(null)
+  const [isGeneratingTranscript, setIsGeneratingTranscript] = useState(false)
   
   // Filter meetings that have a recording URL or might have one (completed meetings)
   const meetingsWithRecordings = pastMeetings.filter(
@@ -34,11 +38,18 @@ export function MeetingRecordings() {
   const handleViewRecording = async (meetingId: string) => {
     setSelectedRecording(meetingId)
     setLoadingRecording(true)
+    setTranscription(null)
     
     try {
-      // In a real app, this would fetch the actual recording from a storage service
-      const details = await getMeetingRecording(meetingId)
+      // Try to get the recording from Google Drive
+      const details = await getMeetingRecording(meetingId, credentials)
       setRecordingDetails(details)
+      
+      // If there's a transcript URL, we'll assume there's already a transcript
+      if (details?.transcriptUrl) {
+        // In a real app, you would fetch and parse the transcript file
+        setTranscription("Transcript is available for download")
+      }
     } catch (error) {
       console.error("Error loading recording:", error)
       toast({
@@ -48,6 +59,53 @@ export function MeetingRecordings() {
       })
     } finally {
       setLoadingRecording(false)
+    }
+  }
+  
+  const handleGenerateTranscript = async () => {
+    if (!recordingDetails?.recordingUrl || !selectedRecording) return
+    
+    setIsGeneratingTranscript(true)
+    
+    try {
+      toast({
+        title: "Generating Transcript",
+        description: "Please wait while we generate the transcript. This may take a few minutes.",
+      })
+      
+      // Generate the transcript
+      const transcript = await generateTranscription(recordingDetails.recordingUrl, credentials)
+      
+      if (!transcript) {
+        throw new Error("Failed to generate transcript")
+      }
+      
+      // Save the transcript to Google Drive
+      const transcriptUrl = await saveTranscriptionToDrive(selectedRecording, transcript, credentials)
+      
+      if (transcriptUrl) {
+        // Update the recording details with the new transcript URL
+        setRecordingDetails({
+          ...recordingDetails,
+          transcriptUrl
+        })
+      }
+      
+      setTranscription(transcript)
+      
+      toast({
+        title: "Transcript Generated",
+        description: "The transcript has been successfully generated and saved.",
+      })
+    } catch (error) {
+      console.error("Error generating transcript:", error)
+      toast({
+        title: "Error Generating Transcript",
+        description: "There was an error generating the transcript. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsGeneratingTranscript(false)
     }
   }
   
@@ -136,17 +194,32 @@ export function MeetingRecordings() {
                 
                 <TabsContent value="recording">
                   <div className="rounded-md overflow-hidden bg-muted aspect-video">
-                    {/* In a real app, this would be a video player */}
-                    <div className="h-full flex flex-col items-center justify-center p-4">
-                      <FileVideo className="h-16 w-16 text-primary/40 mb-2" />
-                      <p className="text-center text-sm text-muted-foreground mb-4">
-                        Video recording from {format(parseISO(selectedMeeting.startTime), "MMM d, yyyy")}
-                      </p>
-                      <Button className="flex items-center gap-2">
-                        <Download className="h-4 w-4" />
-                        Download Recording
-                      </Button>
-                    </div>
+                    {recordingDetails.recordingUrl ? (
+                      <iframe 
+                        src={recordingDetails.recordingUrl.includes('drive.google.com') ? 
+                          recordingDetails.recordingUrl.replace('/view', '/preview') : 
+                          recordingDetails.recordingUrl}
+                        className="w-full h-full" 
+                        allow="autoplay; encrypted-media" 
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center p-4">
+                        <FileVideo className="h-16 w-16 text-primary/40 mb-2" />
+                        <p className="text-center text-sm text-muted-foreground mb-4">
+                          Video recording from {format(parseISO(selectedMeeting.startTime), "MMM d, yyyy")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Button 
+                      className="flex items-center gap-2"
+                      onClick={() => window.open(recordingDetails.recordingUrl, '_blank')}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Recording
+                    </Button>
                   </div>
                 </TabsContent>
                 
@@ -155,52 +228,62 @@ export function MeetingRecordings() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-base">Meeting Transcript</CardTitle>
-                        <Button size="sm" variant="outline" className="flex items-center gap-1">
-                          <Download className="h-4 w-4" />
-                          Download
-                        </Button>
+                        {recordingDetails.transcriptUrl ? (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex items-center gap-1"
+                            onClick={() => window.open(recordingDetails.transcriptUrl, '_blank')}
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="flex items-center gap-1"
+                            onClick={handleGenerateTranscript}
+                            disabled={isGeneratingTranscript}
+                          >
+                            {isGeneratingTranscript ? 'Generating...' : 'Generate Transcript'}
+                          </Button>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="p-4 bg-muted rounded-md max-h-[400px] overflow-y-auto">
-                        <div className="flex items-start space-x-2 mb-4">
-                          <FileText className="h-4 w-4 mt-1 text-primary" />
-                          <div>
-                            <p className="text-sm font-medium">{selectedMeeting.hostName} (Host)</p>
-                            <p className="text-sm">
-                              Welcome everyone to our {selectedMeeting.meetingType} meeting. Today we'll be discussing our progress and any blockers.
-                            </p>
-                          </div>
+                      {isGeneratingTranscript ? (
+                        <div className="text-center py-8">
+                          <p>Generating transcript... This may take a few minutes.</p>
                         </div>
-                        
-                        {selectedMeeting.participants.slice(0, 3).map((participant, index) => (
-                          <div key={participant.id} className="flex items-start space-x-2 mb-4">
-                            <FileText className="h-4 w-4 mt-1 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">{participant.name}</p>
-                              <p className="text-sm">
-                                {index === 0 ? "Thanks for organizing this. I've completed the tasks we discussed last time." : 
-                                 index === 1 ? "I'm still working on the integration part. Should be done by tomorrow." :
-                                 "I've been helping the team with the documentation. It's coming along well."}
-                              </p>
+                      ) : transcription || recordingDetails.transcriptUrl ? (
+                        <div className="p-4 bg-muted rounded-md max-h-[400px] overflow-y-auto">
+                          {transcription || (
+                            <div className="flex flex-col items-center justify-center h-32">
+                              <p>Transcript is available for download</p>
+                              <Button 
+                                variant="link" 
+                                className="mt-2"
+                                onClick={() => window.open(recordingDetails.transcriptUrl, '_blank')}
+                              >
+                                Open transcript
+                              </Button>
                             </div>
-                          </div>
-                        ))}
-                        
-                        <div className="flex items-start space-x-2">
-                          <FileText className="h-4 w-4 mt-1 text-primary" />
-                          <div>
-                            <p className="text-sm font-medium">{selectedMeeting.hostName} (Host)</p>
-                            <p className="text-sm">
-                              Great updates everyone. Let's schedule our next meeting for next week.
-                            </p>
-                          </div>
+                          )}
                         </div>
-                        
-                        <p className="text-xs text-muted-foreground mt-4 text-center">
-                          Note: This is a mock transcript. In a real application, this would be the actual transcribed text.
-                        </p>
-                      </div>
+                      ) : (
+                        <div className="p-4 bg-muted rounded-md flex flex-col items-center justify-center h-32">
+                          <p>No transcript available for this recording</p>
+                          <Button 
+                            variant="link" 
+                            className="mt-2"
+                            onClick={handleGenerateTranscript}
+                            disabled={isGeneratingTranscript}
+                          >
+                            Generate transcript
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

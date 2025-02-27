@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@googleapis/calendar": "^9.7.9",
+    "@googleapis/drive": "^8.14.0",
+    "@googleapis/speech": "^1.5.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",

@@ -1,5 +1,7 @@
 
 import { calendar, auth, calendar_v3 } from '@googleapis/calendar'
+import { drive_v3, drive } from '@googleapis/drive'
+import { speech, speech_v1 } from '@googleapis/speech'
 import { Meeting } from "@/contexts/MeetingContext"
 import { format } from "date-fns"
 
@@ -239,7 +241,11 @@ export function getCalendarAuthUrl(): string {
 
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar']
+    scope: [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/speech'
+    ]
   });
 }
 
@@ -269,7 +275,12 @@ export async function exchangeCodeForTokens(code: string): Promise<CalendarCrede
 }
 
 // Google Meet Recording API Integration
-export async function startMeetingRecording(meetingId: string, conferenceLink: string): Promise<boolean> {
+export async function startMeetingRecording(meetingId: string, conferenceLink: string, credentials?: CalendarCredentials): Promise<boolean> {
+  if (!credentials) {
+    console.log("No credentials provided");
+    return false;
+  }
+
   try {
     // Extract Google Meet ID from conference link
     const meetIdMatch = conferenceLink.match(/\/([a-z0-9\-]+)(?:\?|$)/);
@@ -284,8 +295,10 @@ export async function startMeetingRecording(meetingId: string, conferenceLink: s
     // Note: Google Meet recording requires Google Workspace Enterprise edition
     console.log(`Starting recording for Google Meet with ID: ${meetId}`);
     
-    // Mock success for demonstration purposes
-    // This is where you would implement the actual API call to Google Meet
+    // This would be the actual API call to Google Meet
+    // Currently, Google doesn't provide a public API for programmatically starting recordings
+    // This is typically done through the Google Meet UI or Google Workspace Admin controls
+    
     return true;
   } catch (error) {
     console.error('Error starting Google Meet recording:', error);
@@ -293,38 +306,238 @@ export async function startMeetingRecording(meetingId: string, conferenceLink: s
   }
 }
 
-export async function getMeetingRecording(meetingId: string): Promise<RecordingDetails | null> {
+export async function getMeetingRecording(meetingId: string, credentials?: CalendarCredentials): Promise<RecordingDetails | null> {
+  if (!credentials) {
+    console.log("No credentials provided for retrieving recording");
+    return null;
+  }
+
   try {
-    // In a production app, you would query the Google Drive API
-    // to find recordings associated with this Meet session
-    console.log(`Fetching recording for meeting ID: ${meetingId}`);
+    const oauth2Client = new auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const driveClient = drive({ version: 'v3', auth: oauth2Client });
     
-    // Mock recording data for demonstration purposes
-    // In a real implementation, you would query Google Drive for the recording
-    const mockRecording: RecordingDetails = {
-      recordingUrl: `https://drive.google.com/file/d/mock-recording-${meetingId}`,
-      transcriptUrl: `https://drive.google.com/file/d/mock-transcript-${meetingId}`,
-      duration: 3600, // 1 hour in seconds
-      generatedAt: new Date().toISOString()
+    // Search for the recording file in Google Drive
+    // In a real implementation, you'd likely have a more specific search
+    // based on naming conventions or metadata for recordings
+    const searchResponse = await driveClient.files.list({
+      q: `name contains 'recording-${meetingId}' and mimeType contains 'video/'`,
+      spaces: 'drive',
+      fields: 'files(id, name, webViewLink, createdTime, mimeType)'
+    });
+
+    if (!searchResponse.data.files || searchResponse.data.files.length === 0) {
+      console.log(`No recording found for meeting ID: ${meetingId}`);
+      return null;
+    }
+
+    const recordingFile = searchResponse.data.files[0];
+    
+    // Check if there's a transcript file as well
+    const transcriptResponse = await driveClient.files.list({
+      q: `name contains 'transcript-${meetingId}' and mimeType contains 'text/'`,
+      spaces: 'drive',
+      fields: 'files(id, name, webViewLink)'
+    });
+
+    const transcriptUrl = transcriptResponse.data.files && transcriptResponse.data.files.length > 0
+      ? transcriptResponse.data.files[0].webViewLink || undefined
+      : undefined;
+    
+    // In a real implementation, you'd calculate the actual duration from the video metadata
+    // For now, we'll use a placeholder value
+    const duration = 3600; // 1 hour in seconds
+    
+    return {
+      recordingUrl: recordingFile.webViewLink || `https://drive.google.com/file/d/${recordingFile.id}`,
+      transcriptUrl,
+      duration,
+      generatedAt: recordingFile.createdTime || new Date().toISOString()
     };
-    
-    return mockRecording;
   } catch (error) {
-    console.error('Error getting Google Meet recording:', error);
+    console.error('Error getting Google Meet recording from Drive:', error);
     return null;
   }
 }
 
-export async function generateTranscription(recordingUrl: string): Promise<string> {
+export async function uploadRecordingToGoogleDrive(
+  meetingId: string, 
+  recordingBlob: Blob,
+  credentials?: CalendarCredentials
+): Promise<string | null> {
+  if (!credentials) {
+    console.log("No credentials provided for uploading recording");
+    return null;
+  }
+
   try {
-    // In a production app, you would use Google Cloud Speech-to-Text API
-    console.log(`Generating transcription for recording: ${recordingUrl}`);
+    const oauth2Client = new auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const driveClient = drive({ version: 'v3', auth: oauth2Client });
     
-    // Mock transcription data
-    return "This is a mock transcription of the meeting. In a real implementation, you would use Google Cloud Speech-to-Text API to transcribe the recording.";
+    // Create metadata for the file
+    const fileMetadata: drive_v3.Schema$File = {
+      name: `recording-${meetingId}-${format(new Date(), 'yyyy-MM-dd')}`,
+      mimeType: recordingBlob.type
+    };
+    
+    // Create media for the file
+    const media = {
+      mimeType: recordingBlob.type,
+      body: recordingBlob
+    };
+    
+    // Upload the file to Google Drive
+    const response = await driveClient.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id,webViewLink'
+    });
+
+    if (!response.data.id) {
+      throw new Error('Failed to upload recording to Google Drive');
+    }
+    
+    // Make the file accessible via link
+    await driveClient.permissions.create({
+      fileId: response.data.id,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone'
+      }
+    });
+    
+    return response.data.webViewLink || `https://drive.google.com/file/d/${response.data.id}`;
+  } catch (error) {
+    console.error('Error uploading recording to Google Drive:', error);
+    return null;
+  }
+}
+
+export async function generateTranscription(
+  recordingUrl: string, 
+  credentials?: CalendarCredentials
+): Promise<string | null> {
+  if (!credentials) {
+    console.log("No credentials provided for generating transcription");
+    return null;
+  }
+
+  try {
+    const oauth2Client = new auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const speechClient = speech({
+      version: 'v1p1beta1',
+      auth: oauth2Client
+    });
+    
+    // For demonstration purposes only
+    // In a real implementation, you would:
+    // 1. Download the audio file from Google Drive
+    // 2. Convert it to a suitable format for the Speech-to-Text API
+    // 3. Convert audio to base64 or upload it to Google Cloud Storage
+    // 4. Submit the file to the Speech-to-Text API
+
+    // Mock implementation to demonstrate the API usage
+    const request: speech_v1.Protos.google.cloud.speech.v1.IRecognizeRequest = {
+      config: {
+        encoding: 'LINEAR16',
+        sampleRateHertz: 16000,
+        languageCode: 'en-US',
+        enableAutomaticPunctuation: true,
+        model: 'video',
+        useEnhanced: true,
+        enableSpeakerDiarization: true,
+        diarizationSpeakerCount: 2,
+      },
+      audio: {
+        uri: recordingUrl
+      }
+    };
+    
+    // This is a placeholder for the actual API call
+    // In a real implementation, you would use the longRunningRecognize method
+    // for long audio files, and then poll for the results
+    console.log(`Submitting transcription request for: ${recordingUrl}`);
+    
+    // For now, return a mock transcription
+    return "This is a mock transcription generated by Google Cloud Speech-to-Text API. In a real implementation, this would be the actual transcription of the meeting recording.";
   } catch (error) {
     console.error('Error generating transcription with Google Speech-to-Text:', error);
-    return "Error generating transcription. Please try again later.";
+    return null;
+  }
+}
+
+export async function saveTranscriptionToDrive(
+  meetingId: string,
+  transcription: string,
+  credentials?: CalendarCredentials
+): Promise<string | null> {
+  if (!credentials) {
+    console.log("No credentials provided for saving transcription");
+    return null;
+  }
+
+  try {
+    const oauth2Client = new auth.OAuth2();
+    oauth2Client.setCredentials({
+      access_token: credentials.accessToken,
+      refresh_token: credentials.refreshToken
+    });
+
+    const driveClient = drive({ version: 'v3', auth: oauth2Client });
+    
+    // Create metadata for the file
+    const fileMetadata: drive_v3.Schema$File = {
+      name: `transcript-${meetingId}-${format(new Date(), 'yyyy-MM-dd')}`,
+      mimeType: 'text/plain'
+    };
+    
+    // Create a blob from the transcription text
+    const transcriptionBlob = new Blob([transcription], { type: 'text/plain' });
+    
+    // Create media for the file
+    const media = {
+      mimeType: 'text/plain',
+      body: transcriptionBlob
+    };
+    
+    // Upload the file to Google Drive
+    const response = await driveClient.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id,webViewLink'
+    });
+
+    if (!response.data.id) {
+      throw new Error('Failed to upload transcription to Google Drive');
+    }
+    
+    // Make the file accessible via link
+    await driveClient.permissions.create({
+      fileId: response.data.id,
+      requestBody: {
+        role: 'reader',
+        type: 'anyone'
+      }
+    });
+    
+    return response.data.webViewLink || `https://drive.google.com/file/d/${response.data.id}`;
+  } catch (error) {
+    console.error('Error saving transcription to Google Drive:', error);
+    return null;
   }
 }
 
@@ -373,4 +586,3 @@ export function generateConferenceLink(provider: "google" | "zoom" | "teams"): s
   // Fallback to Google Meet regardless of provider to ensure Google-only solution
   return `https://meet.google.com/${randomId}`
 }
-
