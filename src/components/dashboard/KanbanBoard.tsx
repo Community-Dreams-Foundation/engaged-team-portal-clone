@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
@@ -21,6 +21,29 @@ export function KanbanBoard() {
 
   const { toggleTimer } = useTaskTimer(tasks, setTasks, currentUser?.uid)
   const { handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(tasks, setTasks, currentUser?.uid)
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (!currentUser?.uid) return
+      
+      try {
+        setLoading(true)
+        const fetchedTasks = await fetchTasks(currentUser.uid)
+        setTasks(fetchedTasks)
+      } catch (error) {
+        console.error("Error fetching tasks:", error)
+        toast({
+          variant: "destructive",
+          title: "Error loading tasks",
+          description: "Failed to load your tasks. Please refresh the page."
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadTasks()
+  }, [currentUser?.uid, toast])
 
   const formatDuration = useCallback((milliseconds: number) => {
     const minutes = Math.floor(milliseconds / (1000 * 60))

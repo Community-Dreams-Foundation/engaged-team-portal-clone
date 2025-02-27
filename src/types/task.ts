@@ -1,7 +1,14 @@
+
 export type TaskStatus = "todo" | "in-progress" | "completed"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
 export type AgentType = "general" | "data-analysis" | "content-creation" | "project-management"
+
+export interface Activity {
+  type: "status_change" | "timer_update" | "comment" | "dependency_update" | "tag_update" | "priority_change" | "completion" | "split"
+  timestamp: number
+  details: string
+}
 
 export interface CoSRecommendation {
   id: string
@@ -31,11 +38,8 @@ export interface Task {
   totalElapsedTime?: number // total time spent on task in milliseconds
   assignedTo?: string // user ID of assigned person
   completionPercentage?: number // 0-100
-  lastActivity?: {
-    type: "status_change" | "timer_update" | "comment" | "dependency_update"
-    timestamp: number
-    details?: string
-  }
+  lastActivity?: Activity
+  activities?: Activity[]
   comments?: Array<{
     id: string
     text: string
@@ -74,7 +78,7 @@ export interface Task {
   }
 }
 
-export interface TaskInput extends Omit<Task, "id" | "createdAt" | "updatedAt" | "isTimerRunning" | "totalElapsedTime" | "lastActivity"> {}
+export interface TaskInput extends Omit<Task, "id" | "createdAt" | "updatedAt" | "isTimerRunning" | "totalElapsedTime" | "lastActivity" | "activities"> {}
 
 export interface PersonalizationPreferences {
   workloadThreshold: number // hours per week

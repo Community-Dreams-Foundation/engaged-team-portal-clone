@@ -1,12 +1,28 @@
+
 import { Task } from "@/types/task"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Timer, AlertCircle, Lock, Play, Pause, Clock, Tag, Link2, AlertTriangle, GitFork } from "lucide-react"
-import { useEffect, useState } from "react"
+import { 
+  Timer, 
+  AlertCircle, 
+  Lock, 
+  Play, 
+  Pause, 
+  Clock, 
+  Tag, 
+  Link2, 
+  AlertTriangle, 
+  GitFork,
+  MessageSquare,
+  ExternalLink
+} from "lucide-react"
+import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { autoSplitTask } from "@/utils/tasks/taskSplitting"
 import { useAuth } from "@/contexts/AuthContext"
+import { TaskDetailDialog } from "./TaskDetailDialog"
 
 interface TaskCardProps {
   task: Task
@@ -17,6 +33,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: TaskCardProps) {
   const [canStart, setCanStart] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
   const { currentUser } = useAuth();
 
@@ -64,100 +81,131 @@ export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: 
     task.totalElapsedTime && task.estimatedDuration &&
     task.totalElapsedTime >= task.estimatedDuration * 60 * 1000 * 0.9 &&
     task.metadata?.autoSplitEligible === true;
+    
+  const hasComments = task.comments && task.comments.length > 0;
+  const commentCount = task.comments?.length || 0;
 
   return (
-    <Card
-      key={task.id}
-      className="p-3 cursor-move hover:shadow-md transition-shadow"
-      draggable
-    >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h4 className="font-medium">{task.title}</h4>
-            <p className="text-sm text-muted-foreground">{task.description}</p>
-            
-            <div className="flex flex-wrap gap-2 mt-2">
-              {getPriorityBadge(task.priority)}
-              {task.tags?.map(tag => (
-                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                  <Tag className="h-3 w-3" />
-                  {tag}
+    <>
+      <Card
+        key={task.id}
+        className="p-3 cursor-move hover:shadow-md transition-shadow"
+        draggable
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h4 
+                className="font-medium hover:text-primary cursor-pointer"
+                onClick={() => setShowDetails(true)}
+              >
+                {task.title}
+              </h4>
+              <p className="text-sm text-muted-foreground">{task.description}</p>
+              
+              <div className="flex flex-wrap gap-2 mt-2">
+                {getPriorityBadge(task.priority)}
+                {task.tags?.map(tag => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    <Tag className="h-3 w-3" />
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {task.dependencies && task.dependencies.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-2">
+              <Link2 className="h-4 w-4" />
+              <span>{task.dependencies.length} dependencies</span>
+              {!canStart && (
+                <Badge variant="secondary" className="ml-auto">
+                  Blocked
                 </Badge>
-              ))}
+              )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            <span>
+              Est: {task.estimatedDuration}m
+            </span>
+            
+            {hasComments && (
+              <span className="flex items-center gap-1 ml-auto">
+                <MessageSquare className="h-4 w-4" />
+                {commentCount}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between mt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {formatDuration(task.totalElapsedTime || 0)}
+              </span>
+              {!canStart && (
+                <span className="flex items-center gap-1 text-yellow-500">
+                  <Lock className="h-4 w-4" />
+                </span>
+              )}
+              {task.isTimerRunning && (
+                <span className="flex items-center gap-1 text-green-500">
+                  <Timer className="h-4 w-4 animate-pulse" />
+                </span>
+              )}
+              {(task.totalElapsedTime || 0) > task.estimatedDuration * 60 * 1000 && (
+                <span className="flex items-center gap-1 text-red-500">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {shouldRecommendSplit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={handleSplitTask}
+                >
+                  <GitFork className="h-4 w-4 mr-1" />
+                  Split
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowDetails(true)}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => onTimerToggle(task.id)}
+                disabled={task.status === 'completed' || !canStart}
+              >
+                {task.isTimerRunning ? (
+                  <Pause className="h-4 w-4" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
         </div>
-
-        {task.dependencies && task.dependencies.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-2">
-            <Link2 className="h-4 w-4" />
-            <span>{task.dependencies.length} dependencies</span>
-            {!canStart && (
-              <Badge variant="secondary" className="ml-auto">
-                Blocked
-              </Badge>
-            )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span>
-            Est: {task.estimatedDuration}m
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {formatDuration(task.totalElapsedTime || 0)}
-            </span>
-            {!canStart && (
-              <span className="flex items-center gap-1 text-yellow-500">
-                <Lock className="h-4 w-4" />
-              </span>
-            )}
-            {task.isTimerRunning && (
-              <span className="flex items-center gap-1 text-green-500">
-                <Timer className="h-4 w-4 animate-pulse" />
-              </span>
-            )}
-            {(task.totalElapsedTime || 0) > task.estimatedDuration * 60 * 1000 && (
-              <span className="flex items-center gap-1 text-red-500">
-                <AlertTriangle className="h-4 w-4" />
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {shouldRecommendSplit && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={handleSplitTask}
-              >
-                <GitFork className="h-4 w-4 mr-1" />
-                Split
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => onTimerToggle(task.id)}
-              disabled={task.status === 'completed' || !canStart}
-            >
-              {task.isTimerRunning ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
+      </Card>
+      
+      <TaskDetailDialog 
+        task={task}
+        open={showDetails}
+        onOpenChange={setShowDetails}
+      />
+    </>
   )
 }

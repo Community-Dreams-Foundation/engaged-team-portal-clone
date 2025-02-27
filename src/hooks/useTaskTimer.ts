@@ -1,8 +1,9 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { Task } from "@/types/task"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { updateTaskTimer } from "@/utils/tasks/timerOperations"
+import { recordTimerUpdate } from "@/utils/tasks/activityOperations"
 
 export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, userId?: string) {
   const { toast } = useToast()
@@ -50,6 +51,7 @@ export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetSt
         ? (task.totalElapsedTime || 0) + (task.startTime ? now - task.startTime : 0)
         : task.totalElapsedTime
 
+      // Update the timer in the database
       await updateTaskTimer(
         userId,
         taskId,
@@ -57,7 +59,16 @@ export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetSt
         startTime,
         totalElapsedTime
       )
+      
+      // Log the timer activity
+      await recordTimerUpdate(
+        userId, 
+        taskId, 
+        isTimerRunning, 
+        !isTimerRunning ? (task.startTime ? now - task.startTime : 0) : undefined
+      )
 
+      // Update local state
       setTasks(tasks.map(t => 
         t.id === taskId ? {
           ...t,
