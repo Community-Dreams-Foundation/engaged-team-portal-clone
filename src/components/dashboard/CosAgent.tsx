@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Bot } from "lucide-react"
+import { Bot, Brain, Users, Target } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Agent } from "@/types/task"
 import { PerformanceMetrics } from "@/types/performance"
 import { AgentMetrics } from "./cos-agent/AgentMetrics"
@@ -10,6 +11,7 @@ import { AgentPreferences } from "./cos-agent/AgentPreferences"
 import { AgentsList } from "./cos-agent/AgentsList"
 import { Recommendations } from "./cos-agent/Recommendations"
 import { CreateAgentDialog } from "./cos-agent/CreateAgentDialog"
+import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 
@@ -91,24 +93,55 @@ export function CosAgent() {
         </Badge>
       </div>
 
-      <div className="space-y-4">
-        {preferences && <AgentPreferences preferences={preferences} />}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid grid-cols-4 gap-4">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="simulation" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Simulation
+          </TabsTrigger>
+          <TabsTrigger value="agents" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            Agents
+          </TabsTrigger>
+          <TabsTrigger value="team" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Team
+          </TabsTrigger>
+        </TabsList>
 
-        <AgentMetrics metrics={metrics} />
+        <TabsContent value="overview" className="space-y-4">
+          {preferences && <AgentPreferences preferences={preferences} />}
+          <AgentMetrics metrics={metrics} />
+          <Recommendations 
+            recommendations={recommendations}
+            onFeedback={handleFeedback}
+          />
+        </TabsContent>
 
-        <div className="mb-6">
+        <TabsContent value="simulation" className="space-y-4">
+          <LeadershipSimulation />
+        </TabsContent>
+
+        <TabsContent value="agents" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-medium">Active Agents</h4>
             <CreateAgentDialog onAgentCreated={handleAgentCreated} />
           </div>
           <AgentsList agents={agents} />
-        </div>
+        </TabsContent>
 
-        <Recommendations 
-          recommendations={recommendations}
-          onFeedback={handleFeedback}
-        />
-      </div>
+        <TabsContent value="team" className="space-y-4">
+          <div className="text-center p-8">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h3 className="mt-2 font-semibold">Team Management</h3>
+            <p className="text-muted-foreground">Coming soon</p>
+          </div>
+        </TabsContent>
+      </Tabs>
     </Card>
   )
 }
