@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { format, parseISO } from "date-fns"
-import { FileVideo, FileText, Search, Calendar, Clock, Download } from "lucide-react"
+import { FileVideo, FileText, Search, Calendar, Clock, Download, AlertTriangle } from "lucide-react"
 import { getMeetingRecording, RecordingDetails, generateTranscription, saveTranscriptionToDrive } from "@/utils/calendarIntegration"
 import { useToast } from "@/hooks/use-toast"
+import SocketService from "@/utils/socketService"
 
 export function MeetingRecordings() {
   const { pastMeetings } = useMeetings()
@@ -22,6 +23,8 @@ export function MeetingRecordings() {
   const [loadingRecording, setLoadingRecording] = useState(false)
   const [transcription, setTranscription] = useState<string | null>(null)
   const [isGeneratingTranscript, setIsGeneratingTranscript] = useState(false)
+  const [transcriptionProgress, setTranscriptionProgress] = useState(0)
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null)
   
   // Filter meetings that have a recording URL or might have one (completed meetings)
   const meetingsWithRecordings = pastMeetings.filter(
@@ -35,10 +38,35 @@ export function MeetingRecordings() {
       meeting.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
   
+  // Listen for transcript events from socket
+  useEffect(() => {
+    if (!selectedRecording) return
+    
+    const handleTranscriptEvent = (event: CustomEvent) => {
+      const data = event.detail
+      if (data.meetingId === selectedRecording) {
+        toast({
+          title: "Transcript Updated",
+          description: "Transcript generation has been completed",
+        })
+        
+        // Reload recording details to get the updated transcript URL
+        handleViewRecording(selectedRecording)
+      }
+    }
+    
+    window.addEventListener("meeting:transcript" as any, handleTranscriptEvent)
+    
+    return () => {
+      window.removeEventListener("meeting:transcript" as any, handleTranscriptEvent)
+    }
+  }, [selectedRecording, toast])
+  
   const handleViewRecording = async (meetingId: string) => {
     setSelectedRecording(meetingId)
     setLoadingRecording(true)
     setTranscription(null)
+    setTranscriptionError(null)
     
     try {
       // Try to get the recording from Google Drive
@@ -66,6 +94,8 @@ export function MeetingRecordings() {
     if (!recordingDetails?.recordingUrl || !selectedRecording) return
     
     setIsGeneratingTranscript(true)
+    setTranscriptionProgress(0)
+    setTranscriptionError(null)
     
     try {
       toast({
@@ -73,43 +103,68 @@ export function MeetingRecordings() {
         description: "Please wait while we generate the transcript. This may take a few minutes.",
       })
       
+      // Start progress simulation
+      const progressInterval = setInterval(() => {
+        setTranscriptionProgress(prev => {
+          // Simulate progress up to 90% (real completion will come from API)
+          if (prev < 90) {
+            return prev + Math.random() * 5;
+          }
+          return prev;
+        });
+      }, 3000);
+      
       // Generate the transcript
-      const transcript = await generateTranscription(recordingDetails.recordingUrl, credentials)
+      const transcript = await generateTranscription(recordingDetails.recordingUrl, credentials);
+      
+      clearInterval(progressInterval);
+      setTranscriptionProgress(100);
       
       if (!transcript) {
-        throw new Error("Failed to generate transcript")
+        throw new Error("Failed to generate transcript");
       }
       
       // Save the transcript to Google Drive
-      const transcriptUrl = await saveTranscriptionToDrive(selectedRecording, transcript, credentials)
+      const transcriptUrl = await saveTranscriptionToDrive(selectedRecording, transcript, credentials);
       
       if (transcriptUrl) {
         // Update the recording details with the new transcript URL
         setRecordingDetails({
           ...recordingDetails,
           transcriptUrl
-        })
+        });
+        
+        // Notify other users that a transcript is available
+        if (SocketService.isConnected()) {
+          SocketService.socket?.emit("meeting:transcript", {
+            meetingId: selectedRecording,
+            transcriptUrl,
+            timestamp: new Date().toISOString()
+          });
+        }
       }
       
-      setTranscription(transcript)
+      setTranscription(transcript);
       
       toast({
         title: "Transcript Generated",
         description: "The transcript has been successfully generated and saved.",
-      })
-    } catch (error) {
-      console.error("Error generating transcript:", error)
+        variant: "success"
+      });
+    } catch (error: any) {
+      console.error("Error generating transcript:", error);
+      setTranscriptionError(error.message || "There was an error generating the transcript");
       toast({
         title: "Error Generating Transcript",
         description: "There was an error generating the transcript. Please try again.",
         variant: "destructive"
-      })
+      });
     } finally {
-      setIsGeneratingTranscript(false)
+      setIsGeneratingTranscript(false);
     }
-  }
+  };
   
-  const selectedMeeting = pastMeetings.find(m => m.id === selectedRecording)
+  const selectedMeeting = pastMeetings.find(m => m.id === selectedRecording);
   
   return (
     <div className="space-y-6">
@@ -253,12 +308,45 @@ export function MeetingRecordings() {
                     </CardHeader>
                     <CardContent>
                       {isGeneratingTranscript ? (
-                        <div className="text-center py-8">
-                          <p>Generating transcript... This may take a few minutes.</p>
+                        <div className="space-y-4 py-4">
+                          <p className="text-center text-sm text-muted-foreground">
+                            Generating transcript... This may take a few minutes.
+                          </p>
+                          <div className="w-full bg-muted rounded-full h-2.5">
+                            <div 
+                              className="bg-primary h-2.5 rounded-full transition-all duration-300" 
+                              style={{ width: `${transcriptionProgress}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-center text-muted-foreground">
+                            {transcriptionProgress < 100 
+                              ? "Processing audio and converting to text..." 
+                              : "Finalizing transcript..."}
+                          </p>
+                        </div>
+                      ) : transcriptionError ? (
+                        <div className="p-4 bg-red-50 border border-red-100 rounded-md">
+                          <div className="flex items-center gap-2 text-red-600 mb-2">
+                            <AlertTriangle className="h-5 w-5" />
+                            <p className="font-medium">Error generating transcript</p>
+                          </div>
+                          <p className="text-sm text-red-600">{transcriptionError}</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleGenerateTranscript}
+                            className="mt-4"
+                          >
+                            Try Again
+                          </Button>
                         </div>
                       ) : transcription || recordingDetails.transcriptUrl ? (
                         <div className="p-4 bg-muted rounded-md max-h-[400px] overflow-y-auto">
-                          {transcription || (
+                          {transcription ? (
+                            <div className="space-y-4 whitespace-pre-line">
+                              {transcription}
+                            </div>
+                          ) : (
                             <div className="flex flex-col items-center justify-center h-32">
                               <p>Transcript is available for download</p>
                               <Button 
@@ -273,6 +361,7 @@ export function MeetingRecordings() {
                         </div>
                       ) : (
                         <div className="p-4 bg-muted rounded-md flex flex-col items-center justify-center h-32">
+                          <FileText className="h-10 w-10 text-muted-foreground mb-2" />
                           <p>No transcript available for this recording</p>
                           <Button 
                             variant="link" 
