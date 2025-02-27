@@ -1,23 +1,13 @@
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
-import { TrainingModules } from "@/components/dashboard/TrainingModules"
-import { CosAgent } from "@/components/dashboard/CosAgent"
-import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics"
-import { CommunicationFeed } from "@/components/dashboard/CommunicationFeed"
-import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
-import { TieredSupport } from "@/components/support/TieredSupport"
-import { KnowledgeGraph } from "@/components/dashboard/cos-agent/KnowledgeGraph"
-import { RecruitmentFunnel } from "@/components/dashboard/cos-agent/RecruitmentFunnel"
-import { GitHubPortfolioPreview } from "@/components/dashboard/portfolio/GitHubPortfolioPreview"
-import { LinkedInIntegration } from "@/components/dashboard/portfolio/LinkedInIntegration"
-import { PortfolioPreview } from "@/components/dashboard/portfolio/PortfolioPreview"
-import { Card } from "@/components/ui/card"
-import { NetworkConnections } from "@/components/dashboard/community/NetworkConnections"
-import { CommunityMemberProfile } from "@/components/dashboard/community/CommunityMemberProfile"
-import { TeamChallengesBoard } from "@/components/dashboard/gamification/TeamChallengesBoard"
-import { VisaStatusTracker } from "@/components/dashboard/immigration/VisaStatusTracker"
-import type { TeamChallenge } from "@/types/gamification"
-import type { VisaStatus } from "@/types/immigration"
 
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
+import { KanbanSection } from "@/components/dashboard/sections/KanbanSection"
+import { TrainingSection } from "@/components/dashboard/sections/TrainingSection"
+import { PerformanceSection } from "@/components/dashboard/sections/PerformanceSection"
+import { CommunitySection } from "@/components/dashboard/sections/CommunitySection"
+import { PortfolioSection } from "@/components/dashboard/sections/PortfolioSection"
+import { SupportSection } from "@/components/dashboard/sections/SupportSection"
+
+// Mock data imports
 const mockKnowledgeData = {
   nodes: [
     { 
@@ -85,7 +75,7 @@ const mockRecruitmentData = {
       requirements: ["Resume", "Portfolio"],
       timeline: {
         start: Date.now(),
-        target: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days from now
+        target: Date.now() + 7 * 24 * 60 * 60 * 1000
       }
     },
     {
@@ -105,7 +95,7 @@ const mockRecruitmentData = {
       requirements: ["Interview", "Technical Test"],
       timeline: {
         start: Date.now(),
-        target: Date.now() + 14 * 24 * 60 * 60 * 1000 // 14 days from now
+        target: Date.now() + 14 * 24 * 60 * 60 * 1000
       }
     }
   ],
@@ -113,7 +103,7 @@ const mockRecruitmentData = {
     totalApplications: 5,
     activeProcesses: 2,
     successRate: 0.75,
-    averageTimeToOffer: 1209600000 // 14 days in milliseconds
+    averageTimeToOffer: 1209600000
   }
 };
 
@@ -158,7 +148,7 @@ const mockGithubContent = {
   commitMessage: "Update portfolio"
 };
 
-const mockChallenges: TeamChallenge[] = [
+const mockChallenges = [
   {
     id: "1",
     title: "Sprint Excellence Challenge",
@@ -193,7 +183,7 @@ const mockChallenges: TeamChallenge[] = [
   }
 ];
 
-const mockVisaStatus: VisaStatus = {
+const mockVisaStatus = {
   type: "H-1B",
   expiryDate: Date.now() + 180 * 24 * 60 * 60 * 1000,
   remainingDays: 180,
@@ -229,84 +219,23 @@ export default function Index() {
   return (
     <DashboardLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Kanban Board Section */}
-        <div className="col-span-full">
-          <Card className="p-6">
-            <KanbanBoard />
-          </Card>
-        </div>
-
-        {/* CoS Agent and Knowledge Section */}
-        <div className="md:col-span-2 space-y-4">
-          <Card className="p-6">
-            <TrainingModules />
-          </Card>
-          <Card className="p-6">
-            <KnowledgeGraph data={mockKnowledgeData} />
-          </Card>
-          <Card className="p-6">
-            <TeamChallengesBoard 
-              challenges={mockChallenges}
-              onJoinChallenge={(id) => console.log("Joining challenge:", id)}
-            />
-          </Card>
-        </div>
-
-        {/* Performance and Portfolio Section */}
-        <div className="space-y-4">
-          <CosAgent />
-          <Card className="p-6">
-            <PerformanceMetrics />
-          </Card>
-          <Card className="p-6">
-            <RecruitmentFunnel data={mockRecruitmentData} />
-          </Card>
-          <Card className="p-6">
-            <VisaStatusTracker 
-              status={mockVisaStatus}
-              onSetReminder={(deadline) => console.log("Setting reminder for:", deadline)}
-            />
-          </Card>
-        </div>
-
-        {/* Community Features Section */}
-        <div className="col-span-full lg:col-span-2 space-y-4">
-          <NetworkConnections />
-          <CommunityMemberProfile />
-        </div>
-
-        {/* Portfolio Integration Section */}
-        <div className="col-span-full lg:col-span-2 space-y-4">
-          <Card className="p-6">
-            <PortfolioPreview portfolio={mockPortfolio} />
-          </Card>
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-6">
-              <GitHubPortfolioPreview 
-                content={mockGithubContent}
-                onSave={() => Promise.resolve()}
-              />
-            </Card>
-            <Card className="p-6">
-              <LinkedInIntegration portfolio={mockPortfolio} />
-            </Card>
-          </div>
-        </div>
-
-        {/* Support and Communication Section */}
-        <div className="col-span-full">
-          <Card className="p-6">
-            <TieredSupport />
-          </Card>
-        </div>
-
-        {/* Communication Feed */}
-        <div className="col-span-full lg:col-span-2">
-          <Card className="p-6">
-            <CommunicationFeed />
-          </Card>
-        </div>
+        <KanbanSection />
+        <TrainingSection 
+          knowledgeData={mockKnowledgeData}
+          challenges={mockChallenges}
+        />
+        <PerformanceSection 
+          recruitmentData={mockRecruitmentData}
+          visaStatus={mockVisaStatus}
+        />
+        <CommunitySection />
+        <PortfolioSection 
+          portfolio={mockPortfolio}
+          githubContent={mockGithubContent}
+        />
+        <SupportSection />
       </div>
     </DashboardLayout>
   );
 }
+
