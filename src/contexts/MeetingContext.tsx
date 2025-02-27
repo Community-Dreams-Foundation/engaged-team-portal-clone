@@ -3,7 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from "react"
 import { getDatabase, ref, onValue, get, set, push, update, remove } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
 import { useNotifications } from "@/contexts/NotificationContext"
+import { useCalendar } from "@/contexts/CalendarContext"
 import { formatISO, addMinutes, addDays, addWeeks } from "date-fns"
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "@/utils/calendarIntegration"
 
 export interface Meeting {
   id: string;
@@ -40,6 +42,7 @@ export interface Meeting {
   notes?: string;
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
+  calendarEventId?: string;
 }
 
 export interface RecurringMeetingTemplate {
@@ -64,15 +67,15 @@ interface MeetingContextType {
   meetings: Meeting[];
   upcomingMeetings: Meeting[];
   pastMeetings: Meeting[];
-  createMeeting: (meeting: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status">) => Promise<string>;
+  createMeeting: (meeting: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId">) => Promise<string>;
   updateMeeting: (id: string, updates: Partial<Meeting>) => Promise<void>;
   deleteMeeting: (id: string) => Promise<void>;
-  scheduleMeeting: (templateId: string, startTime: Date, participants: { id: string, name: string }[]) => Promise<string>;
+  scheduleMeeting: (templateId: string, startTime: Date, participants: { id: string, name: string, email?: string }[]) => Promise<string>;
   getMeetingById: (id: string) => Promise<Meeting | null>;
   getUpcomingMeetingsByType: (type: Meeting["meetingType"]) => Meeting[];
   createRecurringMeetings: (
     role: string,
-    participants: { id: string, name: string }[]
+    participants: { id: string, name: string, email?: string }[]
   ) => Promise<string[]>;
 }
 
@@ -82,6 +85,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const { currentUser } = useAuth()
   const { addNotification } = useNotifications()
+  const { calendarSettings, credentials, isConnected } = useCalendar()
   
   const upcomingMeetings = meetings.filter(
     m => new Date(m.startTime) > new Date() && 
@@ -131,7 +135,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   }, [currentUser])
 
   const createMeeting = async (
-    meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status">
+    meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId">
   ): Promise<string> => {
     if (!currentUser) throw new Error("User not authenticated")
     
@@ -151,6 +155,24 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     const meetingId = newMeetingRef.key
     
     if (!meetingId) throw new Error("Failed to create meeting")
+    
+    // Create calendar event if calendar integration is enabled and automatic invites are turned on
+    if (isConnected && calendarSettings.autoSendInvites) {
+      try {
+        const meetingWithId = { id: meetingId, ...newMeeting } as Meeting
+        
+        const calendarEvent = await createCalendarEvent(meetingWithId, credentials)
+        
+        if (calendarEvent) {
+          // Update meeting with calendar event ID
+          await update(ref(db, `meetings/${meetingId}`), {
+            calendarEventId: calendarEvent.id
+          })
+        }
+      } catch (error) {
+        console.error("Error creating calendar event:", error)
+      }
+    }
     
     // Notify all participants
     for (const participant of meetingData.participants) {
@@ -197,6 +219,17 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       updatedAt: formatISO(new Date())
     })
     
+    // Update calendar event if the meeting has one and calendar integration is enabled
+    if (meeting.calendarEventId && isConnected) {
+      try {
+        const updatedMeeting = { ...meeting, ...updates, id } as Meeting
+        
+        await updateCalendarEvent(id, updatedMeeting, credentials)
+      } catch (error) {
+        console.error("Error updating calendar event:", error)
+      }
+    }
+    
     // Notify participants about the update if there are significant changes
     if (updates.startTime || updates.endTime || updates.status === "cancelled") {
       for (const participant of meeting.participants) {
@@ -239,6 +272,15 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Only the host can delete this meeting")
     }
     
+    // Delete calendar event if the meeting has one and calendar integration is enabled
+    if (meeting.calendarEventId && isConnected) {
+      try {
+        await deleteCalendarEvent(id, meeting.calendarEventId, credentials)
+      } catch (error) {
+        console.error("Error deleting calendar event:", error)
+      }
+    }
+    
     // Notify participants about the cancellation
     for (const participant of meeting.participants) {
       if (participant.id !== currentUser.uid) {
@@ -279,7 +321,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   const scheduleMeeting = async (
     templateId: string, 
     startTime: Date, 
-    participants: { id: string, name: string }[]
+    participants: { id: string, name: string, email?: string }[]
   ): Promise<string> => {
     if (!currentUser) throw new Error("User not authenticated")
     
@@ -299,7 +341,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       status: "pending" as const
     }))
     
-    const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+    const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
       title: template.title,
       description: template.description,
       startTime: formatISO(startTime),
@@ -321,7 +363,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   // Create recurring meetings based on role
   const createRecurringMeetings = async (
     role: string,
-    participants: { id: string, name: string }[]
+    participants: { id: string, name: string, email?: string }[]
   ): Promise<string[]> => {
     if (!currentUser) throw new Error("User not authenticated")
     
@@ -351,7 +393,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         
         const endTime = addMinutes(meetingDate, 30) // 30 minute meetings
         
-        const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+        const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
           title: "Team Sync",
           description: "Regular team sync to discuss progress and blockers",
           startTime: formatISO(meetingDate),
@@ -389,7 +431,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       
       const endTime = addMinutes(nextWednesday, 45) // 45 minute meeting
       
-      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
         title: "Captains Sync",
         description: "Weekly meeting with team captains to align on priorities and address escalations",
         startTime: formatISO(nextWednesday),
@@ -427,7 +469,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       
       const endTime = addMinutes(nextMonday, 60) // 1 hour meeting
       
-      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
         title: "Sprint Planning",
         description: "Bi-weekly sprint planning and review with team leads",
         startTime: formatISO(nextMonday),
@@ -465,7 +507,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       
       const endTime = addMinutes(nextThursday, 90) // 1.5 hour meeting
       
-      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+      const meetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
         title: "Executive Review",
         description: "Strategic review and planning with product owners",
         startTime: formatISO(nextThursday),
@@ -500,7 +542,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       
       const quarterlyEndTime = addMinutes(nextQuarterlyMeeting, 120) // 2 hour meeting
       
-      const quarterlyMeetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status"> = {
+      const quarterlyMeetingData: Omit<Meeting, "id" | "createdAt" | "updatedAt" | "status" | "calendarEventId"> = {
         title: "Quarterly All-Hands",
         description: "Quarterly organization-wide update and alignment",
         startTime: formatISO(nextQuarterlyMeeting),

@@ -9,6 +9,7 @@ import {
 import { MeetingCalendar } from "@/components/meetings/MeetingCalendar"
 import { UpcomingMeetings } from "@/components/meetings/UpcomingMeetings"
 import { ScheduleMeeting } from "@/components/meetings/ScheduleMeeting"
+import { CalendarIntegration } from "@/components/meetings/CalendarIntegration"
 import { Meeting, useMeetings } from "@/contexts/MeetingContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -70,6 +71,9 @@ export function MeetingsDashboard() {
             </TabsTrigger>
             <TabsTrigger value="schedule">
               Schedule Meeting
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              Calendar Settings
             </TabsTrigger>
           </TabsList>
         </div>
@@ -216,6 +220,10 @@ export function MeetingsDashboard() {
         
         <TabsContent value="schedule">
           <ScheduleMeeting />
+        </TabsContent>
+        
+        <TabsContent value="settings">
+          <CalendarIntegration />
         </TabsContent>
       </Tabs>
     </div>
