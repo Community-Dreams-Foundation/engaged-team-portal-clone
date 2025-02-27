@@ -18,7 +18,6 @@ import { NotificationProvider } from "./contexts/NotificationContext"
 import { Toaster } from "./components/ui/toaster"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SocketProvider } from "./contexts/SocketContext"
-import { MeetingProvider } from "./contexts/MeetingContext"
 import MeetingsPage from "./pages/Meetings"
 
 import "./App.css"
@@ -39,29 +38,27 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NotificationProvider>
-          <MeetingProvider>
-            <SocketProvider>
-              <Router>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/index" element={<Index />} />
-                  <Route path="/dashboard" element={<Index />} />
-                  <Route path="/intake" element={<Intake />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/completion" element={<Completion />} />
-                  <Route path="/submit-idea" element={<SubmitIdea />} />
-                  <Route path="/simulate" element={<SimulateCoS />} />
-                  <Route path="/fees" element={<FeeTracking />} />
-                  <Route path="/customize" element={<CustomizeCoS />} />
-                  <Route path="/admin" element={<AdminIndex />} />
-                  <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
-                  <Route path="/meetings" element={<MeetingsPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-              </Router>
-            </SocketProvider>
-          </MeetingProvider>
+          <SocketProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/index" element={<Index />} />
+                <Route path="/dashboard" element={<Index />} />
+                <Route path="/intake" element={<Intake />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/completion" element={<Completion />} />
+                <Route path="/submit-idea" element={<SubmitIdea />} />
+                <Route path="/simulate" element={<SimulateCoS />} />
+                <Route path="/fees" element={<FeeTracking />} />
+                <Route path="/customize" element={<CustomizeCoS />} />
+                <Route path="/admin" element={<AdminIndex />} />
+                <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
+                <Route path="/meetings" element={<MeetingsPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+            </Router>
+          </SocketProvider>
         </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
