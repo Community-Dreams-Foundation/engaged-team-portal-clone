@@ -12,7 +12,7 @@ export default function Landing() {
 
   const handleSwitchToSignup = () => {
     setIsLogin(false)
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'smooth' })
   }
 
   return (
@@ -26,13 +26,14 @@ export default function Landing() {
       <main className="container px-4 md:px-6 pt-24 pb-16">
         <HeroSection handleSwitchToSignup={handleSwitchToSignup} />
         <FeatureCards />
-        <AboutSection />
         
-        <div className="grid md:grid-cols-2 gap-12 items-start">
+        <div className="grid md:grid-cols-2 gap-12 items-start my-16">
           <div className="md:col-start-2">
             <AuthForm isLogin={isLogin} setIsLogin={setIsLogin} />
           </div>
         </div>
+        
+        <AboutSection />
       </main>
 
       <Footer />
