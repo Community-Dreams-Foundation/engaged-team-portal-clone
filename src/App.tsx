@@ -1,6 +1,6 @@
 
 import { useEffect } from "react"
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom"
 import Landing from "./pages/Landing"
 import Index from "./pages/Index"
 import Intake from "./pages/Intake"
@@ -22,6 +22,17 @@ import MeetingsPage from "./pages/Meetings"
 
 import "./App.css"
 
+// Redirect component to handle /index -> / redirection
+const IndexRedirect = () => {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    navigate('/', { replace: true });
+  }, [navigate]);
+  
+  return null;
+};
+
 function App() {
   useEffect(() => {
     // Handle theme
@@ -42,7 +53,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/index" element={<Index />} />
+                <Route path="/index" element={<IndexRedirect />} />
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/intake" element={<Intake />} />
                 <Route path="/settings" element={<Settings />} />

@@ -1,3 +1,4 @@
+
 #root {
   width: 100%;
   margin: 0 auto;
@@ -47,11 +48,10 @@ body {
 }
 
 .landing-hero {
-  background: linear-gradient(to bottom, rgba(var(--background), 0.8), rgba(var(--background), 0.4)), 
-              url('/placeholder.svg');
-  background-size: cover;
-  padding: 2.5rem;
   position: relative;
+  padding: 2.5rem;
+  border-radius: 1rem;
+  overflow: hidden;
 }
 
 .feature-card {

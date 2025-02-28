@@ -57,6 +57,17 @@ export default function AboutSection() {
             </div>
           </Card>
         </div>
+        <div className="relative">
+          <img 
+            src="https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=600&q=80" 
+            alt="Productivity" 
+            className="rounded-lg shadow-xl"
+          />
+          <div className="absolute -bottom-6 -left-6 bg-background p-4 rounded-lg shadow-lg border">
+            <p className="font-medium text-primary">Join 5,000+ professionals</p>
+            <p className="text-sm text-muted-foreground">Accelerating their careers with DreamStream</p>
+          </div>
+        </div>
       </div>
     </>
   )
