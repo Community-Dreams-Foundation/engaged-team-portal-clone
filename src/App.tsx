@@ -1,3 +1,4 @@
+
 import { useEffect } from "react"
 import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom"
 import Landing from "./pages/Landing"
@@ -67,7 +68,6 @@ function App() {
                 <Route path="/completion" element={<Completion />} />
                 <Route path="/submit-idea" element={<SubmitIdea />} />
                 <Route path="/simulate" element={<SimulateCoS />} />
-                <Route path="/finalize-cos" element={<FinalizeCoS />} />
                 <Route path="/fees" element={<FeeTracking />} />
                 <Route path="/customize" element={<CustomizeCoS />} />
                 <Route path="/customize-cos" element={<CustomizeCoS />} />

@@ -22,7 +22,7 @@ type Recommendation = {
 export function useCosRecommendations() {
   const { currentUser } = useAuth()
   const { toast } = useToast()
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [recommendations, setRecommendationsState] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function useCosRecommendations() {
       if (snapshot.exists()) {
         const data = snapshot.val()
         const recommendationsArray = Object.values(data) as Recommendation[]
-        setRecommendations(recommendationsArray.sort((a, b) => b.createdAt - a.createdAt))
+        setRecommendationsState(recommendationsArray.sort((a, b) => b.createdAt - a.createdAt))
       } else {
         // If no recommendations exist, create default ones
         const defaultRecommendations: Record<string, Recommendation> = {
@@ -73,7 +73,7 @@ export function useCosRecommendations() {
         // Save default recommendations to Firebase
         update(recommendationsRef, defaultRecommendations)
           .then(() => {
-            setRecommendations(Object.values(defaultRecommendations))
+            setRecommendationsState(Object.values(defaultRecommendations))
           })
           .catch(error => {
             console.error("Error creating default recommendations:", error)
@@ -85,9 +85,10 @@ export function useCosRecommendations() {
     return () => unsubscribe()
   }, [currentUser])
 
+  // Create a sortable setter function to properly sort recommendations
   const setRecommendations = (recs: Recommendation[]) => {
     // Custom setter that ensures recommendations are sorted by creation date
-    setRecommendations(recs.sort((a, b) => b.createdAt - a.createdAt))
+    setRecommendationsState(recs.sort((a, b) => b.createdAt - a.createdAt))
   }
 
   const handleFeedback = async (recommendationId: string, feedback: { useful: boolean, implemented: boolean }) => {

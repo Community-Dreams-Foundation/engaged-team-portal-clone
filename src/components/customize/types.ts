@@ -10,3 +10,4 @@ export const cosCustomizationSchema = z.object({
 });
 
 export type CosCustomizationData = z.infer<typeof cosCustomizationSchema>;
+

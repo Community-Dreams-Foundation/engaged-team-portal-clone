@@ -15,18 +15,11 @@ export function CustomizationForm() {
   const form = useForm<CosCustomizationData>({
     resolver: zodResolver(cosCustomizationSchema),
     defaultValues: {
-      tone: "casual",
-      communicationStyle: "casual",
-      notificationFrequency: "medium",
-      agentInteractionLevel: "medium",
-      workloadThreshold: 40,
-      delegationPreference: "balanced",
-      trainingFocus: ["time-management", "leadership", "delegation"],
-      aiFeatures: {
-        autoLearning: true,
-        proactiveAssistance: true,
-        contextAwareness: true
-      }
+      communicationStyle: "Collaborative",
+      primaryFocus: "Project Management",
+      decisionStyle: "Balanced",
+      feedbackPreference: "Real-time",
+      specialInstructions: ""
     },
   });
 
@@ -66,75 +59,81 @@ export function CustomizationForm() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Tone</label>
-                    <div className="flex space-x-2">
-                      <Button
-                        type="button"
-                        variant={form.watch("tone") === "formal" ? "default" : "outline"}
-                        onClick={() => form.setValue("tone", "formal")}
-                        className="flex-1"
-                      >
-                        Formal
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={form.watch("tone") === "casual" ? "default" : "outline"}
-                        onClick={() => form.setValue("tone", "casual")}
-                        className="flex-1"
-                      >
-                        Casual
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div>
                     <label className="block text-sm font-medium mb-1">Communication Style</label>
                     <div className="flex space-x-2">
                       <Button
                         type="button"
-                        variant={form.watch("communicationStyle") === "formal" ? "default" : "outline"}
-                        onClick={() => form.setValue("communicationStyle", "formal")}
+                        variant={form.watch("communicationStyle") === "Direct" ? "default" : "outline"}
+                        onClick={() => form.setValue("communicationStyle", "Direct")}
                         className="flex-1"
                       >
-                        Formal
+                        Direct
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("communicationStyle") === "casual" ? "default" : "outline"}
-                        onClick={() => form.setValue("communicationStyle", "casual")}
+                        variant={form.watch("communicationStyle") === "Collaborative" ? "default" : "outline"}
+                        onClick={() => form.setValue("communicationStyle", "Collaborative")}
                         className="flex-1"
                       >
-                        Casual
+                        Collaborative
+                      </Button>
+                    </div>
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={form.watch("communicationStyle") === "Diplomatic" ? "default" : "outline"}
+                        onClick={() => form.setValue("communicationStyle", "Diplomatic")}
+                        className="flex-1"
+                      >
+                        Diplomatic
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={form.watch("communicationStyle") === "Analytical" ? "default" : "outline"}
+                        onClick={() => form.setValue("communicationStyle", "Analytical")}
+                        className="flex-1"
+                      >
+                        Analytical
                       </Button>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Notification Frequency</label>
+                    <label className="block text-sm font-medium mb-1">Feedback Preference</label>
                     <div className="flex space-x-2">
                       <Button
                         type="button"
-                        variant={form.watch("notificationFrequency") === "low" ? "default" : "outline"}
-                        onClick={() => form.setValue("notificationFrequency", "low")}
-                        className="flex-1"
+                        variant={form.watch("feedbackPreference") === "Real-time" ? "default" : "outline"}
+                        onClick={() => form.setValue("feedbackPreference", "Real-time")}
+                        className="flex-1 text-xs"
                       >
-                        Low
+                        Real-time
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("notificationFrequency") === "medium" ? "default" : "outline"}
-                        onClick={() => form.setValue("notificationFrequency", "medium")}
-                        className="flex-1"
+                        variant={form.watch("feedbackPreference") === "Scheduled" ? "default" : "outline"}
+                        onClick={() => form.setValue("feedbackPreference", "Scheduled")}
+                        className="flex-1 text-xs"
                       >
-                        Medium
+                        Scheduled
+                      </Button>
+                    </div>
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={form.watch("feedbackPreference") === "As-needed" ? "default" : "outline"}
+                        onClick={() => form.setValue("feedbackPreference", "As-needed")}
+                        className="flex-1 text-xs"
+                      >
+                        As-needed
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("notificationFrequency") === "high" ? "default" : "outline"}
-                        onClick={() => form.setValue("notificationFrequency", "high")}
-                        className="flex-1"
+                        variant={form.watch("feedbackPreference") === "Milestone-based" ? "default" : "outline"}
+                        onClick={() => form.setValue("feedbackPreference", "Milestone-based")}
+                        className="flex-1 text-xs"
                       >
-                        High
+                        Milestone-based
                       </Button>
                     </div>
                   </div>
@@ -142,95 +141,91 @@ export function CustomizationForm() {
               </div>
               
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Workload Management</h3>
+                <h3 className="text-lg font-medium">Work Management</h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Agent Interaction Level</label>
-                    <div className="flex space-x-2">
+                    <label className="block text-sm font-medium mb-1">Primary Focus</label>
+                    <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
-                        variant={form.watch("agentInteractionLevel") === "low" ? "default" : "outline"}
-                        onClick={() => form.setValue("agentInteractionLevel", "low")}
-                        className="flex-1"
+                        variant={form.watch("primaryFocus") === "Strategic Planning" ? "default" : "outline"}
+                        onClick={() => form.setValue("primaryFocus", "Strategic Planning")}
+                        className="text-xs"
                       >
-                        Low
+                        Strategic Planning
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("agentInteractionLevel") === "medium" ? "default" : "outline"}
-                        onClick={() => form.setValue("agentInteractionLevel", "medium")}
-                        className="flex-1"
+                        variant={form.watch("primaryFocus") === "Project Management" ? "default" : "outline"}
+                        onClick={() => form.setValue("primaryFocus", "Project Management")}
+                        className="text-xs"
                       >
-                        Medium
+                        Project Management
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("agentInteractionLevel") === "high" ? "default" : "outline"}
-                        onClick={() => form.setValue("agentInteractionLevel", "high")}
-                        className="flex-1"
+                        variant={form.watch("primaryFocus") === "Team Coordination" ? "default" : "outline"}
+                        onClick={() => form.setValue("primaryFocus", "Team Coordination")}
+                        className="text-xs"
                       >
-                        High
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Workload Threshold (hours/week)</label>
-                    <div className="flex space-x-2">
-                      <Button
-                        type="button"
-                        variant={form.watch("workloadThreshold") === 20 ? "default" : "outline"}
-                        onClick={() => form.setValue("workloadThreshold", 20)}
-                        className="flex-1"
-                      >
-                        20h
+                        Team Coordination
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("workloadThreshold") === 40 ? "default" : "outline"}
-                        onClick={() => form.setValue("workloadThreshold", 40)}
-                        className="flex-1"
+                        variant={form.watch("primaryFocus") === "Resource Optimization" ? "default" : "outline"}
+                        onClick={() => form.setValue("primaryFocus", "Resource Optimization")}
+                        className="text-xs"
                       >
-                        40h
+                        Resource Optimization
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("workloadThreshold") === 60 ? "default" : "outline"}
-                        onClick={() => form.setValue("workloadThreshold", 60)}
-                        className="flex-1"
+                        variant={form.watch("primaryFocus") === "Process Improvement" ? "default" : "outline"}
+                        onClick={() => form.setValue("primaryFocus", "Process Improvement")}
+                        className="text-xs"
                       >
-                        60h
+                        Process Improvement
                       </Button>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Delegation Preference</label>
+                    <label className="block text-sm font-medium mb-1">Decision Style</label>
                     <div className="flex space-x-2">
                       <Button
                         type="button"
-                        variant={form.watch("delegationPreference") === "conservative" ? "default" : "outline"}
-                        onClick={() => form.setValue("delegationPreference", "conservative")}
+                        variant={form.watch("decisionStyle") === "Data-Driven" ? "default" : "outline"}
+                        onClick={() => form.setValue("decisionStyle", "Data-Driven")}
                         className="flex-1 text-xs"
                       >
-                        Conservative
+                        Data-Driven
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("delegationPreference") === "balanced" ? "default" : "outline"}
-                        onClick={() => form.setValue("delegationPreference", "balanced")}
+                        variant={form.watch("decisionStyle") === "Intuitive" ? "default" : "outline"}
+                        onClick={() => form.setValue("decisionStyle", "Intuitive")}
+                        className="flex-1 text-xs"
+                      >
+                        Intuitive
+                      </Button>
+                    </div>
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        type="button"
+                        variant={form.watch("decisionStyle") === "Balanced" ? "default" : "outline"}
+                        onClick={() => form.setValue("decisionStyle", "Balanced")}
                         className="flex-1 text-xs"
                       >
                         Balanced
                       </Button>
                       <Button
                         type="button"
-                        variant={form.watch("delegationPreference") === "aggressive" ? "default" : "outline"}
-                        onClick={() => form.setValue("delegationPreference", "aggressive")}
+                        variant={form.watch("decisionStyle") === "Consultative" ? "default" : "outline"}
+                        onClick={() => form.setValue("decisionStyle", "Consultative")}
                         className="flex-1 text-xs"
                       >
-                        Aggressive
+                        Consultative
                       </Button>
                     </div>
                   </div>
@@ -239,69 +234,12 @@ export function CustomizationForm() {
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Training Focus</h3>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "time-management",
-                  "leadership",
-                  "delegation",
-                  "communication",
-                  "project-management",
-                  "decision-making",
-                  "conflict-resolution",
-                  "strategic-planning"
-                ].map((focus) => (
-                  <Button
-                    key={focus}
-                    type="button"
-                    variant={form.watch("trainingFocus")?.includes(focus) ? "default" : "outline"}
-                    onClick={() => {
-                      const currentFocus = form.watch("trainingFocus") || [];
-                      if (currentFocus.includes(focus)) {
-                        form.setValue(
-                          "trainingFocus",
-                          currentFocus.filter((f) => f !== focus)
-                        );
-                      } else {
-                        form.setValue("trainingFocus", [...currentFocus, focus]);
-                      }
-                    }}
-                    className="text-xs"
-                  >
-                    {focus.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">AI Features</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button
-                  type="button"
-                  variant={form.watch("aiFeatures.autoLearning") ? "default" : "outline"}
-                  onClick={() => form.setValue("aiFeatures.autoLearning", !form.watch("aiFeatures.autoLearning"))}
-                  className="justify-start"
-                >
-                  Auto-Learning
-                </Button>
-                <Button
-                  type="button"
-                  variant={form.watch("aiFeatures.proactiveAssistance") ? "default" : "outline"}
-                  onClick={() => form.setValue("aiFeatures.proactiveAssistance", !form.watch("aiFeatures.proactiveAssistance"))}
-                  className="justify-start"
-                >
-                  Proactive Assistance
-                </Button>
-                <Button
-                  type="button"
-                  variant={form.watch("aiFeatures.contextAwareness") ? "default" : "outline"}
-                  onClick={() => form.setValue("aiFeatures.contextAwareness", !form.watch("aiFeatures.contextAwareness"))}
-                  className="justify-start"
-                >
-                  Context Awareness
-                </Button>
-              </div>
+              <h3 className="text-lg font-medium">Special Instructions</h3>
+              <textarea
+                className="w-full p-2 border border-gray-300 rounded-md h-24"
+                placeholder="Add any specific instructions for your CoS agent..."
+                {...form.register("specialInstructions")}
+              />
             </div>
           </div>
 
