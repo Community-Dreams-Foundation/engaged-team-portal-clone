@@ -46,14 +46,20 @@ const FinalizeCoS = () => {
     try {
       // Create CoS preferences object from form data
       const preferences: CoSPreferences = {
-        tone: cosData.communicationStyle === "Formal" ? "formal" : "casual",
+        // Map communication style to tone (formal or casual)
+        tone: cosData.communicationStyle === "Analytical" || cosData.communicationStyle === "Diplomatic" ? "formal" : "casual",
+        // Map feedback preference to notification frequency
         notificationFrequency: cosData.feedbackPreference === "Real-time" ? "high" : 
                               cosData.feedbackPreference === "Scheduled" ? "medium" : "low",
-        trainingFocus: [cosData.primaryFocus.toLowerCase().replace(" ", "-")],
+        // Convert primaryFocus to lowercase with hyphens for trainingFocus
+        trainingFocus: [cosData.primaryFocus.toLowerCase().replace(/ /g, "-")],
         workloadThreshold: 40, // Default value
+        // Map decision style to delegation preference
         delegationPreference: cosData.decisionStyle === "Data-Driven" ? "conservative" : 
                              cosData.decisionStyle === "Intuitive" ? "aggressive" : "balanced",
-        communicationStyle: cosData.communicationStyle === "Formal" ? "formal" : "casual",
+        // Map communication style to formal/casual string
+        communicationStyle: cosData.communicationStyle === "Analytical" || cosData.communicationStyle === "Diplomatic" ? "formal" : "casual",
+        // Map feedback preference to interaction level
         agentInteractionLevel: cosData.feedbackPreference === "Real-time" ? "high" : 
                               cosData.feedbackPreference === "Scheduled" ? "medium" : "low",
         aiFeatures: {
@@ -120,6 +126,7 @@ const FinalizeCoS = () => {
     }
   };
 
+  // Helper functions to display human-readable values
   const getCommunicationStyleDisplay = (style?: string) => {
     return style || "Collaborative";
   };
