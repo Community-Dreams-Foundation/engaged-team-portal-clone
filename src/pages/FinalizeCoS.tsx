@@ -6,6 +6,8 @@ import { getDatabase, ref, set } from "firebase/database";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, Bot } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { IntakeFormData } from "@/components/intake/types";
 import type { CosCustomizationData } from "@/components/customize/types";
 import type { CoSPreferences } from "@/types/agent";
@@ -17,6 +19,7 @@ const FinalizeCoS = () => {
   const [isComplete, setIsComplete] = useState(false);
   const [userData, setUserData] = useState<IntakeFormData | null>(null);
   const [cosData, setCosData] = useState<CosCustomizationData | null>(null);
+  const [agentName, setAgentName] = useState("My CoS Agent");
 
   useEffect(() => {
     const intakeData = localStorage.getItem("intakeFormData");
@@ -66,18 +69,20 @@ const FinalizeCoS = () => {
           autoLearning: true,
           proactiveAssistance: true,
           contextAwareness: true
-        }
+        },
+        // Save the completed onboarding flag
+        hasCompletedOnboarding: false
       };
       
       // Create initial agent
       const db = getDatabase();
       await set(ref(db, `users/${currentUser.uid}/cosPreferences`), preferences);
       
-      // Create a default agent
+      // Create a default agent with the user's custom name
       const defaultAgent = {
         id: `agent-${Date.now()}`,
         type: "general",
-        name: "Primary CoS Agent",
+        name: agentName,
         skills: preferences.trainingFocus,
         currentLoad: 0,
         assignedTasks: [],
@@ -98,6 +103,33 @@ const FinalizeCoS = () => {
       
       await set(ref(db, `users/${currentUser.uid}/agents/${defaultAgent.id}`), defaultAgent);
       
+      // Create initial tutorial recommendations
+      const tutorialRecommendations = {
+        "rec-welcome": {
+          id: "rec-welcome",
+          type: "onboarding",
+          content: `Welcome to your new CoS Agent, ${agentName}! I'm here to help you be more productive.`,
+          timestamp: Date.now(),
+          priority: "high"
+        },
+        "rec-tasks": {
+          id: "rec-tasks",
+          type: "task",
+          content: "Start by creating your first task in the Task Dashboard.",
+          timestamp: Date.now() - 100,
+          priority: "high"
+        },
+        "rec-profile": {
+          id: "rec-profile",
+          type: "profile",
+          content: "Complete your portfolio to showcase your skills and experience.",
+          timestamp: Date.now() - 200,
+          priority: "medium"
+        }
+      };
+      
+      await set(ref(db, `users/${currentUser.uid}/recommendations`), tutorialRecommendations);
+      
       // Success! Mark as complete
       setIsComplete(true);
       
@@ -107,7 +139,7 @@ const FinalizeCoS = () => {
       
       toast({
         title: "CoS Agent Deployed!",
-        description: "Your AI Chief of Staff is now ready to assist you.",
+        description: `${agentName} is now ready to assist you.`,
       });
       
       // Wait 2 seconds before navigating to the dashboard
@@ -167,6 +199,20 @@ const FinalizeCoS = () => {
               </p>
             </div>
 
+            <div className="space-y-4">
+              <Label htmlFor="agent-name">Name Your Agent</Label>
+              <Input 
+                id="agent-name"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                placeholder="My CoS Agent"
+                className="max-w-md mx-auto"
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Give your AI assistant a name that you'll recognize
+              </p>
+            </div>
+
             {userData && cosData && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
@@ -211,22 +257,22 @@ const FinalizeCoS = () => {
               {isComplete ? (
                 <div className="flex items-center justify-center space-x-2 text-green-500">
                   <Check className="h-5 w-5" />
-                  <span>CoS Agent successfully deployed!</span>
+                  <span>{agentName} successfully deployed!</span>
                 </div>
               ) : (
                 <Button 
                   onClick={handleDeployAgent} 
-                  disabled={isDeploying}
+                  disabled={isDeploying || !agentName.trim()}
                   className="w-full"
                   size="lg"
                 >
                   {isDeploying ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deploying CoS Agent...
+                      Deploying {agentName}...
                     </>
                   ) : (
-                    "Deploy My CoS Agent"
+                    `Deploy ${agentName || "My CoS Agent"}`
                   )}
                 </Button>
               )}

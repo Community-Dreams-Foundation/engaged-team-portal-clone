@@ -1,4 +1,3 @@
-
 import { SimulationNodeDatum } from "d3";
 
 export interface CoSPreferences {
@@ -26,6 +25,7 @@ export interface CoSPreferences {
     locationPreference: string;
     remotePreference: "remote" | "hybrid" | "onsite";
   };
+  hasCompletedOnboarding?: boolean;
 }
 
 export interface KnowledgeNode extends SimulationNodeDatum {
