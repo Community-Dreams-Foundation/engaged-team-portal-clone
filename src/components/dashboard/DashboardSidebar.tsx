@@ -12,6 +12,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton
 } from "@/components/ui/sidebar"
 import { 
   Kanban, 
@@ -22,13 +25,29 @@ import {
   Settings, 
   FileStack,
   Bot,
-  LogOut
+  LogOut,
+  Home,
+  ChevronDown,
+  LayoutDashboard
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
 export function DashboardSidebar() {
   const { currentUser, logout } = useAuth()
   const location = useLocation()
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    analytics: true,
+    development: false,
+    community: false
+  })
+
+  const toggleGroup = (group: string) => {
+    setOpenGroups(prev => ({
+      ...prev,
+      [group]: !prev[group]
+    }))
+  }
 
   const handleSignOut = async () => {
     try {
@@ -41,26 +60,27 @@ export function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="h-14">
-        <div className="font-semibold pl-2">DreamStream</div>
-        <Button variant="ghost" size="icon" className="rounded-full ml-auto">
+        <Button variant="ghost" size="icon" className="ml-auto">
           <Settings className="h-5 w-5" />
           <span className="sr-only">Settings</span>
         </Button>
       </SidebarHeader>
+      
       <SidebarContent>
+        {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  isActive={location.pathname === "/dashboard"}
+                  isActive={location.pathname === "/dashboard" || location.pathname === "/"}
                   tooltip="Dashboard"
                 >
                   <Link to="/dashboard">
-                    <Kanban className="h-5 w-5" />
-                    <span>Task Dashboard</span>
+                    <LayoutDashboard className="h-5 w-5" />
+                    <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -68,8 +88,30 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
+        {/* Task Management */}
         <SidebarGroup>
-          <SidebarGroupLabel>Features</SidebarGroupLabel>
+          <SidebarGroupLabel>Task Management</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname.includes("/dashboard")}
+                  tooltip="Task Dashboard"
+                >
+                  <Link to="/dashboard">
+                    <Kanban className="h-5 w-5" />
+                    <span>Task Board</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        {/* Performance & Analytics */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Growth & Development</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -101,25 +143,33 @@ export function DashboardSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   asChild 
-                  isActive={location.pathname === "/community"}
-                  tooltip="Community"
-                >
-                  <Link to="/community">
-                    <Users className="h-5 w-5" />
-                    <span>Community</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
                   isActive={location.pathname === "/portfolio"}
                   tooltip="Portfolio"
                 >
                   <Link to="/portfolio">
                     <FileStack className="h-5 w-5" />
                     <span>Portfolio</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        {/* Community & Support */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Community & Support</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === "/community"}
+                  tooltip="Community"
+                >
+                  <Link to="/community">
+                    <Users className="h-5 w-5" />
+                    <span>Community</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
