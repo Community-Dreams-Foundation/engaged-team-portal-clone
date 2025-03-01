@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { KanbanSection } from "@/components/dashboard/sections/KanbanSection"
 import { TrainingSection } from "@/components/dashboard/sections/TrainingSection"
@@ -6,11 +5,15 @@ import { PerformanceSection } from "@/components/dashboard/sections/PerformanceS
 import { CommunitySection } from "@/components/dashboard/sections/CommunitySection"
 import { PortfolioSection } from "@/components/dashboard/sections/PortfolioSection"
 import { SupportSection } from "@/components/dashboard/sections/SupportSection"
+import { DashboardOverview } from "@/components/dashboard/sections/DashboardOverview"
+import { CosAgent } from "@/components/dashboard/CosAgent"
 import { useAuth } from "@/contexts/AuthContext"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useGamification } from "@/hooks/useGamification"
+import { fetchTasks } from "@/utils/tasks/basicOperations"
+import { Task } from "@/types/task"
+import { useToast } from "@/components/ui/use-toast"
 
-// Mock data imports
 const mockKnowledgeData = {
   nodes: [
     { 
@@ -229,6 +232,9 @@ const mockVisaStatus = {
 export default function Index() {
   const { currentUser } = useAuth();
   const { checkStreak } = useGamification();
+  const { toast } = useToast();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Check if user has activity today when they load the dashboard
   useEffect(() => {
@@ -237,18 +243,56 @@ export default function Index() {
     }
   }, [currentUser, checkStreak]);
 
+  // Fetch tasks for the dashboard
+  useEffect(() => {
+    const loadTasks = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        setLoading(true);
+        const fetchedTasks = await fetchTasks(currentUser.uid);
+        setTasks(fetchedTasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        toast({
+          variant: "destructive",
+          title: "Error loading tasks",
+          description: "Failed to load your tasks. Please refresh the page."
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadTasks();
+  }, [currentUser?.uid, toast]);
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Leadership Dashboard</h1>
           <p className="text-muted-foreground">
             Welcome back{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}
           </p>
         </div>
         
+        {/* Dashboard Overview Section */}
+        <DashboardOverview tasks={tasks} />
+        
+        {/* Main Dashboard Sections */}
         <div className="grid gap-6">
           <KanbanSection />
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <CosAgent />
+          </div>
+          <PerformanceSection 
+            recruitmentData={mockRecruitmentData}
+            visaStatus={mockVisaStatus}
+          />
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -256,16 +300,12 @@ export default function Index() {
             knowledgeData={mockKnowledgeData}
             challenges={mockChallenges}
           />
-          <PerformanceSection 
-            recruitmentData={mockRecruitmentData}
-            visaStatus={mockVisaStatus}
-          />
           <CommunitySection />
+          <SupportSection />
         </div>
         
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6">
           <PortfolioSection portfolio={mockPortfolio} />
-          <SupportSection />
         </div>
       </div>
     </DashboardLayout>

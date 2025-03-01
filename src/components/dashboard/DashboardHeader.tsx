@@ -42,7 +42,7 @@ export function DashboardHeader() {
             />
             <div className="hidden sm:flex flex-col">
               <span className="font-semibold">DreamStream</span>
-              <span className="text-xs text-muted-foreground">One Team, One Dream</span>
+              <span className="text-xs text-muted-foreground">Leadership Dashboard</span>
             </div>
           </div>
           <div className="hidden md:flex flex-1 items-center gap-4 mx-4">
@@ -56,7 +56,15 @@ export function DashboardHeader() {
             </div>
           </div>
         </div>
-        <NotificationsDropdown />
+        
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="hidden sm:flex gap-1 items-center px-3 py-1">
+            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+            <span className="text-xs">Leadership Level: 5</span>
+          </Badge>
+          <NotificationsDropdown />
+        </div>
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full h-9 w-9 border border-border">

@@ -12,6 +12,9 @@ export function CommunitySection() {
           <Users className="mr-2 h-5 w-5 text-primary" />
           Community
         </CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">
+          Connect with your dream team and leadership network
+        </p>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
         <NetworkConnections />
