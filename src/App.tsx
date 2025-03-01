@@ -17,10 +17,17 @@ import { AuthProvider } from "./contexts/AuthContext"
 import { NotificationProvider } from "./contexts/NotificationContext"
 import { Toaster } from "./components/ui/toaster"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { SocketProvider } from "./contexts/SocketContext"
 import MeetingsPage from "./pages/Meetings"
 
 import "./App.css"
+
+// Try to import socket provider but don't block app if it fails
+let SocketProvider: React.FC<{children: React.ReactNode}> = ({ children }) => <>{children}</>;
+try {
+  SocketProvider = require('./contexts/SocketContext').SocketProvider;
+} catch (error) {
+  console.error('Socket provider not available:', error);
+}
 
 // Redirect component to handle /index -> / redirection
 const IndexRedirect = () => {

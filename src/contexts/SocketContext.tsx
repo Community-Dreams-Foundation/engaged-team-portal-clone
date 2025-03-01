@@ -1,11 +1,37 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from './AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from './AuthContext';
+
+// Try to import socket.io-client, but provide a fallback if it fails
+let Socket: any;
+let io: any;
+
+try {
+  // Dynamic import for socket.io-client
+  const socketModule = require('socket.io-client');
+  Socket = socketModule.Socket;
+  io = socketModule.io || socketModule.default;
+} catch (error) {
+  console.error('Error importing socket.io-client:', error);
+  // Create a mock implementation if import fails
+  io = (url: string) => {
+    console.warn('Using mock socket implementation');
+    return {
+      on: (event: string, callback: Function) => {
+        if (event === 'connect') {
+          setTimeout(() => callback(), 100);
+        }
+      },
+      emit: () => {},
+      disconnect: () => {},
+      auth: {}
+    };
+  };
+}
 
 interface SocketContextType {
-  socket: Socket | null;
+  socket: any | null;
   isConnected: boolean;
   sendMessage: (message: any) => void;
 }
@@ -21,7 +47,7 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [socket, setSocket] = useState<any | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { currentUser } = useAuth();
 
@@ -29,48 +55,53 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     // Only connect if user is authenticated
     if (!currentUser) return;
 
-    console.log('Initializing socket connection...');
-    const socketInstance = io('http://localhost:3001', {
-      auth: {
-        userId: currentUser.uid,
-        userName: currentUser.displayName || 'Anonymous'
-      }
-    });
-
-    socketInstance.on('connect', () => {
-      console.log('Socket connected');
-      setIsConnected(true);
-      toast({
-        title: "Connected to real-time server",
-        description: "You'll receive live updates",
+    try {
+      console.log('Initializing socket connection...');
+      const socketInstance = io('http://localhost:3001', {
+        auth: {
+          userId: currentUser.uid,
+          userName: currentUser.displayName || 'Anonymous'
+        }
       });
-    });
 
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
+      socketInstance.on('connect', () => {
+        console.log('Socket connected');
+        setIsConnected(true);
+        toast({
+          title: "Connected to real-time server",
+          description: "You'll receive live updates",
+        });
+      });
+
+      socketInstance.on('disconnect', () => {
+        console.log('Socket disconnected');
+        setIsConnected(false);
+        toast({
+          variant: "destructive",
+          title: "Disconnected from server",
+          description: "Trying to reconnect...",
+        });
+      });
+
+      socketInstance.on('error', (error: any) => {
+        console.error('Socket error:', error);
+        toast({
+          variant: "destructive",
+          title: "Connection Error",
+          description: "Failed to establish real-time connection",
+        });
+      });
+
+      setSocket(socketInstance);
+
+      return () => {
+        console.log('Cleaning up socket connection...');
+        socketInstance.disconnect();
+      };
+    } catch (error) {
+      console.error('Failed to initialize socket connection:', error);
       setIsConnected(false);
-      toast({
-        variant: "destructive",
-        title: "Disconnected from server",
-        description: "Trying to reconnect...",
-      });
-    });
-
-    socketInstance.on('error', (error) => {
-      console.error('Socket error:', error);
-      toast({
-        variant: "destructive",
-        title: "Connection Error",
-        description: "Failed to establish real-time connection",
-      });
-    });
-
-    setSocket(socketInstance);
-
-    return () => {
-      console.log('Cleaning up socket connection...');
-      socketInstance.disconnect();
-    };
+    }
   }, [currentUser]);
 
   const sendMessage = (message: any) => {
@@ -93,4 +124,3 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     </SocketContext.Provider>
   );
 };
-

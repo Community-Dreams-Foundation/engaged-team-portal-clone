@@ -38,6 +38,11 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
     try {
       console.log(`Attempting ${isLogin ? 'login' : 'signup'} for email:`, email);
       
+      // For debugging - log if using test credentials
+      if (email === 'testuser@admin.com' && password === 'adminadmin') {
+        console.log('Using test credentials');
+      }
+      
       if (isLogin) {
         console.log('Calling login function...');
         await login(email, password)
@@ -59,10 +64,39 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
       }
     } catch (error: any) {
       console.error('Auth error:', error)
+      
+      // Enhanced error handling for Firebase auth errors
+      let errorMessage = 'An unexpected error occurred during authentication.';
+      
+      if (error.code) {
+        console.log('Firebase error code:', error.code);
+        switch(error.code) {
+          case 'auth/invalid-credential':
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = 'Invalid email or password. Please check your credentials.';
+            break;
+          case 'auth/email-already-in-use':
+            errorMessage = 'An account with this email already exists.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Password should be at least 6 characters.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Network error. Please check your internet connection.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many unsuccessful login attempts. Please try again later.';
+            break;
+          default:
+            errorMessage = `Authentication error (${error.code}): ${error.message}`;
+        }
+      }
+      
       toast({
         variant: "destructive",
-        title: "Authentication Error",
-        description: error.message || "Failed to authenticate"
+        title: "Authentication Failed",
+        description: errorMessage
       })
     } finally {
       setIsLoading(false)
