@@ -18,6 +18,12 @@ import { NotificationProvider } from "./contexts/NotificationContext"
 import { Toaster } from "./components/ui/toaster"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import MeetingsPage from "./pages/Meetings"
+import TrainingPage from "./pages/TrainingPage"
+import PerformancePage from "./pages/PerformancePage"
+import CommunityPage from "./pages/CommunityPage"
+import PortfolioPage from "./pages/PortfolioPage"
+import CosAgentPage from "./pages/CosAgentPage"
+import SupportPage from "./pages/SupportPage"
 
 import "./App.css"
 
@@ -67,6 +73,15 @@ function App() {
                 <Route path="/admin" element={<AdminIndex />} />
                 <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
                 <Route path="/meetings" element={<MeetingsPage />} />
+                
+                {/* New separate pages */}
+                <Route path="/training" element={<TrainingPage />} />
+                <Route path="/performance" element={<PerformancePage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/portfolio" element={<PortfolioPage />} />
+                <Route path="/cos-agent" element={<CosAgentPage />} />
+                <Route path="/support" element={<SupportPage />} />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />
