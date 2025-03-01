@@ -33,8 +33,8 @@ export function IntakeForm() {
       if (!hasAgreedToTerms) {
         toast({
           variant: "destructive",
-          title: "Agreement Required",
-          description: "You must agree to the terms and conditions to proceed.",
+          title: "Document Submission Required",
+          description: "You must review, sign, and agree to all onboarding documents before proceeding.",
         });
         return;
       }
