@@ -9,13 +9,11 @@ import { PersonalInfoFields } from "./intake/PersonalInfoFields";
 import { AvailabilityField } from "./intake/AvailabilityField";
 import { DreamerStatement } from "./intake/DreamerStatement";
 import { ResumeUpload } from "./intake/ResumeUpload";
-import { DocumentAgreement } from "./intake/DocumentAgreement";
 import { intakeFormSchema, type IntakeFormData } from "./intake/types";
 import { useState } from "react";
 
 export function IntakeForm() {
   const navigate = useNavigate();
-  const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
   
   const form = useForm<IntakeFormData>({
     resolver: zodResolver(intakeFormSchema),
@@ -30,25 +28,16 @@ export function IntakeForm() {
 
   async function onSubmit(values: IntakeFormData) {
     try {
-      if (!hasAgreedToTerms) {
-        toast({
-          variant: "destructive",
-          title: "Document Submission Required",
-          description: "You must review, sign, and agree to all onboarding documents before proceeding.",
-        });
-        return;
-      }
-      
       // Store form data in localStorage for use in next steps
       localStorage.setItem("intakeFormData", JSON.stringify(values));
       
       toast({
         title: "Profile saved!",
-        description: "Let's customize your AI Chief of Staff.",
+        description: "Continue to review and sign your onboarding documents.",
       });
       
-      // Navigate to the CoS customization page - using correct URL
-      navigate("/customize-cos");
+      // Navigate to the onboarding documents page
+      navigate("/onboarding-documents");
     } catch (error) {
       toast({
         variant: "destructive",
@@ -66,10 +55,9 @@ export function IntakeForm() {
           <AvailabilityField form={form} />
           <DreamerStatement form={form} />
           <ResumeUpload form={form} />
-          <DocumentAgreement onAgreementChange={setHasAgreedToTerms} agreed={hasAgreedToTerms} />
 
-          <Button type="submit" className="w-full" disabled={!hasAgreedToTerms}>
-            Continue to CoS Customization
+          <Button type="submit" className="w-full">
+            Continue to Onboarding Documents
           </Button>
         </form>
       </Form>

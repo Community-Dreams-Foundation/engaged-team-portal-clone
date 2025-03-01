@@ -12,6 +12,7 @@ import SubmitIdea from "./pages/SubmitIdea"
 import FeeTracking from "./pages/FeeTracking"
 import CustomizeCoS from "./pages/CustomizeCoS"
 import FinalizeCoS from "./pages/FinalizeCoS"
+import OnboardingDocuments from "./pages/OnboardingDocuments"
 import AdminIndex from "./pages/admin/Index"
 import AdminWaiverDashboard from "./pages/admin/waiver/WaiverDashboard"
 import { AuthProvider } from "./contexts/AuthContext"
@@ -65,6 +66,7 @@ function App() {
                 <Route path="/index" element={<IndexRedirect />} />
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/intake" element={<Intake />} />
+                <Route path="/onboarding-documents" element={<OnboardingDocuments />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/completion" element={<Completion />} />
                 <Route path="/submit-idea" element={<SubmitIdea />} />
