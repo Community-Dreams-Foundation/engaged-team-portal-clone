@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import type { CosCustomizationData } from "@/components/customize/types";
 import type { IntakeFormData } from "@/components/intake/types";
 import { ScenarioCard } from "@/components/simulate/ScenarioCard";
@@ -16,6 +17,7 @@ const SimulateCoS = () => {
   const [isScenarioActive, setIsScenarioActive] = useState(false);
   const [currentScenario, setCurrentScenario] = useState<"morning" | "project" | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
+  const [completedScenarios, setCompletedScenarios] = useState<string[]>([]);
 
   useEffect(() => {
     const intakeData = localStorage.getItem("intakeFormData");
@@ -54,17 +56,26 @@ const SimulateCoS = () => {
     if (currentStep < 3) {
       setCurrentStep(prev => prev + 1);
     } else {
+      // Mark scenario as completed
+      if (currentScenario && !completedScenarios.includes(currentScenario)) {
+        setCompletedScenarios(prev => [...prev, currentScenario]);
+      }
+      
       setIsScenarioActive(false);
       setCurrentStep(0);
       setCurrentScenario(null);
       toast({
         title: "Scenario Completed",
-        description: currentScenario === "morning"
-          ? "You've completed the morning briefing scenario!"
-          : "You've completed the project planning scenario!",
+        description: "Great work! You've completed this simulation scenario.",
       });
     }
   };
+
+  const handleContinue = () => {
+    navigate("/finalize-cos");
+  };
+
+  const atLeastOneScenarioCompleted = completedScenarios.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,6 +113,7 @@ const SimulateCoS = () => {
                 onStart={() => handleStartScenario("morning")}
                 disabled={isScenarioActive && currentScenario !== "morning"}
                 isInProgress={isScenarioActive && currentScenario === "morning"}
+                isCompleted={completedScenarios.includes("morning")}
               >
                 {isScenarioActive && currentScenario === "morning" && userData && cosData && (
                   <MorningBriefingScenario
@@ -120,6 +132,7 @@ const SimulateCoS = () => {
                 onStart={() => handleStartScenario("project")}
                 disabled={isScenarioActive && currentScenario !== "project"}
                 isInProgress={isScenarioActive && currentScenario === "project"}
+                isCompleted={completedScenarios.includes("project")}
               >
                 {isScenarioActive && currentScenario === "project" && userData && cosData && (
                   <ProjectPlanningScenario
@@ -138,6 +151,16 @@ const SimulateCoS = () => {
                 onStart={() => {}}
                 disabled={true}
               />
+            </div>
+
+            <div className="pt-6 flex justify-end">
+              <Button 
+                onClick={handleContinue}
+                disabled={!atLeastOneScenarioCompleted}
+                size="lg"
+              >
+                Continue to Deployment
+              </Button>
             </div>
           </div>
         </div>

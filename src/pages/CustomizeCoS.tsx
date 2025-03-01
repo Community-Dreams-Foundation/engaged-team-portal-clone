@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 import { type IntakeFormData } from "@/components/intake/types";
 import { CustomizationForm } from "@/components/customize/CustomizationForm";
 
@@ -11,6 +12,11 @@ const CustomizeCoS = () => {
     // Check if user completed the intake form
     const intakeData = localStorage.getItem("intakeFormData");
     if (!intakeData) {
+      toast({
+        title: "Missing Information", 
+        description: "Please complete your profile information first.",
+        variant: "destructive"
+      });
       navigate("/intake");
       return;
     }

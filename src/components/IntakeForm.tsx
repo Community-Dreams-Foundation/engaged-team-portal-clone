@@ -34,7 +34,7 @@ export function IntakeForm() {
         description: "Let's customize your AI Chief of Staff.",
       });
       
-      // Navigate to the CoS customization page
+      // Navigate to the CoS customization page - using correct URL
       navigate("/customize-cos");
     } catch (error) {
       toast({
