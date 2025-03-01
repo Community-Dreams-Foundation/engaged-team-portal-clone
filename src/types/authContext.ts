@@ -4,7 +4,7 @@ import { ExtendedUser, UserRole } from './auth';
 export interface AuthContextType {
   currentUser: ExtendedUser | null;
   userRole: UserRole | undefined;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserRole>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -18,4 +18,3 @@ export interface AuthContextType {
   isSuperAdmin: () => boolean;
   isAdmin: () => boolean;
 }
-
