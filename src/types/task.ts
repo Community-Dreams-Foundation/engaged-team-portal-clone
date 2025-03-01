@@ -1,5 +1,5 @@
 
-export type TaskStatus = "todo" | "in-progress" | "completed"
+export type TaskStatus = "todo" | "not-started" | "in-progress" | "completed" | "blocked"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
 export type AgentType = "general" | "data-analysis" | "content-creation" | "project-management"

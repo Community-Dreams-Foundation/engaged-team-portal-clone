@@ -33,6 +33,7 @@ export function TaskColumn({
   const getStatusColor = () => {
     switch(status) {
       case 'not-started':
+      case 'todo': // Adding support for the legacy 'todo' status
         return 'bg-blue-50 dark:bg-blue-950';
       case 'in-progress':
         return 'bg-amber-50 dark:bg-amber-950';
@@ -48,7 +49,7 @@ export function TaskColumn({
   return (
     <Card
       className={`p-4 shadow-sm transition-all ${getStatusColor()} border-t-4 ${
-        status === 'not-started' ? 'border-blue-400' : 
+        status === 'not-started' || status === 'todo' ? 'border-blue-400' : 
         status === 'in-progress' ? 'border-amber-400' : 
         status === 'completed' ? 'border-green-400' : 
         'border-red-400'
