@@ -9,11 +9,9 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarHeaderTitle,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeaderAction,
 } from "@/components/ui/sidebar"
 import { 
   Kanban, 
@@ -29,12 +27,12 @@ import {
 import { Button } from "@/components/ui/button"
 
 export function DashboardSidebar() {
-  const { currentUser, signOut } = useAuth()
+  const { currentUser, logout } = useAuth()
   const location = useLocation()
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await logout()
     } catch (error) {
       console.error("Error signing out:", error)
     }
@@ -43,13 +41,11 @@ export function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="h-14">
-        <SidebarHeaderTitle>DreamStream</SidebarHeaderTitle>
-        <SidebarHeaderAction asChild>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Settings className="h-5 w-5" />
-            <span className="sr-only">Settings</span>
-          </Button>
-        </SidebarHeaderAction>
+        <div className="font-semibold pl-2">DreamStream</div>
+        <Button variant="ghost" size="icon" className="rounded-full ml-auto">
+          <Settings className="h-5 w-5" />
+          <span className="sr-only">Settings</span>
+        </Button>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
