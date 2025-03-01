@@ -1,13 +1,12 @@
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { FileText, Upload, Check } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
+import { DocumentSignatureMethod } from "./DocumentSignatureMethod";
+import { DocumentTabs } from "./DocumentTabs";
+import { DocumentAgreementCheckbox } from "./DocumentAgreementCheckbox";
+import { documentTitles, documentDescriptions } from "./DocumentConstants";
 
 interface DocumentAgreementProps {
   onAgreementChange: (agreed: boolean) => void;
@@ -72,16 +71,16 @@ export function DocumentAgreement({ onAgreementChange, agreed }: DocumentAgreeme
     onAgreementChange(value);
   };
 
-  const documentTitles: Record<string, string> = {
-    offerLetter: "Offer Letter",
-    agreement: "Service Agreement",
-    handbook: "Company Handbook"
-  };
-
-  const documentDescriptions: Record<string, string> = {
-    offerLetter: "This document outlines the terms of your engagement with DreamStream, including role, expectations, and compensation structure.",
-    agreement: "Our service agreement covers intellectual property rights, confidentiality, and terms of collaboration.",
-    handbook: "The handbook details our policies, procedures, code of conduct, and other important guidelines."
+  const handleCheckboxChange = (checked: boolean) => {
+    if (checked && !allDocumentsHandled()) {
+      toast({
+        variant: "destructive",
+        title: "Document Submission Required",
+        description: "Please sign or upload all required documents before proceeding.",
+      });
+      return;
+    }
+    updateAgreement(checked);
   };
 
   return (
@@ -98,133 +97,29 @@ export function DocumentAgreement({ onAgreementChange, agreed }: DocumentAgreeme
             </div>
           </div>
           
-          <div className="flex gap-4">
-            <Button 
-              type="button" 
-              variant={signatureMethod === "upload" ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setSignatureMethod("upload")}
-              className="flex-1"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Signed Documents
-            </Button>
-            
-            <Button 
-              type="button" 
-              variant={signatureMethod === "sign" ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setSignatureMethod("sign")}
-              className="flex-1"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Sign Electronically
-            </Button>
-          </div>
+          <DocumentSignatureMethod 
+            signatureMethod={signatureMethod} 
+            setSignatureMethod={setSignatureMethod} 
+          />
           
           {signatureMethod && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="offerLetter" className="relative">
-                  Offer Letter
-                  {((uploadedFiles.offerLetter && signatureMethod === "upload") || 
-                    (signatureValues.offerLetter.length > 3 && signatureMethod === "sign")) && (
-                    <Check className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="agreement" className="relative">
-                  Agreement
-                  {((uploadedFiles.agreement && signatureMethod === "upload") || 
-                    (signatureValues.agreement.length > 3 && signatureMethod === "sign")) && (
-                    <Check className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="handbook" className="relative">
-                  Handbook
-                  {((uploadedFiles.handbook && signatureMethod === "upload") || 
-                    (signatureValues.handbook.length > 3 && signatureMethod === "sign")) && (
-                    <Check className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              
-              {Object.keys(documentTitles).map((docType) => (
-                <TabsContent key={docType} value={docType} className="space-y-4">
-                  <h4 className="font-semibold">{documentTitles[docType]}</h4>
-                  <p className="text-sm text-muted-foreground mb-4">{documentDescriptions[docType]}</p>
-                  
-                  <div className="text-sm border rounded p-3 h-40 overflow-y-auto">
-                    <h4 className="font-semibold mb-2">DreamStream {documentTitles[docType]}</h4>
-                    <p className="mb-2">
-                      This is a sample of the {documentTitles[docType].toLowerCase()} content. In a production environment,
-                      this would contain the full text of the document for review.
-                    </p>
-                    <p className="mb-2">
-                      By signing this document, you acknowledge that you have read,
-                      understood, and agree to all terms and conditions outlined in the full {documentTitles[docType].toLowerCase()}.
-                    </p>
-                    <p>
-                      This document constitutes a legally binding agreement between you and DreamStream.
-                    </p>
-                  </div>
-                  
-                  {signatureMethod === "upload" && (
-                    <div className="space-y-2">
-                      <Input 
-                        type="file" 
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" 
-                        onChange={(e) => handleFileUpload(docType, e)}
-                      />
-                      {uploadedFiles[docType] && (
-                        <p className="text-sm text-muted-foreground">
-                          Uploaded: {uploadedFiles[docType]?.name}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {signatureMethod === "sign" && (
-                    <div className="space-y-2">
-                      <Input 
-                        type="text" 
-                        placeholder="Type your full name to sign"
-                        value={signatureValues[docType]}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          handleSignedAgreement(docType, value);
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        By typing your name above, you acknowledge this as your electronic signature.
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
+            <DocumentTabs
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              signatureMethod={signatureMethod}
+              uploadedFiles={uploadedFiles}
+              signatureValues={signatureValues}
+              documentTitles={documentTitles}
+              documentDescriptions={documentDescriptions}
+              handleFileUpload={handleFileUpload}
+              handleSignedAgreement={handleSignedAgreement}
+            />
           )}
           
-          <div className="flex items-start space-x-2 mt-6">
-            <Checkbox 
-              id="terms" 
-              checked={agreed}
-              onCheckedChange={(checked) => {
-                if (checked === true && !allDocumentsHandled()) {
-                  toast({
-                    variant: "destructive",
-                    title: "Document Submission Required",
-                    description: "Please sign or upload all required documents before proceeding.",
-                  });
-                  return;
-                }
-                updateAgreement(checked === true);
-              }}
-            />
-            <Label htmlFor="terms" className="text-sm leading-normal">
-              I confirm that I have read, understood, and agree to all the terms and conditions in these documents. 
-              I acknowledge that these documents constitute a legally binding agreement between myself and DreamStream.
-            </Label>
-          </div>
+          <DocumentAgreementCheckbox 
+            agreed={agreed} 
+            onAgreementChange={handleCheckboxChange} 
+          />
         </div>
       </Card>
     </div>
