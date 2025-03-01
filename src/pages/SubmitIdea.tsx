@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +56,7 @@ const SubmitIdea = () => {
         title: "Success!",
         description: "Your idea has been submitted successfully.",
       });
-      setTimeout(() => navigate("/dashboard"), 1500); // Changed to redirect to dashboard
+      navigate("/dashboard");
     } catch (error) {
       toast({
         variant: "destructive",
@@ -74,7 +73,7 @@ const SubmitIdea = () => {
       <Button
         variant="ghost"
         className="mb-6"
-        onClick={() => navigate("/dashboard")} // Changed to go back to dashboard
+        onClick={() => navigate("/dashboard")} 
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Dashboard
