@@ -55,12 +55,12 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
       } else {
         console.log('Calling signup function...');
         await signup(email, password)
-        console.log('Signup successful, navigating to homepage');
+        console.log('Signup successful, navigating to intake form');
         toast({
           title: "Welcome to DreamStream!",
-          description: "Your account has been created successfully"
+          description: "Your account has been created successfully. Please complete your profile."
         })
-        navigate("/dashboard")
+        navigate("/intake")
       }
     } catch (error: any) {
       console.error('Auth error:', error)

@@ -49,8 +49,9 @@ export const positions = [
 ] as const;
 
 export const availabilityOptions = [
-  { value: 40, label: "Standard (40 hours)" },
-  { value: 45, label: "Extended (45 hours)" },
-  { value: 50, label: "Executive (50 hours)" },
-  { value: 60, label: "Leadership (60 hours)" },
+  { value: 10, label: "Minimal (10 hours)" },
+  { value: 20, label: "Part-time (20 hours)" },
+  { value: 30, label: "Extended (30 hours)" },
+  { value: 40, label: "Full-time (40 hours)" },
+  { value: -1, label: "Custom hours" },
 ] as const;

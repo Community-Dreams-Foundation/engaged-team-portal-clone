@@ -9,23 +9,36 @@ import { PersonalInfoFields } from "./intake/PersonalInfoFields";
 import { AvailabilityField } from "./intake/AvailabilityField";
 import { DreamerStatement } from "./intake/DreamerStatement";
 import { ResumeUpload } from "./intake/ResumeUpload";
+import { DocumentAgreement } from "./intake/DocumentAgreement";
 import { intakeFormSchema, type IntakeFormData } from "./intake/types";
+import { useState } from "react";
 
 export function IntakeForm() {
   const navigate = useNavigate();
+  const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
+  
   const form = useForm<IntakeFormData>({
     resolver: zodResolver(intakeFormSchema),
     defaultValues: {
       fullName: "",
       email: "",
       position: "",
-      availability: 0,
+      availability: 40,
       dreamerStatement: "",
     },
   });
 
   async function onSubmit(values: IntakeFormData) {
     try {
+      if (!hasAgreedToTerms) {
+        toast({
+          variant: "destructive",
+          title: "Agreement Required",
+          description: "You must agree to the terms and conditions to proceed.",
+        });
+        return;
+      }
+      
       // Store form data in localStorage for use in next steps
       localStorage.setItem("intakeFormData", JSON.stringify(values));
       
@@ -53,8 +66,9 @@ export function IntakeForm() {
           <AvailabilityField form={form} />
           <DreamerStatement form={form} />
           <ResumeUpload form={form} />
+          <DocumentAgreement onAgreementChange={setHasAgreedToTerms} agreed={hasAgreedToTerms} />
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={!hasAgreedToTerms}>
             Continue to CoS Customization
           </Button>
         </form>
