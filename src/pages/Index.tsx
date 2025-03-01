@@ -239,19 +239,34 @@ export default function Index() {
 
   return (
     <DashboardLayout>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <KanbanSection />
-        <TrainingSection 
-          knowledgeData={mockKnowledgeData}
-          challenges={mockChallenges}
-        />
-        <PerformanceSection 
-          recruitmentData={mockRecruitmentData}
-          visaStatus={mockVisaStatus}
-        />
-        <CommunitySection />
-        <PortfolioSection portfolio={mockPortfolio} />
-        <SupportSection />
+      <div className="space-y-8">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}
+          </p>
+        </div>
+        
+        <div className="grid gap-6">
+          <KanbanSection />
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <TrainingSection 
+            knowledgeData={mockKnowledgeData}
+            challenges={mockChallenges}
+          />
+          <PerformanceSection 
+            recruitmentData={mockRecruitmentData}
+            visaStatus={mockVisaStatus}
+          />
+          <CommunitySection />
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2">
+          <PortfolioSection portfolio={mockPortfolio} />
+          <SupportSection />
+        </div>
       </div>
     </DashboardLayout>
   );

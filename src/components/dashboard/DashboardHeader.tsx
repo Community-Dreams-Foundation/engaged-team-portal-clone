@@ -1,5 +1,5 @@
 
-import { Search, Bell, User, Settings } from "lucide-react"
+import { Search, Bell, User, Settings, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -14,15 +14,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
 
 export function DashboardHeader() {
-  const { logout } = useAuth()
+  const { logout, currentUser } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
     try {
       await logout()
-      navigate("/landing")
+      navigate("/")
     } catch (error) {
       console.error("Logout failed:", error)
     }
@@ -31,7 +32,7 @@ export function DashboardHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center gap-4">
-        <SidebarTrigger />
+        <SidebarTrigger className="text-primary hover:bg-primary/10 hover:text-primary" />
         <div className="flex-1 flex items-center gap-4">
           <div className="flex items-center gap-2">
             <img
@@ -50,7 +51,7 @@ export function DashboardHeader() {
               <Input
                 type="search"
                 placeholder="Search tasks, documentation, and knowledge base..."
-                className="pl-8"
+                className="pl-8 bg-background border-primary/20 focus-visible:ring-primary"
               />
             </div>
           </div>
@@ -58,12 +59,15 @@ export function DashboardHeader() {
         <NotificationsDropdown />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            <Button variant="ghost" size="icon" className="relative rounded-full h-9 w-9 border border-border">
               <User className="h-5 w-5" />
+              <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-primary" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {currentUser?.displayName || currentUser?.email || "My Account"}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               <Settings className="mr-2 h-4 w-4" />
