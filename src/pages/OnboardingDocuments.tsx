@@ -18,6 +18,20 @@ const OnboardingDocuments = () => {
     navigate("/intake");
   };
 
+  // Function to simulate sending emails with executed documents
+  const sendExecutedDocumentsEmail = async (userEmail: string) => {
+    // In a real implementation, this would connect to an email service API
+    console.log(`Sending executed documents to email: ${userEmail}`);
+    
+    // Simulating API call to email service
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        console.log("Email sent successfully with executed documents");
+        resolve();
+      }, 1000);
+    });
+  };
+
   const handleContinueClick = () => {
     if (!hasAgreedToTerms) {
       toast({
@@ -41,6 +55,19 @@ const OnboardingDocuments = () => {
         priority: "medium"
       }
     });
+
+    // Trigger email delivery with executed documents
+    // In production, we would get the user's email from authentication or form data
+    const userEmail = "user@example.com"; // This would come from auth context in real app
+    sendExecutedDocumentsEmail(userEmail)
+      .then(() => {
+        console.log("Executed documents email delivery triggered successfully");
+      })
+      .catch((error) => {
+        console.error("Error sending executed documents email:", error);
+        // We could add error handling here, but not showing the error to users
+        // to avoid confusion as they'll still proceed with onboarding
+      });
 
     // Show a toast message
     toast({
