@@ -57,7 +57,7 @@ const SubmitIdea = () => {
         title: "Success!",
         description: "Your idea has been submitted successfully.",
       });
-      setTimeout(() => navigate("/"), 1500);
+      setTimeout(() => navigate("/dashboard"), 1500); // Changed to redirect to dashboard
     } catch (error) {
       toast({
         variant: "destructive",
@@ -74,10 +74,10 @@ const SubmitIdea = () => {
       <Button
         variant="ghost"
         className="mb-6"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/dashboard")} // Changed to go back to dashboard
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Home
+        Back to Dashboard
       </Button>
 
       <div className="max-w-2xl mx-auto">

@@ -8,6 +8,9 @@ import { useGamification } from "@/hooks/useGamification"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
 import { Task } from "@/types/task"
 import { useToast } from "@/components/ui/use-toast"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function Index() {
   const { currentUser } = useAuth();
@@ -52,9 +55,17 @@ export default function Index() {
       <div className="space-y-8">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold tracking-tight">Task Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}
-          </p>
+          <div className="flex gap-4">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/submit-idea">
+                <Plus className="mr-2 h-4 w-4" />
+                Submit Project Idea
+              </Link>
+            </Button>
+            <p className="text-muted-foreground flex items-center">
+              Welcome back{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}
+            </p>
+          </div>
         </div>
         
         {/* Task Analytics Overview */}

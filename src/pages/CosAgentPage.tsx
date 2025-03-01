@@ -1,12 +1,12 @@
 
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { CosAgent } from "@/components/dashboard/CosAgent"
 import { useAuth } from "@/contexts/AuthContext"
 import { getDatabase, ref, get, update } from "firebase/database"
 import { Button } from "@/components/ui/button"
-import { Bot, ArrowRight, Check } from "lucide-react"
+import { Bot, ArrowRight, Check, Plus } from "lucide-react"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Card } from "@/components/ui/card"
 import { useCosData } from "@/hooks/useCosData"
@@ -89,9 +89,17 @@ export default function CosAgentPage() {
       <div className="space-y-8">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold tracking-tight">CoS Agent</h1>
-          <p className="text-muted-foreground">
-            Your AI-powered productivity assistant
-          </p>
+          <div className="flex gap-4">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/submit-idea">
+                <Plus className="mr-2 h-4 w-4" />
+                Submit Project Idea
+              </Link>
+            </Button>
+            <p className="text-muted-foreground">
+              Your AI-powered productivity assistant
+            </p>
+          </div>
         </div>
         
         {isLoading ? (
