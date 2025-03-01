@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,7 +54,7 @@ const FinalizeCoS = () => {
         notificationFrequency: cosData.feedbackPreference === "Real-time" ? "high" : 
                               cosData.feedbackPreference === "Scheduled" ? "medium" : "low",
         // Convert primaryFocus to lowercase with hyphens for trainingFocus
-        trainingFocus: [cosData.primaryFocus.toLowerCase().replace(/ /g, "-")],
+        trainingFocus: [cosData.primaryFocus.toLowerCase().replace(/\s+/g, "-")],
         workloadThreshold: 40, // Default value
         // Map decision style to delegation preference
         delegationPreference: cosData.decisionStyle === "Data-Driven" ? "conservative" : 
@@ -142,10 +141,8 @@ const FinalizeCoS = () => {
         description: `${agentName} is now ready to assist you.`,
       });
       
-      // Wait 2 seconds before navigating to the dashboard
-      setTimeout(() => {
-        navigate("/cos-agent");
-      }, 2000);
+      // Immediately navigate to the dashboard instead of waiting
+      navigate("/cos-agent");
       
     } catch (error) {
       console.error("Error deploying CoS agent:", error);
@@ -158,7 +155,6 @@ const FinalizeCoS = () => {
     }
   };
 
-  // Helper functions to display human-readable values
   const getCommunicationStyleDisplay = (style?: string) => {
     return style || "Collaborative";
   };
