@@ -9,7 +9,6 @@ import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import type { UserRole, ExtendedUser } from '@/types/auth';
 import type { AuthContextType } from '@/types/authContext';
-import { SocketProvider } from './SocketContext';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -58,10 +57,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     userRole,
     login: async (email: string, password: string) => {
       console.log('AuthContext: Starting login process');
-      const role = await login(email, password);
-      console.log('AuthContext: Setting user role:', role);
-      setUserRole(role);
-      setIsNewUser(false);
+      try {
+        const role = await login(email, password);
+        console.log('AuthContext: Setting user role:', role);
+        setUserRole(role);
+        setIsNewUser(false);
+        return role;
+      } catch (error) {
+        console.error('AuthContext: Login failed', error);
+        throw error;
+      }
     },
     signup: async (email: string, password: string) => {
       console.log('AuthContext: Starting signup process');
@@ -98,10 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      <SocketProvider>
-        {!loading && children}
-      </SocketProvider>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
-

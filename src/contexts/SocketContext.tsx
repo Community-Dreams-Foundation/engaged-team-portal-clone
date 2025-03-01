@@ -3,32 +3,17 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from './AuthContext';
 
-// Try to import socket.io-client, but provide a fallback if it fails
-let Socket: any;
-let io: any;
-
-try {
-  // Dynamic import for socket.io-client
-  const socketModule = require('socket.io-client');
-  Socket = socketModule.Socket;
-  io = socketModule.io || socketModule.default;
-} catch (error) {
-  console.error('Error importing socket.io-client:', error);
-  // Create a mock implementation if import fails
-  io = (url: string) => {
-    console.warn('Using mock socket implementation');
-    return {
-      on: (event: string, callback: Function) => {
-        if (event === 'connect') {
-          setTimeout(() => callback(), 100);
-        }
-      },
-      emit: () => {},
-      disconnect: () => {},
-      auth: {}
-    };
-  };
-}
+// Mock socket implementation since we're disabling it
+const mockSocket = {
+  on: (event: string, callback: Function) => {
+    if (event === 'connect') {
+      setTimeout(() => callback(), 100);
+    }
+  },
+  emit: () => {},
+  disconnect: () => {},
+  auth: {}
+};
 
 interface SocketContextType {
   socket: any | null;
@@ -52,51 +37,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Only connect if user is authenticated
+    // Only connect if user is authenticated - but we're disabling real connection for now
     if (!currentUser) return;
 
     try {
-      console.log('Initializing socket connection...');
-      const socketInstance = io('http://localhost:3001', {
-        auth: {
-          userId: currentUser.uid,
-          userName: currentUser.displayName || 'Anonymous'
-        }
-      });
-
-      socketInstance.on('connect', () => {
-        console.log('Socket connected');
-        setIsConnected(true);
-        toast({
-          title: "Connected to real-time server",
-          description: "You'll receive live updates",
-        });
-      });
-
-      socketInstance.on('disconnect', () => {
-        console.log('Socket disconnected');
-        setIsConnected(false);
-        toast({
-          variant: "destructive",
-          title: "Disconnected from server",
-          description: "Trying to reconnect...",
-        });
-      });
-
-      socketInstance.on('error', (error: any) => {
-        console.error('Socket error:', error);
-        toast({
-          variant: "destructive",
-          title: "Connection Error",
-          description: "Failed to establish real-time connection",
-        });
-      });
-
-      setSocket(socketInstance);
-
+      console.log('Socket functionality is temporarily disabled');
+      
+      // Use mock socket instead of real connection
+      setSocket(mockSocket);
+      setIsConnected(true);
+      
+      // No toast notification about connection since we're mocking
+      
       return () => {
         console.log('Cleaning up socket connection...');
-        socketInstance.disconnect();
+        // No real disconnect needed
       };
     } catch (error) {
       console.error('Failed to initialize socket connection:', error);
@@ -105,11 +60,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [currentUser]);
 
   const sendMessage = (message: any) => {
-    if (socket && isConnected) {
-      socket.emit('message', message);
-    } else {
-      console.error('Cannot send message: Socket not connected');
-    }
+    console.log('Socket functionality is disabled, message not sent:', message);
   };
 
   const value = {

@@ -21,13 +21,8 @@ import MeetingsPage from "./pages/Meetings"
 
 import "./App.css"
 
-// Try to import socket provider but don't block app if it fails
-let SocketProvider: React.FC<{children: React.ReactNode}> = ({ children }) => <>{children}</>;
-try {
-  SocketProvider = require('./contexts/SocketContext').SocketProvider;
-} catch (error) {
-  console.error('Socket provider not available:', error);
-}
+// No dynamic import that could fail with "require is not defined"
+import { SocketProvider } from './contexts/SocketContext';
 
 // Redirect component to handle /index -> / redirection
 const IndexRedirect = () => {
