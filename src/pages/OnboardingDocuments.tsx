@@ -5,10 +5,14 @@ import { DocumentAgreement } from "@/components/intake/DocumentAgreement";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 const OnboardingDocuments = () => {
   const navigate = useNavigate();
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
+  const [documentsSubmitted, setDocumentsSubmitted] = useState(false);
+  const { addNotification } = useNotifications();
 
   const handleBackClick = () => {
     navigate("/intake");
@@ -24,8 +28,30 @@ const OnboardingDocuments = () => {
       return;
     }
 
+    // Send a notification about document submission
+    setDocumentsSubmitted(true);
+    
+    // Add a system notification
+    addNotification({
+      title: "Onboarding Documents Received",
+      message: "Your signed documents have been received. Final executed copies will be emailed to you shortly.",
+      type: "system",
+      metadata: {
+        actionRequired: false,
+        priority: "medium"
+      }
+    });
+
+    // Show a toast message
+    toast({
+      title: "Documents Submitted Successfully",
+      description: "Final executed copies will be emailed to you and available in your account.",
+    });
+
     // Navigate to the CoS customization page
-    navigate("/customize-cos");
+    setTimeout(() => {
+      navigate("/customize-cos");
+    }, 3000);
   };
 
   return (
@@ -52,13 +78,30 @@ const OnboardingDocuments = () => {
               These documents outline our working relationship and are essential for your onboarding process.
             </p>
             
-            <DocumentAgreement onAgreementChange={setHasAgreedToTerms} agreed={hasAgreedToTerms} />
+            {documentsSubmitted ? (
+              <Alert className="mb-6 bg-green-50">
+                <AlertDescription className="text-center py-4">
+                  <div className="font-semibold text-green-600 mb-2">Documents Successfully Submitted!</div>
+                  <p className="text-sm">
+                    Your signed documents have been received. Final executed copies with all signatures will be:
+                  </p>
+                  <ul className="list-disc list-inside text-sm mt-2 text-left">
+                    <li>Emailed to your registered email address</li>
+                    <li>Available for download in your account dashboard</li>
+                  </ul>
+                  <p className="text-sm mt-3">Redirecting to the next step...</p>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <DocumentAgreement onAgreementChange={setHasAgreedToTerms} agreed={hasAgreedToTerms} />
+            )}
             
             <div className="flex justify-between mt-8">
               <Button 
                 variant="outline" 
                 onClick={handleBackClick}
                 className="flex items-center"
+                disabled={documentsSubmitted}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Profile
@@ -67,9 +110,9 @@ const OnboardingDocuments = () => {
               <Button 
                 onClick={handleContinueClick}
                 className="flex items-center"
-                disabled={!hasAgreedToTerms}
+                disabled={!hasAgreedToTerms || documentsSubmitted}
               >
-                Continue to CoS Customization
+                {documentsSubmitted ? "Processing..." : "Submit Documents & Continue"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>

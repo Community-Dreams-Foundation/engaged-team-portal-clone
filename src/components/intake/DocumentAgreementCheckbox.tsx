@@ -21,6 +21,7 @@ export function DocumentAgreementCheckbox({
       <Label htmlFor="terms" className="text-sm leading-normal">
         I confirm that I have read, understood, and agree to all the terms and conditions in these documents. 
         I acknowledge that these documents constitute a legally binding agreement between myself and DreamStream.
+        Once submitted, final executed copies will be emailed to me and available for download.
       </Label>
     </div>
   );
