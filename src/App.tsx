@@ -11,6 +11,7 @@ import SimulateCoS from "./pages/SimulateCoS"
 import SubmitIdea from "./pages/SubmitIdea"
 import FeeTracking from "./pages/FeeTracking"
 import CustomizeCoS from "./pages/CustomizeCoS"
+import FinalizeCoS from "./pages/FinalizeCoS"
 import AdminIndex from "./pages/admin/Index"
 import AdminWaiverDashboard from "./pages/admin/waiver/WaiverDashboard"
 import { AuthProvider } from "./contexts/AuthContext"
@@ -71,6 +72,7 @@ function App() {
                 <Route path="/fees" element={<FeeTracking />} />
                 <Route path="/customize" element={<CustomizeCoS />} />
                 <Route path="/customize-cos" element={<CustomizeCoS />} />
+                <Route path="/finalize-cos" element={<FinalizeCoS />} />
                 <Route path="/admin" element={<AdminIndex />} />
                 <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
                 <Route path="/meetings" element={<MeetingsPage />} />

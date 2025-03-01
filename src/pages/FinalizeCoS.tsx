@@ -46,14 +46,21 @@ const FinalizeCoS = () => {
     try {
       // Create CoS preferences object from form data
       const preferences: CoSPreferences = {
-        tone: cosData.tone,
-        notificationFrequency: cosData.notificationFrequency,
-        trainingFocus: cosData.trainingFocus,
-        workloadThreshold: cosData.workloadThreshold,
-        delegationPreference: cosData.delegationPreference,
-        communicationStyle: cosData.communicationStyle,
-        agentInteractionLevel: cosData.agentInteractionLevel,
-        aiFeatures: cosData.aiFeatures,
+        tone: cosData.communicationStyle === "Formal" ? "formal" : "casual",
+        notificationFrequency: cosData.feedbackPreference === "Real-time" ? "high" : 
+                              cosData.feedbackPreference === "Scheduled" ? "medium" : "low",
+        trainingFocus: [cosData.primaryFocus.toLowerCase().replace(" ", "-")],
+        workloadThreshold: 40, // Default value
+        delegationPreference: cosData.decisionStyle === "Data-Driven" ? "conservative" : 
+                             cosData.decisionStyle === "Intuitive" ? "aggressive" : "balanced",
+        communicationStyle: cosData.communicationStyle === "Formal" ? "formal" : "casual",
+        agentInteractionLevel: cosData.feedbackPreference === "Real-time" ? "high" : 
+                              cosData.feedbackPreference === "Scheduled" ? "medium" : "low",
+        aiFeatures: {
+          autoLearning: true,
+          proactiveAssistance: true,
+          contextAwareness: true
+        }
       };
       
       // Create initial agent
@@ -65,7 +72,7 @@ const FinalizeCoS = () => {
         id: `agent-${Date.now()}`,
         type: "general",
         name: "Primary CoS Agent",
-        skills: cosData.trainingFocus,
+        skills: preferences.trainingFocus,
         currentLoad: 0,
         assignedTasks: [],
         performance: {
@@ -77,9 +84,9 @@ const FinalizeCoS = () => {
         lastActive: Date.now(),
         status: "active",
         specializationScore: {
-          "leadership": cosData.trainingFocus.includes("leadership") ? 80 : 50,
-          "time-management": cosData.trainingFocus.includes("time-management") ? 80 : 50,
-          "project-management": cosData.trainingFocus.includes("project-management") ? 80 : 50,
+          "leadership": preferences.trainingFocus.includes("leadership") ? 80 : 50,
+          "time-management": preferences.trainingFocus.includes("time-management") ? 80 : 50,
+          "project-management": preferences.trainingFocus.includes("project-management") ? 80 : 50,
         }
       };
       
@@ -111,6 +118,18 @@ const FinalizeCoS = () => {
       });
       setIsDeploying(false);
     }
+  };
+
+  const getCommunicationStyleDisplay = (style?: string) => {
+    return style || "Collaborative";
+  };
+
+  const getNotificationFrequencyDisplay = (freq?: string) => {
+    return freq || "As-needed";
+  };
+
+  const getDecisionStyleDisplay = (style?: string) => {
+    return style || "Balanced";
   };
 
   return (
@@ -166,15 +185,15 @@ const FinalizeCoS = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Communication:</span>
-                      <span className="font-medium capitalize">{cosData.tone}</span>
+                      <span className="font-medium capitalize">{getCommunicationStyleDisplay(cosData.communicationStyle)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Notification Frequency:</span>
-                      <span className="font-medium capitalize">{cosData.notificationFrequency}</span>
+                      <span className="font-medium capitalize">{getNotificationFrequencyDisplay(cosData.feedbackPreference)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Delegation Style:</span>
-                      <span className="font-medium capitalize">{cosData.delegationPreference}</span>
+                      <span className="text-muted-foreground">Decision Style:</span>
+                      <span className="font-medium capitalize">{getDecisionStyleDisplay(cosData.decisionStyle)}</span>
                     </div>
                   </div>
                 </div>
