@@ -60,7 +60,6 @@ export default function Settings() {
   })
 
   const handleSaveProfile = () => {
-    // Here we would implement actual profile update logic
     setIsEditing(false)
     toast({
       title: "Profile updated",
@@ -100,7 +99,6 @@ export default function Settings() {
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Handle file upload logic here
     toast({
       title: "Profile image selected",
       description: "Your new profile image has been selected. Save changes to update."
@@ -154,8 +152,82 @@ export default function Settings() {
           </TabsList>
           
           <TabsContent value="profile" className="space-y-8">
-            <div className="grid gap-8 md:grid-cols-3">
-              <Card className="md:col-span-2 bg-card border shadow-md">
+            <Card className="border shadow-md bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xl">Account Information</CardTitle>
+                <CardDescription>
+                  Basic information about your account and membership
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="py-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Contact Information</h3>
+                    <div className="space-y-1">
+                      <p className="flex items-center gap-1.5 text-sm">
+                        <AtSign className="h-4 w-4 text-primary/70" /> 
+                        {currentUser?.email}
+                      </p>
+                      <p className="flex items-center gap-1.5 text-sm">
+                        <Calendar className="h-4 w-4 text-primary/70" />
+                        Member since {accountCreationDate}
+                      </p>
+                      <p className="flex items-center gap-1.5 text-sm">
+                        <Calendar className="h-4 w-4 text-primary/70" />
+                        Last sign in: {lastSignInDate}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Membership</h3>
+                    <div className="space-y-1">
+                      <p className="text-sm">Current plan:</p>
+                      <Badge className="bg-green-100 text-green-800">
+                        Monthly Plan
+                      </Badge>
+                      <Button 
+                        variant="link" 
+                        className="h-auto p-0 text-xs mt-1" 
+                        onClick={() => setActiveTab("billing")}
+                      >
+                        View billing details
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium text-muted-foreground">Gamification Level</h3>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-primary/10 text-primary">
+                          Level {mockGamificationProfile.level}
+                        </Badge>
+                        <span className="text-sm">{mockGamificationProfile.points} points</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Current streak: {mockGamificationProfile.currentStreak} days
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {mockGamificationProfile.badges.slice(0, 2).map((badge, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {badge}
+                          </Badge>
+                        ))}
+                        {mockGamificationProfile.badges.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{mockGamificationProfile.badges.length - 2} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="grid gap-8 md:grid-cols-1">
+              <Card className="bg-card border shadow-md">
                 <CardHeader className="relative">
                   <div className="absolute right-6 top-6 flex gap-2">
                     <Button 
@@ -543,55 +615,6 @@ export default function Settings() {
                   </CardFooter>
                 )}
               </Card>
-              
-              <div className="space-y-6">
-                <Card className="border shadow-md">
-                  <CardHeader>
-                    <CardTitle>Account Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                      <p className="flex items-center gap-1 text-base">
-                        <AtSign className="h-4 w-4 text-muted-foreground" /> 
-                        {currentUser?.email}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Member Since</h3>
-                      <p className="flex items-center gap-1 text-base">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {accountCreationDate}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Subscription</h3>
-                      <Badge className="mt-1 bg-green-100 text-green-800">
-                        Monthly Plan
-                      </Badge>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Gamification Level</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="bg-primary/10 text-primary">
-                          Level {mockGamificationProfile.level}
-                        </Badge>
-                        <span className="text-sm">{mockGamificationProfile.points} points</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex-col gap-2 border-t pt-6">
-                    <Button variant="outline" className="w-full" onClick={() => setActiveTab("billing")}>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Manage Subscription
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={() => setActiveTab("settings")}>
-                      <Settings2 className="mr-2 h-4 w-4" />
-                      Account Settings
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </div>
             </div>
           </TabsContent>
           
