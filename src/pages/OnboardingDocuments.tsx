@@ -65,10 +65,10 @@ const OnboardingDocuments = () => {
       description: "Final executed copies will be emailed to you and available in your account.",
     });
 
-    // Navigate to the CoS customization page
+    // Navigate to the CoS customization page after a longer delay (increased from 3000ms to 7000ms)
     setTimeout(() => {
       navigate("/customize-cos");
-    }, 3000);
+    }, 7000); // Increased delay to 7 seconds
   };
 
   return (
