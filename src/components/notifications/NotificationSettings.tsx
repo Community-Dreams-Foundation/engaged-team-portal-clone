@@ -493,12 +493,25 @@ export default function NotificationSettings() {
     }
   };
 
-  // Fix: Update the setSchedule calls to ensure all required properties are included
+  // Fix: Update the updateSchedule function to ensure all required properties are included
   const updateSchedule = (updates: Partial<NotificationSchedule>) => {
-    setSchedule(prevSchedule => ({
-      ...prevSchedule,
-      ...updates
-    }));
+    // Ensure we're creating a complete NotificationSchedule object by spread
+    // first the defaultSchedule (for type safety), then the current schedule,
+    // and finally apply the updates
+    setSchedule(prevSchedule => {
+      // Handle the special case for customDays to ensure it's always complete
+      const updatedCustomDays = updates.customDays 
+        ? { ...prevSchedule.customDays, ...updates.customDays }
+        : prevSchedule.customDays;
+        
+      // Return a complete NotificationSchedule object
+      return {
+        ...prevSchedule,
+        ...updates,
+        // Always ensure customDays is complete even if updates.customDays is partial
+        customDays: updatedCustomDays
+      };
+    });
   };
 
   const hasPreferences = Object.keys(preferences).length > 0;
@@ -641,7 +654,6 @@ export default function NotificationSettings() {
                       onCheckedChange={(checked) => updateSchedule({ 
                         weekendsOff: checked,
                         customDays: {
-                          ...schedule.customDays,
                           saturday: !checked,
                           sunday: !checked
                         }
@@ -679,7 +691,6 @@ export default function NotificationSettings() {
                                 if (!disabled) {
                                   updateSchedule({
                                     customDays: {
-                                      ...schedule.customDays,
                                       [day]: !schedule.customDays[day as keyof typeof schedule.customDays]
                                     }
                                   });
