@@ -1,4 +1,3 @@
-
 import { Task, TaskInput } from "@/types/task"
 
 // Mock data to use instead of Firebase Realtime Database
@@ -51,7 +50,7 @@ export const updateTask = async (userId: string, taskId: string, updateData: Par
     ...updateData,
     updatedAt: now,
     lastActivity: {
-      type: "status_change", // Changed from "update" to "status_change" which is an allowed activity type
+      type: "status_change",
       timestamp: now,
       details: "Task updated"
     }
@@ -221,7 +220,11 @@ export const createTeamTask = async (
         ...task,
         assignedTo: memberId,
         metadata: {
-          ...(task.metadata || {}),
+          complexity: task.metadata?.complexity || "medium",
+          impact: task.metadata?.impact || "medium",
+          businessValue: task.metadata?.businessValue || 5,
+          learningOpportunity: task.metadata?.learningOpportunity || 5,
+          ...((task.metadata || {}) as any),
           originalCreator: userId,
           originalTaskId: taskId,
           sharedTask: true,
