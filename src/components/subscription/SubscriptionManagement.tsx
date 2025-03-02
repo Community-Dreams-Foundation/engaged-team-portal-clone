@@ -45,6 +45,7 @@ export function SubscriptionManagement() {
   const [cancelling, setCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const db = getFirestore();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -68,7 +69,7 @@ export function SubscriptionManagement() {
     };
 
     fetchSubscription();
-  }, [currentUser]);
+  }, [currentUser, toast]);
 
   useEffect(() => {
     const fetchPaymentHistory = async () => {
@@ -131,7 +132,7 @@ export function SubscriptionManagement() {
     if (subscription) {
       fetchPaymentHistory();
     }
-  }, [currentUser, subscription]);
+  }, [currentUser, subscription, toast]);
 
   const handleCancelSubscription = async () => {
     if (!currentUser || !subscription) return;
