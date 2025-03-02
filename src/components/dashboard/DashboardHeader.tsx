@@ -34,17 +34,6 @@ export function DashboardHeader() {
       <div className="container flex h-16 items-center gap-4">
         <SidebarTrigger className="text-primary hover:bg-primary/10 hover:text-primary" />
         <div className="flex-1 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <img
-              src="/lovable-uploads/cc37c25a-85ca-4af3-a844-a7f5a90aea97.png"
-              alt="DreamStream Logo"
-              className="h-8 w-8"
-            />
-            <div className="hidden sm:flex flex-col">
-              <span className="font-semibold">DreamStream</span>
-              <span className="text-xs text-muted-foreground">Leadership Dashboard</span>
-            </div>
-          </div>
           <div className="hidden md:flex flex-1 items-center gap-4 mx-4">
             <div className="relative flex-1 max-w-2xl">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

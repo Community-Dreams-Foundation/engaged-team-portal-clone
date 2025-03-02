@@ -60,10 +60,20 @@ export function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="h-14">
-        <Button variant="ghost" size="icon" className="ml-auto">
-          <Settings className="h-5 w-5" />
-          <span className="sr-only">Settings</span>
-        </Button>
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2">
+            <img
+              src="/lovable-uploads/cc37c25a-85ca-4af3-a844-a7f5a90aea97.png"
+              alt="DreamStream Logo"
+              className="h-8 w-8"
+            />
+            <span className="font-semibold text-sm">DreamStream</span>
+          </div>
+          <Button variant="ghost" size="icon">
+            <Settings className="h-5 w-5" />
+            <span className="sr-only">Settings</span>
+          </Button>
+        </div>
       </SidebarHeader>
       
       <SidebarContent>
