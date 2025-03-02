@@ -121,7 +121,7 @@ export const AdminApi = {
   rejectWaiver: (data: any) => callApi(ApiDomain.ADMIN, 'rejectWaiver', data),
 };
 
-// Add LeadershipApi for leadership-related endpoints
+// Update LeadershipApi with proper TypeScript types
 export const LeadershipApi = {
   fetchProfile: (userId: string): Promise<any> => 
     callApi(ApiDomain.PERFORMANCE, 'fetchLeadershipProfile', { userId }),
