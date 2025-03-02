@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card"
 import { TrainingModulesHeader } from "./TrainingModulesHeader"
 import { TrainingModulesGrid } from "./TrainingModulesGrid"
 import { useTrainingModules } from "@/hooks/useTrainingModules"
+import { TrainingModule } from "@/utils/trainingModules"
 
 export function TrainingModules() {
   const { modules, handleModuleAction, isAuthenticated } = useTrainingModules()
@@ -15,7 +16,7 @@ export function TrainingModules() {
         totalCount={modules.length}
       />
       <TrainingModulesGrid
-        modules={modules}
+        modules={modules as TrainingModule[]}
         onModuleAction={handleModuleAction}
         disabled={!isAuthenticated}
       />

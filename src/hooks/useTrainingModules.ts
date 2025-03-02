@@ -12,9 +12,9 @@ export const useTrainingModules = () => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   
-  const { data: modules = [] } = useQuery({
+  const { data: modules = [] } = useQuery<TrainingModule[], Error>({
     queryKey: ['trainingModules', currentUser?.uid],
-    queryFn: () => {
+    queryFn: async () => {
       if (!currentUser?.uid) return []
       // Use the new API gateway
       return TrainingApi.fetchModules(currentUser.uid)

@@ -84,7 +84,7 @@ export const TasksApi = {
 };
 
 export const TrainingApi = {
-  fetchModules: (userId: string) => callApi(ApiDomain.TRAINING, 'fetchModules', { userId }),
+  fetchModules: (userId: string): Promise<any[]> => callApi(ApiDomain.TRAINING, 'fetchModules', { userId }),
   updateProgress: (data: any) => callApi(ApiDomain.TRAINING, 'updateProgress', data),
   completeModule: (data: any) => callApi(ApiDomain.TRAINING, 'completeModule', data),
 };
