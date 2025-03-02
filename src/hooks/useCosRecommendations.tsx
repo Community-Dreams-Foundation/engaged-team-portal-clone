@@ -1,43 +1,58 @@
 
-import { useState, useCallback } from 'react';
-import { CoSRecommendation } from '@/types/task';
+import { useState, useCallback, useEffect } from 'react';
+import { CoSRecommendation, Task } from '@/types/task';
+import { generateTaskRecommendations, analyzeTaskPatterns, suggestTeamCollaboration } from '@/utils/tasks/cosTaskRecommendations';
+import { useAuth } from '@/contexts/AuthContext';
+import { fetchTasks } from '@/utils/tasks/basicOperations';
 
 export function useCosRecommendations() {
   const [recommendations, setRecommendations] = useState<CoSRecommendation[]>([]);
   const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
 
+  // Fetch recommendations based on user tasks and behavior
   const fetchRecommendations = useCallback(async (userId: string, taskId?: string) => {
     try {
       setLoading(true);
       
-      // This is a mock implementation - in a real app, you would fetch from an API
       console.log(`Fetching recommendations for user: ${userId}${taskId ? `, task: ${taskId}` : ''}`);
       
-      // Simulate API call with setTimeout
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Fetch the user's tasks to generate personalized recommendations
+      const userTasks = await fetchTasks(userId);
       
-      // Mock recommendations
-      const mockRecommendations: CoSRecommendation[] = [
-        {
-          id: `rec-${Date.now()}-1`,
-          type: 'task',
-          content: 'Consider breaking this task into smaller subtasks for better tracking',
-          timestamp: Date.now(),
-          priority: 'medium',
-          impact: 75
-        },
-        {
-          id: `rec-${Date.now()}-2`,
-          type: 'time',
-          content: 'Based on similar tasks, this might take longer than estimated',
-          timestamp: Date.now(),
-          priority: 'high',
-          impact: 85
-        }
+      // Generate different types of recommendations
+      const taskRecs = await generateTaskRecommendations(userId, userTasks);
+      
+      // Analyze completed tasks for patterns
+      const completedTasks = userTasks.filter(task => task.status === 'completed');
+      const patternRecs = await analyzeTaskPatterns(userId, completedTasks);
+      
+      // Mock team members for collaboration recommendations
+      const mockTeamMembers = [
+        {id: "team-1", name: "Alice", skills: ["design", "UI/UX"]},
+        {id: "team-2", name: "Bob", skills: ["backend", "data analysis"]},
+        {id: userId, name: "You", skills: ["project management", "frontend"]}
       ];
       
-      setRecommendations(mockRecommendations);
-      return mockRecommendations;
+      const teamRecs = await suggestTeamCollaboration(userId, mockTeamMembers);
+      
+      // Combine all recommendations and sort by priority and impact
+      const allRecommendations = [...taskRecs, ...patternRecs, ...teamRecs]
+        .sort((a, b) => {
+          // Sort by priority first
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          const priorityDiff = 
+            (priorityOrder[a.priority || 'low'] || 0) - 
+            (priorityOrder[b.priority || 'low'] || 0);
+          
+          if (priorityDiff !== 0) return priorityDiff;
+          
+          // Then by impact (higher impact first)
+          return (b.impact || 0) - (a.impact || 0);
+        });
+      
+      setRecommendations(allRecommendations);
+      return allRecommendations;
     } catch (error) {
       console.error('Error fetching recommendations:', error);
       return [];
@@ -45,6 +60,13 @@ export function useCosRecommendations() {
       setLoading(false);
     }
   }, []);
+
+  // Auto-fetch recommendations when the user changes
+  useEffect(() => {
+    if (currentUser?.uid) {
+      fetchRecommendations(currentUser.uid);
+    }
+  }, [currentUser, fetchRecommendations]);
 
   const provideRecommendationFeedback = useCallback(async (
     recommendationId: string, 

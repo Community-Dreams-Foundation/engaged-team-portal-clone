@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Bot, Brain, Users, Target, ClipboardList } from "lucide-react"
+import { Bot, Brain, Users, Target, ClipboardList, Plus, ListChecks } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { Agent } from "@/types/task"
+import type { Agent, Task } from "@/types/task"
 import { PerformanceMetrics } from "@/types/performance"
 import { AgentMetrics } from "./cos-agent/AgentMetrics"
 import { AgentPreferences } from "./cos-agent/AgentPreferences"
@@ -14,13 +14,22 @@ import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { suggestTasks } from "@/utils/tasks/basicOperations"
+import { TaskSuggestionDialog } from "./cos-agent/TaskSuggestionDialog"
+import { TeamCollaboration } from "./cos-agent/TeamCollaboration"
+import { useToast } from "@/hooks/use-toast"
 
 export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
   const { preferences, agents: fetchedAgents } = useCosData()
   const { recommendations, setRecommendations, handleFeedback } = useCosRecommendations()
   const [deploymentTarget, setDeploymentTarget] = useState<string | null>(null)
+  const [suggestedTasks, setSuggestedTasks] = useState<Task[]>([])
+  const [taskSuggestionOpen, setTaskSuggestionOpen] = useState(false)
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
+  const { currentUser } = useAuth()
+  const { toast } = useToast()
   const [metrics] = useState<PerformanceMetrics>({
     taskCompletionRate: 0.85,
     avgTaskTime: 45,
@@ -98,6 +107,41 @@ export function CosAgent() {
     setDeploymentTarget(null)
   }
 
+  const handleGenerateTaskSuggestions = async () => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to generate task suggestions",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    setIsLoadingSuggestions(true)
+    
+    try {
+      const tasks = await suggestTasks(currentUser.uid)
+      setSuggestedTasks(tasks)
+      setTaskSuggestionOpen(true)
+    } catch (error) {
+      console.error("Error generating task suggestions:", error)
+      toast({
+        title: "Failed to generate suggestions",
+        description: "An error occurred while generating task suggestions",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoadingSuggestions(false)
+    }
+  }
+
+  const handleTaskAdded = (taskId: string) => {
+    toast({
+      title: "Task added",
+      description: "The suggested task has been added to your task list"
+    })
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -161,18 +205,26 @@ export function CosAgent() {
         </TabsContent>
 
         <TabsContent value="team" className="space-y-4">
-          <div className="text-center p-8">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="mt-2 font-semibold">Team Management</h3>
-            <p className="text-muted-foreground">Coming soon</p>
-          </div>
+          <TeamCollaboration />
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-medium">Task Assistance</h4>
-            <Button variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-1" /> Generate Tasks
+            <Button variant="outline" size="sm" onClick={handleGenerateTaskSuggestions} disabled={isLoadingSuggestions}>
+              {isLoadingSuggestions ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                <>
+                  <ListChecks className="h-4 w-4 mr-1" /> Generate Tasks
+                </>
+              )}
             </Button>
           </div>
           
@@ -212,6 +264,13 @@ export function CosAgent() {
           </div>
         </TabsContent>
       </Tabs>
+      
+      <TaskSuggestionDialog
+        open={taskSuggestionOpen}
+        onOpenChange={setTaskSuggestionOpen}
+        suggestedTasks={suggestedTasks}
+        onTaskAdded={handleTaskAdded}
+      />
     </Card>
   )
 }
