@@ -2,7 +2,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
 import { ProfileSettings } from "./ProfileSettings"
-import { NotificationSettings } from "../notifications/NotificationSettings"
+import NotificationSettings from "../notifications/NotificationSettings"
 import { SubscriptionManagement } from "../subscription/SubscriptionManagement"
 import { LeadershipSettings } from "./LeadershipSettings" 
 

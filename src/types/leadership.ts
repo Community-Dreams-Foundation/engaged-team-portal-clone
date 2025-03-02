@@ -1,3 +1,4 @@
+
 export type LeadershipTier = "emerging" | "captain" | "team-lead" | "product-owner" | "executive";
 
 export type LeadershipDomain = "strategy" | "product-design" | "data-engineering" | "software-development" | "engagement";
@@ -144,6 +145,16 @@ export interface LeadershipProfile {
     timestamp: number;
     approvedBy?: string;
   }>;
+  // New fields needed for LeadershipSettings
+  mentorshipPreferences?: {
+    availableAsMentor: boolean;
+    seekingMentor: boolean;
+    preferredMentorshipAreas: string[];
+  };
+  displaySettings?: {
+    showAchievements: boolean;
+    showMetrics: boolean;
+  };
 }
 
 export interface PromotionRequest {

@@ -72,10 +72,20 @@ export function LeadershipSettings() {
       try {
         // Simulate fetching the leadership profile
         // In a real app, you would use get() from firebase/database
-        return {
+        const mockProfile: LeadershipProfile = {
           userId: currentUser.uid,
           currentTier: "emerging" as LeadershipTier,
           domain: "software-development" as LeadershipDomain,
+          joinedAt: Date.now(),
+          assessments: [],
+          trainingCompleted: [],
+          metrics: {
+            overallScore: 75,
+            leaderboardRank: 15
+          },
+          achievements: [],
+          mentors: [],
+          mentees: [],
           specializations: ["software-development"] as LeadershipDomain[],
           mentorshipPreferences: {
             availableAsMentor: false,
@@ -86,7 +96,8 @@ export function LeadershipSettings() {
             showAchievements: true,
             showMetrics: true
           }
-        } as LeadershipProfile
+        };
+        return mockProfile;
       } catch (error) {
         console.error("Error fetching leadership profile:", error)
         return null
