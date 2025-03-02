@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import {
@@ -19,12 +22,23 @@ import {
   Link as LinkIcon,
   AtSign,
   Calendar,
-  BadgeCheck
+  BadgeCheck,
+  Moon,
+  Sun,
+  Globe,
+  Clock
 } from "lucide-react";
 import { User } from "firebase/auth";
 import { SettingsCard } from "./SettingsCard";
 import { SettingsSection } from "./SettingsSection";
 import { SettingsForm } from "./SettingsForm";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProfileData {
   displayName: string;
@@ -36,6 +50,12 @@ interface ProfileData {
   skills: string[];
   interests: string[];
   profileVisibility: 'public' | 'private';
+  language: string;
+  timezone: string;
+  darkMode: boolean;
+  highContrast: boolean;
+  reducedMotion: boolean;
+  fontSize: 'default' | 'large' | 'x-large';
 }
 
 interface ProfileTabContentProps {
@@ -54,7 +74,64 @@ const profileSchema = z.object({
   jobTitle: z.string().optional(),
   location: z.string().optional(),
   website: z.string().url("Please enter a valid URL").or(z.string().length(0)).optional(),
+  language: z.string(),
+  timezone: z.string(),
 });
+
+// List of common languages
+const languages = [
+  { value: "en-US", label: "English (US)" },
+  { value: "en-GB", label: "English (UK)" },
+  { value: "es", label: "Spanish" },
+  { value: "fr", label: "French" },
+  { value: "de", label: "German" },
+  { value: "zh", label: "Chinese" },
+  { value: "ja", label: "Japanese" },
+  { value: "ko", label: "Korean" },
+  { value: "ar", label: "Arabic" },
+  { value: "ru", label: "Russian" },
+];
+
+// List of common timezones
+const timezones = [
+  { value: "America/New_York", label: "Eastern Time (ET)" },
+  { value: "America/Chicago", label: "Central Time (CT)" },
+  { value: "America/Denver", label: "Mountain Time (MT)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
+  { value: "America/Anchorage", label: "Alaska Time" },
+  { value: "Pacific/Honolulu", label: "Hawaii Time" },
+  { value: "Europe/London", label: "Greenwich Mean Time (GMT)" },
+  { value: "Europe/Paris", label: "Central European Time (CET)" },
+  { value: "Asia/Tokyo", label: "Japan Standard Time (JST)" },
+  { value: "Asia/Shanghai", label: "China Standard Time (CST)" },
+  { value: "Australia/Sydney", label: "Australian Eastern Time (AET)" },
+  { value: "Asia/Kolkata", label: "India Standard Time (IST)" },
+];
+
+// Function to calculate profile completion percentage
+const calculateProfileCompletion = (profileData: ProfileData): number => {
+  let completedFields = 0;
+  let totalFields = 0;
+
+  // Count required fields
+  if (profileData.displayName) completedFields++;
+  totalFields++;
+
+  // Count optional fields
+  if (profileData.bio) completedFields++;
+  if (profileData.company) completedFields++;
+  if (profileData.jobTitle) completedFields++;
+  if (profileData.location) completedFields++;
+  if (profileData.website) completedFields++;
+  if (profileData.skills.length > 0) completedFields++;
+  if (profileData.interests.length > 0) completedFields++;
+  if (profileData.language) completedFields++;
+  if (profileData.timezone) completedFields++;
+  
+  totalFields += 9; // Add the number of optional fields we're checking
+
+  return Math.round((completedFields / totalFields) * 100);
+};
 
 export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
   currentUser,
@@ -75,8 +152,21 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
     website: 'https://example.com/profile',
     skills: ['Artificial Intelligence', 'Project Management', 'Innovation Leadership', 'UX Design'],
     interests: ['Emerging Tech', 'Team Collaboration', 'Sustainable Innovation'],
-    profileVisibility: 'public'
+    profileVisibility: 'public',
+    language: 'en-US',
+    timezone: 'America/Los_Angeles',
+    darkMode: false,
+    highContrast: false,
+    reducedMotion: false,
+    fontSize: 'default'
   });
+
+  const [completionPercentage, setCompletionPercentage] = useState(0);
+  
+  // Calculate profile completion percentage when profileData changes
+  useEffect(() => {
+    setCompletionPercentage(calculateProfileCompletion(profileData));
+  }, [profileData]);
 
   const handleSaveProfile = async (values: any) => {
     // This would be an API call in a real application
@@ -97,6 +187,55 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
       title: "Profile image selected",
       description: "Your new profile image has been selected. Save changes to update.",
       variant: "info"
+    });
+  };
+
+  const toggleDarkMode = () => {
+    setProfileData({
+      ...profileData,
+      darkMode: !profileData.darkMode
+    });
+    toast({
+      title: `${profileData.darkMode ? 'Light' : 'Dark'} mode activated`,
+      description: `Theme has been switched to ${profileData.darkMode ? 'light' : 'dark'} mode.`,
+      variant: "success"
+    });
+    // Here you would also update the actual theme in the application
+  };
+
+  const toggleHighContrast = () => {
+    setProfileData({
+      ...profileData,
+      highContrast: !profileData.highContrast
+    });
+    toast({
+      title: `High contrast ${profileData.highContrast ? 'disabled' : 'enabled'}`,
+      description: `High contrast mode has been ${profileData.highContrast ? 'disabled' : 'enabled'}.`,
+      variant: "success"
+    });
+  };
+
+  const toggleReducedMotion = () => {
+    setProfileData({
+      ...profileData,
+      reducedMotion: !profileData.reducedMotion
+    });
+    toast({
+      title: `Reduced motion ${profileData.reducedMotion ? 'disabled' : 'enabled'}`,
+      description: `Reduced motion has been ${profileData.reducedMotion ? 'disabled' : 'enabled'}.`,
+      variant: "success"
+    });
+  };
+
+  const changeFontSize = (size: 'default' | 'large' | 'x-large') => {
+    setProfileData({
+      ...profileData,
+      fontSize: size
+    });
+    toast({
+      title: "Font size updated",
+      description: `Font size has been changed to ${size}.`,
+      variant: "success"
     });
   };
 
@@ -159,6 +298,42 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
               </div>
             </div>
           </SettingsSection>
+        </div>
+      </SettingsCard>
+
+      {/* Profile Completion Card */}
+      <SettingsCard
+        title="Profile Completion"
+        description="Complete your profile to get the most out of your experience"
+        isLoading={isLoading}
+      >
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">{completionPercentage}% complete</span>
+            <span className="text-sm text-muted-foreground">
+              {completionPercentage === 100 
+                ? "All set! Your profile is complete" 
+                : "Complete your profile to unlock all features"}
+            </span>
+          </div>
+          <Progress value={completionPercentage} className="h-2" />
+          
+          {completionPercentage < 100 && (
+            <div className="mt-4 p-3 bg-primary/5 rounded-md border">
+              <h4 className="text-sm font-medium mb-2">Suggested next steps:</h4>
+              <ul className="text-sm space-y-1">
+                {!profileData.bio && <li>• Add a professional bio</li>}
+                {!profileData.company && <li>• Add your company</li>}
+                {!profileData.jobTitle && <li>• Add your job title</li>}
+                {!profileData.location && <li>• Add your location</li>}
+                {!profileData.website && <li>• Add your website</li>}
+                {profileData.skills.length === 0 && <li>• Add your skills</li>}
+                {profileData.interests.length === 0 && <li>• Add your interests</li>}
+                {!profileData.language && <li>• Set your preferred language</li>}
+                {!profileData.timezone && <li>• Set your timezone</li>}
+              </ul>
+            </div>
+          )}
         </div>
       </SettingsCard>
       
@@ -256,6 +431,18 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                         </a>
                       </p>
                     )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {languages.find(lang => lang.value === profileData.language)?.label || profileData.language}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {timezones.find(tz => tz.value === profileData.timezone)?.label || profileData.timezone}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -311,6 +498,8 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                       jobTitle: profileData.jobTitle,
                       location: profileData.location,
                       website: profileData.website,
+                      language: profileData.language,
+                      timezone: profileData.timezone,
                     }}
                     onSubmit={handleSaveProfile}
                     id="profile-form"
@@ -410,6 +599,53 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                       <p className="text-xs text-muted-foreground mt-1">
                         A brief description about yourself, your experience and expertise.
                       </p>
+                    </div>
+
+                    {/* Language & Timezone Section */}
+                    <div className="grid md:grid-cols-2 gap-6 mt-6">
+                      <div>
+                        <Label htmlFor="language">Preferred Language</Label>
+                        <Select
+                          name="language"
+                          defaultValue={profileData.language}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languages.map((lang) => (
+                              <SelectItem key={lang.value} value={lang.value}>
+                                {lang.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Select your preferred language for the application interface
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="timezone">Timezone</Label>
+                        <Select
+                          name="timezone"
+                          defaultValue={profileData.timezone}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select timezone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timezones.map((tz) => (
+                              <SelectItem key={tz.value} value={tz.value}>
+                                {tz.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          This helps us show times and dates in your local timezone
+                        </p>
+                      </div>
                     </div>
                     
                     <div className="grid md:grid-cols-2 gap-6 mt-6">
@@ -573,6 +809,18 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                             </a>
                           </p>
                         )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {languages.find(lang => lang.value === profileData.language)?.label || profileData.language}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {timezones.find(tz => tz.value === profileData.timezone)?.label || profileData.timezone}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     
@@ -624,6 +872,103 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                 )}
               </div>
             )}
+          </div>
+        </SettingsCard>
+
+        {/* Accessibility Options Card */}
+        <SettingsCard
+          title="Accessibility & Preferences"
+          description="Customize your experience with these accessibility options"
+          isLoading={isLoading}
+        >
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h3 className="text-md font-medium">Display Options</h3>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="dark-mode" className="text-base">Dark Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Switch between light and dark theme
+                    </p>
+                  </div>
+                  <Switch
+                    id="dark-mode"
+                    checked={profileData.darkMode}
+                    onCheckedChange={toggleDarkMode}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="high-contrast" className="text-base">High Contrast</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Increase contrast for better readability
+                    </p>
+                  </div>
+                  <Switch
+                    id="high-contrast"
+                    checked={profileData.highContrast}
+                    onCheckedChange={toggleHighContrast}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h3 className="text-md font-medium">Motion & Animation</h3>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="reduced-motion" className="text-base">Reduced Motion</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Minimize animations and transitions
+                    </p>
+                  </div>
+                  <Switch
+                    id="reduced-motion"
+                    checked={profileData.reducedMotion}
+                    onCheckedChange={toggleReducedMotion}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <h3 className="text-md font-medium">Text Options</h3>
+                
+                <div className="space-y-2">
+                  <Label className="text-base">Font Size</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={profileData.fontSize === 'default' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => changeFontSize('default')}
+                    >
+                      Default
+                    </Button>
+                    <Button
+                      variant={profileData.fontSize === 'large' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => changeFontSize('large')}
+                    >
+                      Large
+                    </Button>
+                    <Button
+                      variant={profileData.fontSize === 'x-large' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => changeFontSize('x-large')}
+                    >
+                      X-Large
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Adjust text size for better readability
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </SettingsCard>
       </div>
