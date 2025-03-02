@@ -1,7 +1,6 @@
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
-import { Card } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PayPalButton from "@/components/PayPalButton"
 import { SubscriptionManagement } from "@/components/subscription/SubscriptionManagement"
@@ -9,29 +8,56 @@ import { LeadershipMetrics } from "@/components/leadership/LeadershipMetrics"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Shield, Bell, UserCircle, CreditCard, AtSign, Calendar, Settings2, BadgeCheck } from "lucide-react"
+import { 
+  Shield, 
+  Bell, 
+  UserCircle, 
+  CreditCard, 
+  AtSign, 
+  Calendar, 
+  Settings2, 
+  BadgeCheck, 
+  Save, 
+  Camera,
+  Building,
+  MapPin,
+  Briefcase,
+  Eye,
+  EyeOff,
+  Edit,
+  Link as LinkIcon
+} from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form"
 import { GamificationProfile } from "@/components/dashboard/gamification/GamificationProfile"
 import { CommunityMemberProfile } from "@/components/dashboard/community/CommunityMemberProfile"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { RewardTier } from "@/types/gamification"
+import { searchUsers } from "@/utils/userOperations"
 
 export default function Settings() {
   const { currentUser } = useAuth()
   const [activeTab, setActiveTab] = useState("profile")
   const [showSubscription, setShowSubscription] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const { toast } = useToast()
+  
   const [profileData, setProfileData] = useState({
     displayName: currentUser?.displayName || '',
-    bio: '',
-    company: '',
-    jobTitle: '',
-    location: ''
+    bio: 'Innovator and problem solver passionate about technology and AI solutions.',
+    company: 'DreamTech Solutions',
+    jobTitle: 'Senior Innovation Engineer',
+    location: 'San Francisco, CA',
+    website: 'https://example.com/profile',
+    skills: ['Artificial Intelligence', 'Project Management', 'Innovation Leadership', 'UX Design'],
+    interests: ['Emerging Tech', 'Team Collaboration', 'Sustainable Innovation'],
+    profileVisibility: 'public'
   })
-  const { toast } = useToast()
 
   const handleSaveProfile = () => {
     // Here we would implement actual profile update logic
@@ -73,18 +99,38 @@ export default function Settings() {
     ]
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle file upload logic here
+    toast({
+      title: "Profile image selected",
+      description: "Your new profile image has been selected. Save changes to update."
+    })
+  }
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Account Settings</h1>
-          <div className="text-sm text-muted-foreground">
-            Member since {accountCreationDate}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Account Settings</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your profile, account preferences and subscription
+            </p>
           </div>
+          {isEditing ? (
+            <Button onClick={handleSaveProfile} className="gap-2">
+              <Save className="h-4 w-4" />
+              Save Changes
+            </Button>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              Member since {accountCreationDate}
+            </div>
+          )}
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full justify-start mb-6">
+          <TabsList className="w-full justify-start mb-8 bg-card border">
             <TabsTrigger value="profile" className="flex items-center">
               <UserCircle className="mr-2 h-4 w-4" />
               Profile
@@ -107,172 +153,446 @@ export default function Settings() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="profile" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-24 w-24 border-4 border-primary/10">
-                      {currentUser?.photoURL ? (
-                        <AvatarImage src={currentUser.photoURL} alt={currentUser.displayName || 'User'} />
+          <TabsContent value="profile" className="space-y-8">
+            <div className="grid gap-8 md:grid-cols-3">
+              <Card className="md:col-span-2 bg-card border shadow-md">
+                <CardHeader className="relative">
+                  <div className="absolute right-6 top-6 flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1 text-xs"
+                      onClick={() => setShowPreview(!showPreview)}
+                    >
+                      {showPreview ? (
+                        <>
+                          <EyeOff className="h-3.5 w-3.5" />
+                          <span>Hide Preview</span>
+                        </>
                       ) : (
-                        <AvatarFallback className="text-2xl">
-                          {currentUser?.email?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
+                        <>
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>Public View</span>
+                        </>
                       )}
-                    </Avatar>
-                    <div>
-                      <h2 className="text-2xl font-semibold">
-                        {currentUser?.displayName || 'DreamStream User'}
-                      </h2>
-                      <p className="text-muted-foreground flex items-center gap-1">
-                        <AtSign className="h-4 w-4" /> 
-                        {currentUser?.email}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Joined {accountCreationDate}</span>
-                      </div>
-                      {currentUser?.emailVerified && (
-                        <Badge className="mt-2 bg-green-100 text-green-800">
-                          <BadgeCheck className="h-3 w-3 mr-1" /> Verified Account
-                        </Badge>
-                      )}
-                    </div>
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="gap-1 text-xs"
+                      onClick={() => setIsEditing(!isEditing)}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span>{isEditing ? "Cancel" : "Edit Profile"}</span>
+                    </Button>
                   </div>
-                  <Button
-                    variant={isEditing ? "default" : "outline"}
-                    onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
-                  >
-                    {isEditing ? "Save Profile" : "Edit Profile"}
-                  </Button>
-                </div>
-
-                <Separator className="my-6" />
-
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <div className="grid gap-4">
-                      <div>
-                        <Label htmlFor="displayName">Display Name</Label>
-                        <Input 
-                          id="displayName" 
-                          value={profileData.displayName} 
-                          onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
-                        />
+                  <CardTitle className="text-2xl font-bold">
+                    {showPreview ? "Public Profile Preview" : "Profile Information"}
+                  </CardTitle>
+                  <CardDescription>
+                    {showPreview 
+                      ? "This is how others will see your profile"
+                      : "Update your profile information visible to the community"}
+                  </CardDescription>
+                </CardHeader>
+                
+                <CardContent>
+                  {showPreview ? (
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+                        <Avatar className="h-24 w-24 border-4 border-primary/10">
+                          {currentUser?.photoURL ? (
+                            <AvatarImage src={currentUser.photoURL} alt={profileData.displayName || 'User'} />
+                          ) : (
+                            <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                              {profileData.displayName.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div>
+                          <h2 className="text-2xl font-semibold">
+                            {profileData.displayName || 'DreamStream User'}
+                            {currentUser?.emailVerified && (
+                              <Badge className="ml-2 bg-green-100 text-green-800">
+                                <BadgeCheck className="h-3 w-3 mr-1" /> Verified
+                              </Badge>
+                            )}
+                          </h2>
+                          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" /> 
+                            {profileData.jobTitle} at {profileData.company}
+                          </p>
+                          <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" /> 
+                            {profileData.location}
+                          </p>
+                          {profileData.website && (
+                            <p className="text-primary mt-1 flex items-center gap-2">
+                              <LinkIcon className="h-4 w-4" /> 
+                              <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {profileData.website.replace(/(https?:\/\/)?(www\.)?/, '')}
+                              </a>
+                            </p>
+                          )}
+                        </div>
                       </div>
                       
                       <div>
-                        <Label htmlFor="bio">Bio</Label>
-                        <Input 
+                        <h3 className="text-md font-medium mb-2">About</h3>
+                        <p className="text-muted-foreground whitespace-pre-line">{profileData.bio}</p>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="text-md font-medium mb-2">Skills</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {profileData.skills.map((skill, i) => (
+                              <Badge key={i} variant="secondary">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-md font-medium mb-2">Interests</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {profileData.interests.map((interest, i) => (
+                              <Badge key={i} variant="outline">
+                                {interest}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-md font-medium mb-2">Badges & Achievements</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {mockGamificationProfile.badges.map((badge, i) => (
+                            <Badge key={i} className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                              {badge}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row gap-6 items-start">
+                        <div className="relative">
+                          <Avatar className="h-24 w-24 border-4 border-primary/10">
+                            {currentUser?.photoURL ? (
+                              <AvatarImage src={currentUser.photoURL} alt={profileData.displayName || 'User'} />
+                            ) : (
+                              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                                {profileData.displayName.charAt(0).toUpperCase() || 'U'}
+                              </AvatarFallback>
+                            )}
+                          </Avatar>
+                          {isEditing && (
+                            <div className="absolute bottom-0 right-0">
+                              <label htmlFor="profile-image" className="cursor-pointer">
+                                <div className="rounded-full bg-primary p-2 text-white shadow-md hover:bg-primary/90 transition-colors">
+                                  <Camera className="h-4 w-4" />
+                                </div>
+                                <input 
+                                  id="profile-image" 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={handleFileUpload}
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 space-y-4">
+                          <div>
+                            <Label htmlFor="displayName">Display Name</Label>
+                            <Input 
+                              id="displayName" 
+                              value={profileData.displayName} 
+                              onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
+                              readOnly={!isEditing}
+                              className={!isEditing ? "bg-muted" : ""}
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="jobTitle">Job Title</Label>
+                              <Input 
+                                id="jobTitle" 
+                                value={profileData.jobTitle} 
+                                onChange={(e) => setProfileData({...profileData, jobTitle: e.target.value})}
+                                readOnly={!isEditing}
+                                className={!isEditing ? "bg-muted" : ""}
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor="company">Company</Label>
+                              <Input 
+                                id="company" 
+                                value={profileData.company} 
+                                onChange={(e) => setProfileData({...profileData, company: e.target.value})}
+                                readOnly={!isEditing}
+                                className={!isEditing ? "bg-muted" : ""}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="location">Location</Label>
+                              <Input 
+                                id="location" 
+                                value={profileData.location} 
+                                onChange={(e) => setProfileData({...profileData, location: e.target.value})}
+                                readOnly={!isEditing}
+                                className={!isEditing ? "bg-muted" : ""}
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label htmlFor="website">Website</Label>
+                              <Input 
+                                id="website" 
+                                value={profileData.website} 
+                                onChange={(e) => setProfileData({...profileData, website: e.target.value})}
+                                readOnly={!isEditing}
+                                className={!isEditing ? "bg-muted" : ""}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="bio">Professional Bio</Label>
+                        <Textarea 
                           id="bio" 
                           value={profileData.bio} 
                           onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                          readOnly={!isEditing}
+                          className={!isEditing ? "bg-muted min-h-[120px]" : "min-h-[120px]"}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          A brief description about yourself, your experience and expertise.
+                        </p>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <Label htmlFor="skills">Skills</Label>
+                          <div className="mt-2 border rounded-md p-3 min-h-[100px]">
+                            {isEditing ? (
+                              <div className="flex flex-wrap gap-2">
+                                {profileData.skills.map((skill, i) => (
+                                  <Badge key={i} variant="secondary" className="flex items-center gap-1">
+                                    {skill}
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-4 w-4 p-0 hover:bg-transparent"
+                                      onClick={() => setProfileData({
+                                        ...profileData, 
+                                        skills: profileData.skills.filter((_, idx) => idx !== i)
+                                      })}
+                                    >
+                                      <span className="sr-only">Remove</span>
+                                      <span aria-hidden="true">×</span>
+                                    </Button>
+                                  </Badge>
+                                ))}
+                                <Input 
+                                  placeholder="Add skill + Enter"
+                                  className="flex-1 min-w-[150px] border-dashed"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const value = e.currentTarget.value.trim();
+                                      if (value && !profileData.skills.includes(value)) {
+                                        setProfileData({
+                                          ...profileData,
+                                          skills: [...profileData.skills, value]
+                                        });
+                                        e.currentTarget.value = '';
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {profileData.skills.map((skill, i) => (
+                                  <Badge key={i} variant="secondary">
+                                    {skill}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="interests">Interests</Label>
+                          <div className="mt-2 border rounded-md p-3 min-h-[100px]">
+                            {isEditing ? (
+                              <div className="flex flex-wrap gap-2">
+                                {profileData.interests.map((interest, i) => (
+                                  <Badge key={i} variant="outline" className="flex items-center gap-1">
+                                    {interest}
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-4 w-4 p-0 hover:bg-transparent"
+                                      onClick={() => setProfileData({
+                                        ...profileData, 
+                                        interests: profileData.interests.filter((_, idx) => idx !== i)
+                                      })}
+                                    >
+                                      <span className="sr-only">Remove</span>
+                                      <span aria-hidden="true">×</span>
+                                    </Button>
+                                  </Badge>
+                                ))}
+                                <Input 
+                                  placeholder="Add interest + Enter"
+                                  className="flex-1 min-w-[150px] border-dashed"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      const value = e.currentTarget.value.trim();
+                                      if (value && !profileData.interests.includes(value)) {
+                                        setProfileData({
+                                          ...profileData,
+                                          interests: [...profileData.interests, value]
+                                        });
+                                        e.currentTarget.value = '';
+                                      }
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {profileData.interests.map((interest, i) => (
+                                  <Badge key={i} variant="outline">
+                                    {interest}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       
                       <div>
-                        <Label htmlFor="company">Company</Label>
-                        <Input 
-                          id="company" 
-                          value={profileData.company} 
-                          onChange={(e) => setProfileData({...profileData, company: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="jobTitle">Job Title</Label>
-                        <Input 
-                          id="jobTitle" 
-                          value={profileData.jobTitle} 
-                          onChange={(e) => setProfileData({...profileData, jobTitle: e.target.value})}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="location">Location</Label>
-                        <Input 
-                          id="location" 
-                          value={profileData.location} 
-                          onChange={(e) => setProfileData({...profileData, location: e.target.value})}
-                        />
+                        <Label className="flex items-center gap-2">
+                          <span>Profile Visibility</span>
+                          {profileData.profileVisibility === 'public' ? (
+                            <Badge variant="outline" className="text-green-600 bg-green-50">Public</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-gray-600 bg-gray-50">Private</Badge>
+                          )}
+                        </Label>
+                        {isEditing && (
+                          <div className="mt-2 flex items-center gap-4">
+                            <Button 
+                              type="button"
+                              size="sm"
+                              variant={profileData.profileVisibility === 'public' ? 'default' : 'outline'}
+                              className="gap-2"
+                              onClick={() => setProfileData({...profileData, profileVisibility: 'public'})}
+                            >
+                              <Eye className="h-4 w-4" />
+                              Public
+                            </Button>
+                            <Button 
+                              type="button"
+                              size="sm"
+                              variant={profileData.profileVisibility === 'private' ? 'default' : 'outline'}
+                              className="gap-2"
+                              onClick={() => setProfileData({...profileData, profileVisibility: 'private'})}
+                            >
+                              <EyeOff className="h-4 w-4" />
+                              Private
+                            </Button>
+                            <p className="text-xs text-muted-foreground">
+                              {profileData.profileVisibility === 'public' 
+                                ? 'Your profile is visible to all members' 
+                                : 'Only you can see your profile'}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Email Address</h3>
-                        <p className="text-base">{currentUser?.email}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Account Created</h3>
-                        <p className="text-base">{accountCreationDate}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Last Sign In</h3>
-                        <p className="text-base">{lastSignInDate}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Account ID</h3>
-                        <p className="text-base">{currentUser?.uid.substring(0, 8)}...</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
+                </CardContent>
+                
+                {isEditing && (
+                  <CardFooter className="flex justify-end gap-2 border-t pt-6">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSaveProfile}>
+                      Save Changes
+                    </Button>
+                  </CardFooter>
                 )}
               </Card>
               
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Activity & Achievements</h2>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Gamification Level</h3>
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-primary text-primary-foreground">
-                        Level {mockGamificationProfile.level}
+              <div className="space-y-6">
+                <Card className="border shadow-md">
+                  <CardHeader>
+                    <CardTitle>Account Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                      <p className="flex items-center gap-1 text-base">
+                        <AtSign className="h-4 w-4 text-muted-foreground" /> 
+                        {currentUser?.email}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Member Since</h3>
+                      <p className="flex items-center gap-1 text-base">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        {accountCreationDate}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Subscription</h3>
+                      <Badge className="mt-1 bg-green-100 text-green-800">
+                        Monthly Plan
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {mockGamificationProfile.points} points
-                      </span>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Recent Badges</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {mockGamificationProfile.badges.slice(0, 3).map((badge, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {badge}
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Gamification Level</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="bg-primary/10 text-primary">
+                          Level {mockGamificationProfile.level}
                         </Badge>
-                      ))}
+                        <span className="text-sm">{mockGamificationProfile.points} points</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Current Subscription</h3>
-                    <Badge className="bg-green-100 text-green-800">
-                      Monthly Plan
-                    </Badge>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Next billing date: May 15, 2024
-                    </p>
-                  </div>
-                </div>
-                
-                <Separator className="my-4" />
-                
-                <div className="mt-auto pt-4">
-                  <Button className="w-full" variant="outline" onClick={() => setActiveTab("billing")}>
-                    Manage Subscription
-                  </Button>
-                </div>
-              </Card>
+                  </CardContent>
+                  <CardFooter className="flex-col gap-2 border-t pt-6">
+                    <Button variant="outline" className="w-full" onClick={() => setActiveTab("billing")}>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Manage Subscription
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => setActiveTab("settings")}>
+                      <Settings2 className="mr-2 h-4 w-4" />
+                      Account Settings
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </div>
             </div>
-            
-            <GamificationProfile profile={mockGamificationProfile} />
-            
-            <CommunityMemberProfile />
           </TabsContent>
           
           <TabsContent value="billing" className="space-y-4">
