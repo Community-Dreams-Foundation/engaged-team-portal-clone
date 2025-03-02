@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
@@ -7,8 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save, Bell, Mail, Clock } from "lucide-react"
-import { toast } from "@/components/ui/use-toast"
+import { Save, Bell, Mail, Clock, AlertTriangle } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import { getDatabase, ref, update, get } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
 import { Separator } from "@/components/ui/separator"
@@ -23,17 +22,22 @@ type NotificationPreferences = Record<string, NotificationPreference>;
 
 export default function NotificationSettings() {
   const { currentUser } = useAuth()
+  const { toast } = useToast()
   const [preferences, setPreferences] = useState<NotificationPreferences>({})
   const [isLoading, setIsLoading] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
+  const [errorLoading, setErrorLoading] = useState(false)
 
-  // Load user notification preferences
   useEffect(() => {
     async function loadPreferences() {
-      if (!currentUser) return
+      if (!currentUser) {
+        setIsLoading(false)
+        return
+      }
       
       try {
         setIsLoading(true)
+        setErrorLoading(false)
         const db = getDatabase()
         const prefsRef = ref(db, `users/${currentUser.uid}/notificationPreferences`)
         const snapshot = await get(prefsRef)
@@ -41,7 +45,6 @@ export default function NotificationSettings() {
         if (snapshot.exists()) {
           setPreferences(snapshot.val())
         } else {
-          // Set default preferences if none exist
           const defaultPreferences: NotificationPreferences = {
             meeting: {
               enabled: true,
@@ -93,6 +96,7 @@ export default function NotificationSettings() {
         }
       } catch (error) {
         console.error("Error loading notification preferences:", error)
+        setErrorLoading(true)
         toast({
           variant: "destructive",
           title: "Failed to load notification preferences",
@@ -104,7 +108,7 @@ export default function NotificationSettings() {
     }
     
     loadPreferences()
-  }, [currentUser])
+  }, [currentUser, toast])
 
   const handleToggleNotification = (type: string, enabled: boolean) => {
     setPreferences(prev => ({
@@ -160,6 +164,58 @@ export default function NotificationSettings() {
         description: "Please try again"
       })
     }
+  }
+
+  const handleResetToDefault = () => {
+    const defaultPreferences: NotificationPreferences = {
+      meeting: {
+        enabled: true,
+        channel: "both",
+        frequency: "immediate"
+      },
+      task_alert: {
+        enabled: true,
+        channel: "both",
+        frequency: "immediate"
+      },
+      fee_reminder: {
+        enabled: true,
+        channel: "both",
+        frequency: "immediate"
+      },
+      performance_update: {
+        enabled: true,
+        channel: "in-app",
+        frequency: "daily"
+      },
+      leadership: {
+        enabled: true,
+        channel: "in-app",
+        frequency: "daily"
+      },
+      support: {
+        enabled: true,
+        channel: "both",
+        frequency: "immediate"
+      },
+      waiver: {
+        enabled: true,
+        channel: "both",
+        frequency: "immediate"
+      },
+      training: {
+        enabled: true,
+        channel: "in-app",
+        frequency: "daily"
+      },
+      system: {
+        enabled: true,
+        channel: "in-app",
+        frequency: "immediate"
+      }
+    }
+    setPreferences(defaultPreferences)
+    setHasChanges(true)
   }
 
   const getNotificationTitle = (type: string): string => {
@@ -235,6 +291,47 @@ export default function NotificationSettings() {
                 <div className="h-6 w-12 bg-muted rounded"></div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (errorLoading) {
+    return (
+      <Card className="p-6">
+        <CardHeader>
+          <CardTitle>Notification Preferences</CardTitle>
+          <CardDescription>There was an error loading your notification settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 space-y-4">
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+            <p className="text-center text-muted-foreground">
+              We couldn't load your notification preferences. Please try refreshing the page.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!currentUser) {
+    return (
+      <Card className="p-6">
+        <CardHeader>
+          <CardTitle>Notification Preferences</CardTitle>
+          <CardDescription>Sign in to manage your notification settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-10 space-y-4">
+            <Bell className="h-12 w-12 text-muted" />
+            <p className="text-center text-muted-foreground">
+              You need to be signed in to view and manage your notification preferences.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -354,7 +451,7 @@ export default function NotificationSettings() {
         })}
       </CardContent>
       <CardFooter className="flex justify-end space-x-2 bg-muted/10 py-4">
-        <Button variant="outline" disabled={!hasChanges}>
+        <Button variant="outline" onClick={handleResetToDefault} disabled={!hasChanges}>
           Reset to Default
         </Button>
         <Button disabled={!hasChanges} onClick={savePreferences}>
