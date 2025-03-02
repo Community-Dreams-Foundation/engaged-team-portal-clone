@@ -145,16 +145,15 @@ export interface LeadershipProfile {
     timestamp: number;
     approvedBy?: string;
   }>;
-  // Update mentorshipPreferences to have required properties inside the object
+  // Fix: Make all properties inside mentorshipPreferences and displaySettings optional
   mentorshipPreferences?: {
-    availableAsMentor: boolean;
-    seekingMentor: boolean;
-    preferredMentorshipAreas: string[];
+    availableAsMentor?: boolean;
+    seekingMentor?: boolean;
+    preferredMentorshipAreas?: string[];
   };
-  // Update displaySettings to have required properties inside the object
   displaySettings?: {
-    showAchievements: boolean;
-    showMetrics: boolean;
+    showAchievements?: boolean;
+    showMetrics?: boolean;
   };
 }
 
