@@ -7,14 +7,70 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { Bell, Check, Trash2, Clock } from "lucide-react"
+import { Bell, Check, Trash2, Clock, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
+import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { getDatabase, ref, get } from "firebase/database"
+import { useAuth } from "@/contexts/AuthContext"
+
+interface NotificationPreference {
+  enabled: boolean;
+  channel: "in-app" | "email" | "both";
+  frequency: "immediate" | "hourly" | "daily";
+}
+
+type NotificationPreferences = Record<string, NotificationPreference>;
 
 export function NotificationsDropdown() {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
+  const { currentUser } = useAuth()
+  const navigate = useNavigate()
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
+  const [filteredNotifications, setFilteredNotifications] = useState(notifications)
+  
+  // Load user notification preferences
+  useEffect(() => {
+    async function loadPreferences() {
+      if (!currentUser) return
+      
+      try {
+        const db = getDatabase()
+        const prefsRef = ref(db, `users/${currentUser.uid}/notificationPreferences`)
+        const snapshot = await get(prefsRef)
+        
+        if (snapshot.exists()) {
+          setPreferences(snapshot.val())
+        } else {
+          // Default preferences if none exist
+          setPreferences({})
+        }
+      } catch (error) {
+        console.error("Error loading notification preferences:", error)
+      }
+    }
+    
+    loadPreferences()
+  }, [currentUser])
+  
+  // Filter notifications based on preferences
+  useEffect(() => {
+    if (!preferences) {
+      setFilteredNotifications(notifications)
+      return
+    }
+    
+    const filtered = notifications.filter(notification => {
+      const pref = preferences[notification.type]
+      // If no specific preference exists or preference is enabled, show the notification
+      return !pref || pref.enabled
+    })
+    
+    setFilteredNotifications(filtered)
+  }, [notifications, preferences])
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -65,7 +121,7 @@ export function NotificationsDropdown() {
 
   const groupNotifications = () => {
     const now = Date.now()
-    return notifications.reduce((groups: any, notification) => {
+    return filteredNotifications.reduce((groups: any, notification) => {
       const timeDiff = now - notification.timestamp
       let group = 'older'
       
@@ -82,18 +138,19 @@ export function NotificationsDropdown() {
   }
 
   const groupedNotifications = groupNotifications()
+  const filteredUnreadCount = filteredNotifications.filter(n => n.status === "unread").length
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {filteredUnreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {unreadCount}
+              {filteredUnreadCount}
             </Badge>
           )}
         </Button>
@@ -101,21 +158,32 @@ export function NotificationsDropdown() {
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between p-4">
           <div className="text-sm font-medium">Notifications</div>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs"
-              onClick={() => markAllAsRead()}
+          <div className="flex items-center gap-2">
+            {filteredUnreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => markAllAsRead()}
+              >
+                <Check className="mr-2 h-4 w-4" />
+                Mark all as read
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs" 
+              onClick={() => navigate("/settings?tab=notifications")}
             >
-              <Check className="mr-2 h-4 w-4" />
-              Mark all as read
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
             </Button>
-          )}
+          </div>
         </div>
         <DropdownMenuSeparator />
         <ScrollArea className="h-[400px]">
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
               No notifications
             </div>

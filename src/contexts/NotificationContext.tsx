@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getDatabase, ref, onValue, update, push, get } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
 import socketService from "@/utils/socketService"
+import { sendEmail } from "@/utils/emailService"
 
 export interface Notification {
   id: string;
@@ -30,6 +31,14 @@ export interface Notification {
   };
 }
 
+interface NotificationPreference {
+  enabled: boolean;
+  channel: "in-app" | "email" | "both";
+  frequency: "immediate" | "hourly" | "daily";
+}
+
+type NotificationPreferences = Record<string, NotificationPreference>;
+
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
@@ -46,6 +55,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null)
   const { toast } = useToast()
   const { currentUser } = useAuth()
 
@@ -72,6 +82,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     })
 
+    return () => unsubscribe()
+  }, [currentUser])
+
+  // Load user notification preferences
+  useEffect(() => {
+    if (!currentUser) return
+    
+    const db = getDatabase()
+    const prefsRef = ref(db, `users/${currentUser.uid}/notificationPreferences`)
+    
+    const unsubscribe = onValue(prefsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setPreferences(snapshot.val())
+      } else {
+        setPreferences({})
+      }
+    })
+    
     return () => unsubscribe()
   }, [currentUser])
 
@@ -239,6 +267,45 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const addNotification = async (notification: Omit<Notification, "id" | "status" | "timestamp">) => {
     if (!currentUser) return
+    
+    // Check notification preferences if they exist
+    if (preferences) {
+      const pref = preferences[notification.type]
+      
+      // If preferences exist for this notification type and it's disabled, don't add it
+      if (pref && !pref.enabled) {
+        return
+      }
+      
+      // Handle email notification based on preferences
+      if (pref && (pref.channel === "email" || pref.channel === "both")) {
+        // Send email notification based on frequency
+        if (pref.frequency === "immediate") {
+          try {
+            await sendEmail({
+              to: currentUser.email || "",
+              from: "notifications@dreamstream.org",
+              subject: `DreamStream: ${notification.title}`,
+              message: notification.message,
+              metadata: {
+                notificationType: notification.type,
+                priority: notification.metadata?.priority
+              }
+            })
+          } catch (error) {
+            console.error("Failed to send email notification:", error)
+          }
+        }
+        // For hourly and daily digests, we'd need a separate aggregation system
+        // that would collect notifications and send them on schedule
+      }
+      
+      // If channel is email-only and not in-app, don't store the notification
+      if (pref && pref.channel === "email") {
+        return
+      }
+    }
+    
     const db = getDatabase()
     const notificationsRef = ref(db, `users/${currentUser.uid}/notifications`)
     
