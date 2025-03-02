@@ -17,7 +17,8 @@ export enum ApiDomain {
   COMMUNICATION = 'communication',
   PERFORMANCE = 'performance',
   PAYMENTS = 'payments',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  ACCOUNT = 'account'
 }
 
 // Cache for function instances to avoid recreating them
@@ -131,4 +132,20 @@ export const LeadershipApi = {
     callApi(ApiDomain.PERFORMANCE, 'fetchPromotionRequirements', { userId, targetTier }),
   submitPromotionRequest: (data: any) => 
     callApi(ApiDomain.PERFORMANCE, 'submitPromotionRequest', data),
+};
+
+// New AccountApi for managing account-related operations
+export const AccountApi = {
+  fetchSessions: (userId: string): Promise<any[]> => 
+    callApi(ApiDomain.ACCOUNT, 'fetchSessions', { userId }),
+  terminateSession: (sessionId: string): Promise<void> => 
+    callApi(ApiDomain.ACCOUNT, 'terminateSession', { sessionId }),
+  terminateAllSessions: (excludeCurrentSession: boolean = true): Promise<void> => 
+    callApi(ApiDomain.ACCOUNT, 'terminateAllSessions', { excludeCurrentSession }),
+  fetchActivityLog: (userId: string, limit: number = 20): Promise<any[]> => 
+    callApi(ApiDomain.ACCOUNT, 'fetchActivityLog', { userId, limit }),
+  exportUserData: (userId: string): Promise<any> => 
+    callApi(ApiDomain.ACCOUNT, 'exportUserData', { userId }),
+  updateSecuritySettings: (settings: any): Promise<void> => 
+    callApi(ApiDomain.ACCOUNT, 'updateSecuritySettings', settings),
 };
