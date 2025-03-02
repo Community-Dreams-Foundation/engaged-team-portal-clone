@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNotifications, Notification } from "@/contexts/NotificationContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -494,6 +493,14 @@ export default function NotificationSettings() {
     }
   };
 
+  // Fix: Update the setSchedule calls to ensure all required properties are included
+  const updateSchedule = (updates: Partial<NotificationSchedule>) => {
+    setSchedule(prevSchedule => ({
+      ...prevSchedule,
+      ...updates
+    }));
+  };
+
   const hasPreferences = Object.keys(preferences).length > 0;
 
   return (
@@ -587,10 +594,7 @@ export default function NotificationSettings() {
                     <Switch
                       id="quiet-hours"
                       checked={schedule.quietHoursEnabled}
-                      onCheckedChange={(checked) => setSchedule(prev => ({
-                        ...prev,
-                        quietHoursEnabled: checked
-                      }))}
+                      onCheckedChange={(checked) => updateSchedule({ quietHoursEnabled: checked })}
                     />
                     <Label htmlFor="quiet-hours">Enable Quiet Hours</Label>
                   </div>
@@ -605,10 +609,7 @@ export default function NotificationSettings() {
                             id="start-time"
                             type="time"
                             value={schedule.quietHoursStart}
-                            onChange={(e) => setSchedule(prev => ({
-                              ...prev,
-                              quietHoursStart: e.target.value
-                            }))}
+                            onChange={(e) => updateSchedule({ quietHoursStart: e.target.value })}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           />
                         </div>
@@ -621,10 +622,7 @@ export default function NotificationSettings() {
                             id="end-time"
                             type="time"
                             value={schedule.quietHoursEnd}
-                            onChange={(e) => setSchedule(prev => ({
-                              ...prev,
-                              quietHoursEnd: e.target.value
-                            }))}
+                            onChange={(e) => updateSchedule({ quietHoursEnd: e.target.value })}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           />
                         </div>
@@ -640,15 +638,14 @@ export default function NotificationSettings() {
                     <Switch
                       id="weekends-off"
                       checked={schedule.weekendsOff}
-                      onCheckedChange={(checked) => setSchedule(prev => ({
-                        ...prev,
+                      onCheckedChange={(checked) => updateSchedule({ 
                         weekendsOff: checked,
                         customDays: {
-                          ...prev.customDays,
+                          ...schedule.customDays,
                           saturday: !checked,
                           sunday: !checked
                         }
-                      }))}
+                      })}
                     />
                     <Label htmlFor="weekends-off">Disable weekend notifications</Label>
                   </div>
@@ -680,13 +677,12 @@ export default function NotificationSettings() {
                               } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                               onClick={() => {
                                 if (!disabled) {
-                                  setSchedule(prev => ({
-                                    ...prev,
+                                  updateSchedule({
                                     customDays: {
-                                      ...prev.customDays,
-                                      [day]: !prev.customDays[day as keyof typeof prev.customDays]
+                                      ...schedule.customDays,
+                                      [day]: !schedule.customDays[day as keyof typeof schedule.customDays]
                                     }
-                                  }));
+                                  });
                                 }
                               }}
                             >
