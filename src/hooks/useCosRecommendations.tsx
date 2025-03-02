@@ -68,10 +68,18 @@ export function useCosRecommendations() {
     }
   }, []);
 
+  // Add the missing functions to match what CosAgent.tsx expects
+  const handleFeedback = useCallback((recId: string, feedback: 'positive' | 'negative') => {
+    provideRecommendationFeedback(recId, feedback);
+  }, [provideRecommendationFeedback]);
+
   return {
     recommendations,
     loading,
     fetchRecommendations,
-    provideRecommendationFeedback
+    provideRecommendationFeedback,
+    // Add these exports to match what's used in CosAgent.tsx
+    setRecommendations,
+    handleFeedback
   };
 }
