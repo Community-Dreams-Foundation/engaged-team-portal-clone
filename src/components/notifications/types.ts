@@ -87,31 +87,29 @@ export const notificationGroups: GroupedPreferences = {
 };
 
 export const getNotificationIcon = (type: string, size = 4) => {
-  const sizeClass = `h-${size} w-${size}`;
-  
   switch (type) {
     case "meeting":
-      return <Calendar className={sizeClass} />;
+      return <Calendar className={`h-${size} w-${size}`} />;
     case "support":
-      return <MessageSquare className={sizeClass} />;
+      return <MessageSquare className={`h-${size} w-${size}`} />;
     case "task_alert":
-      return <ClipboardList className={sizeClass} />;
+      return <ClipboardList className={`h-${size} w-${size}`} />;
     case "fee_reminder":
-      return <CreditCard className={sizeClass} />;
+      return <CreditCard className={`h-${size} w-${size}`} />;
     case "performance_update":
-      return <Star className={sizeClass} />;
+      return <Star className={`h-${size} w-${size}`} />;
     case "leadership":
-      return <Shield className={sizeClass} />;
+      return <Shield className={`h-${size} w-${size}`} />;
     case "waiver":
-      return <User className={sizeClass} />;
+      return <User className={`h-${size} w-${size}`} />;
     case "payment":
-      return <CreditCard className={sizeClass} />;
+      return <CreditCard className={`h-${size} w-${size}`} />;
     case "comment":
-      return <MessageSquare className={sizeClass} />;
+      return <MessageSquare className={`h-${size} w-${size}`} />;
     case "system":
-      return <Wrench className={sizeClass} />;
+      return <Wrench className={`h-${size} w-${size}`} />;
     default:
-      return <Bell className={sizeClass} />;
+      return <Bell className={`h-${size} w-${size}`} />;
   }
 };
 
