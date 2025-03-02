@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { getDatabase, ref, update } from "firebase/database"
@@ -193,151 +194,152 @@ export function LeadershipSettings() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="domain"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primary Leadership Domain</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your primary domain" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="strategy">Strategy</SelectItem>
-                        <SelectItem value="product-design">Product Design</SelectItem>
-                        <SelectItem value="data-engineering">Data Engineering</SelectItem>
-                        <SelectItem value="software-development">Software Development</SelectItem>
-                        <SelectItem value="engagement">Engagement</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      This is your primary area of leadership focus.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <Separator className="my-4" />
-              
-              <div>
-                <h3 className="text-lg font-medium">Mentorship Preferences</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Configure your mentorship involvement settings.
-                </p>
+                <FormField
+                  control={form.control}
+                  name="domain"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Primary Leadership Domain</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your primary domain" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="strategy">Strategy</SelectItem>
+                          <SelectItem value="product-design">Product Design</SelectItem>
+                          <SelectItem value="data-engineering">Data Engineering</SelectItem>
+                          <SelectItem value="software-development">Software Development</SelectItem>
+                          <SelectItem value="engagement">Engagement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        This is your primary area of leadership focus.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="mentorshipPreferences.availableAsMentor"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Available as Mentor</FormLabel>
-                          <FormDescription>
-                            Allow others to find you as a mentor
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                <Separator className="my-4" />
+                
+                <div>
+                  <h3 className="text-lg font-medium">Mentorship Preferences</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Configure your mentorship involvement settings.
+                  </p>
                   
-                  <FormField
-                    control={form.control}
-                    name="mentorshipPreferences.seekingMentor"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Seeking Mentor</FormLabel>
-                          <FormDescription>
-                            Indicate that you're looking for mentorship
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="mentorshipPreferences.availableAsMentor"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Available as Mentor</FormLabel>
+                            <FormDescription>
+                              Allow others to find you as a mentor
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="mentorshipPreferences.seekingMentor"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Seeking Mentor</FormLabel>
+                            <FormDescription>
+                              Indicate that you're looking for mentorship
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <div>
+                  <h3 className="text-lg font-medium">Display Preferences</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Control visibility of your leadership information.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="displayAchievements"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Show Achievements</FormLabel>
+                            <FormDescription>
+                              Display your leadership achievements on your profile
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="displayLeadershipMetrics"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Show Leadership Metrics</FormLabel>
+                            <FormDescription>
+                              Display your leadership metrics and statistics
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
               
-              <Separator className="my-4" />
-              
-              <div>
-                <h3 className="text-lg font-medium">Display Preferences</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Control visibility of your leadership information.
-                </p>
-                
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="displayAchievements"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Show Achievements</FormLabel>
-                          <FormDescription>
-                            Display your leadership achievements on your profile
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="displayLeadershipMetrics"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">Show Leadership Metrics</FormLabel>
-                          <FormDescription>
-                            Display your leadership metrics and statistics
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <Button 
-              type="submit"
-              disabled={isLoading || updateSettingsMutation.isPending}
-            >
-              {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
+              <Button 
+                type="submit"
+                disabled={isLoading || updateSettingsMutation.isPending}
+              >
+                {updateSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
       
