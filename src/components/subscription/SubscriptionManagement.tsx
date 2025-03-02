@@ -2,21 +2,13 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, getDocs, getFirestore, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { format } from 'date-fns';
-import { Loader2, Download, CreditCard, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
+import { SubscriptionDetails } from './SubscriptionDetails';
+import { BillingHistory } from './BillingHistory';
+import { PaymentMethod } from './PaymentMethod';
 
 interface Subscription {
   subscriptionID: string;
@@ -69,7 +61,7 @@ export function SubscriptionManagement() {
     };
 
     fetchSubscription();
-  }, [currentUser, toast]);
+  }, [currentUser, toast, db]);
 
   useEffect(() => {
     const fetchPaymentHistory = async () => {
@@ -132,7 +124,7 @@ export function SubscriptionManagement() {
     if (subscription) {
       fetchPaymentHistory();
     }
-  }, [currentUser, subscription, toast]);
+  }, [currentUser, subscription, toast, db]);
 
   const handleCancelSubscription = async () => {
     if (!currentUser || !subscription) return;
@@ -209,129 +201,25 @@ export function SubscriptionManagement() {
           <TabsTrigger value="payment">Payment Method</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="details" className="space-y-4">
-          <h3 className="text-xl font-semibold">Current Subscription</h3>
-          
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Plan Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>Next Payment</TableHead>
-                <TableHead>Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium capitalize">{subscription.planType}</TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    getStatusBadgeColor(subscription.status)
-                  }`}>
-                    {subscription.status.toLowerCase()}
-                  </span>
-                </TableCell>
-                <TableCell>{format(subscription.createdAt.toDate(), 'MMM d, yyyy')}</TableCell>
-                <TableCell>{format(new Date(subscription.dueDate), 'MMM d, yyyy')}</TableCell>
-                <TableCell>${subscription.price}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-
-          <div className="bg-blue-50 p-4 rounded-lg mt-4">
-            <h4 className="text-sm font-medium text-blue-800 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Subscription Benefits
-            </h4>
-            <ul className="mt-2 text-sm text-blue-700 list-disc list-inside">
-              <li>Access to all premium features</li>
-              <li>Priority customer support</li>
-              <li>Advanced leadership training modules</li>
-              <li>Unlimited career guidance resources</li>
-            </ul>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <Button
-              variant="destructive"
-              onClick={handleCancelSubscription}
-              disabled={subscription.status !== 'ACTIVE' || cancelling}
-            >
-              {cancelling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cancelling...
-                </>
-              ) : (
-                'Cancel Subscription'
-              )}
-            </Button>
-          </div>
+        <TabsContent value="details">
+          <SubscriptionDetails 
+            subscription={subscription}
+            cancelling={cancelling}
+            handleCancelSubscription={handleCancelSubscription}
+            getStatusBadgeColor={getStatusBadgeColor}
+          />
         </TabsContent>
         
         <TabsContent value="history">
-          <h3 className="text-xl font-semibold mb-4">Billing History</h3>
-          
-          {historyLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : paymentHistory.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentHistory.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>{format(payment.date.toDate(), 'MMM d, yyyy')}</TableCell>
-                    <TableCell>{payment.description}</TableCell>
-                    <TableCell>${payment.amount}</TableCell>
-                    <TableCell>
-                      <Badge variant={payment.status === 'completed' ? 'default' : payment.status === 'pending' ? 'outline' : 'destructive'}>
-                        {payment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleDownloadInvoice(payment.id)}
-                      >
-                        <Download className="h-4 w-4" />
-                        <span className="sr-only">Download Invoice</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-muted-foreground py-4">No billing history available.</p>
-          )}
+          <BillingHistory 
+            paymentHistory={paymentHistory}
+            historyLoading={historyLoading}
+            handleDownloadInvoice={handleDownloadInvoice}
+          />
         </TabsContent>
         
         <TabsContent value="payment">
-          <h3 className="text-xl font-semibold mb-4">Payment Method</h3>
-          
-          <div className="border rounded-lg p-4 mb-4 flex items-start space-x-4">
-            <CreditCard className="h-10 w-10 text-blue-500" />
-            <div>
-              <p className="font-medium">PayPal</p>
-              <p className="text-sm text-muted-foreground">Connected to your PayPal account</p>
-              <p className="text-sm mt-1">Next charge on {format(new Date(subscription.dueDate), 'MMM d, yyyy')}</p>
-            </div>
-          </div>
-          
-          <Button variant="outline">Update Payment Method</Button>
+          <PaymentMethod dueDate={subscription.dueDate} />
         </TabsContent>
       </Tabs>
     </Card>
