@@ -1,149 +1,143 @@
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { SubscriptionDetails } from "@/components/subscription/SubscriptionDetails";
+import { BillingHistory } from "@/components/subscription/BillingHistory";
+import { PaymentMethod } from "@/components/subscription/PaymentMethod";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SubscriptionDetails } from "./SubscriptionDetails";
-import { PaymentMethod } from "./PaymentMethod";
-import { BillingHistory } from "./BillingHistory";
+import { CreditCard, Clock, Receipt } from "lucide-react";
 
-type Subscription = {
-  id: string;
-  plan: string;
-  status: "active" | "canceled" | "past_due" | "trialing";
-  currentPeriodEnd: number;
-  cancelAtPeriodEnd: boolean;
+// Mock data for testing
+const mockSubscriptionData = {
+  plan: "Professional",
+  status: "active",
+  renewalDate: new Date().setDate(new Date().getDate() + 30),
+  price: 49.99,
+  features: [
+    "Unlimited tasks",
+    "5 AI agents",
+    "Advanced analytics",
+    "Priority support"
+  ]
 };
 
-type Payment = {
-  id: string;
-  amount: number;
-  status: string;
-  date: number;
-  description: string;
-};
+const mockPaymentMethods = [
+  {
+    id: "pm_1",
+    brand: "visa",
+    last4: "4242",
+    expiryMonth: 12,
+    expiryYear: 2024,
+    isDefault: true
+  },
+  {
+    id: "pm_2",
+    brand: "mastercard",
+    last4: "5555",
+    expiryMonth: 10,
+    expiryYear: 2025,
+    isDefault: false
+  }
+];
 
-type PaymentCard = {
-  id: string;
-  brand: string;
-  last4: string;
-  expiryMonth: number;
-  expiryYear: number;
-  isDefault: boolean;
-};
+const mockBillingHistory = [
+  {
+    id: "pay_1",
+    amount: 49.99,
+    status: "succeeded",
+    date: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
+    description: "Professional Plan - Monthly"
+  },
+  {
+    id: "pay_2",
+    amount: 49.99,
+    status: "succeeded",
+    date: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago
+    description: "Professional Plan - Monthly"
+  }
+];
 
 export const SubscriptionManagement: React.FC = () => {
-  const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentCard[]>([]);
-  const [billingHistory, setBillingHistory] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState(mockSubscriptionData);
+  const [paymentMethods, setPaymentMethods] = useState(mockPaymentMethods);
+  const [billingHistory, setBillingHistory] = useState(mockBillingHistory);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("subscription");
 
+  // This would normally fetch data from an API
   useEffect(() => {
-    const loadSubscriptionData = async () => {
-      if (!currentUser) return;
-
-      try {
-        setLoading(true);
-        
-        // Mock data for testing
-        const mockSubscription: Subscription = {
-          id: "sub_12345",
-          plan: "Professional",
-          status: "active",
-          currentPeriodEnd: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days from now
-          cancelAtPeriodEnd: false,
-        };
-        
-        const mockPaymentMethods: PaymentCard[] = [
-          {
-            id: "pm_1234",
-            brand: "visa",
-            last4: "4242",
-            expiryMonth: 12,
-            expiryYear: 2024,
-            isDefault: true,
-          },
-        ];
-        
-        const mockBillingHistory: Payment[] = [
-          {
-            id: "pay_1234",
-            amount: 29.99,
-            status: "succeeded",
-            date: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
-            description: "Professional Plan - Monthly",
-          },
-          {
-            id: "pay_5678",
-            amount: 29.99,
-            status: "succeeded",
-            date: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago
-            description: "Professional Plan - Monthly",
-          },
-        ];
-
-        setSubscription(mockSubscription);
-        setPaymentMethods(mockPaymentMethods);
-        setBillingHistory(mockBillingHistory);
-      } catch (error) {
-        console.error("Error loading subscription data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load subscription data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSubscriptionData();
-  }, [currentUser, toast]);
+    setLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setSubscription(mockSubscriptionData);
+      setPaymentMethods(mockPaymentMethods);
+      setBillingHistory(mockBillingHistory);
+      setLoading(false);
+    }, 500);
+  }, []);
 
   const handleSetDefaultPaymentMethod = (id: string) => {
-    toast({
-      title: "Payment Method Updated",
-      description: "Your default payment method has been updated.",
-      variant: "success",
-    });
-    setPaymentMethods(prevMethods =>
-      prevMethods.map(method => ({
+    // Update payment methods
+    setPaymentMethods(prev => 
+      prev.map(method => ({
         ...method,
         isDefault: method.id === id
       }))
     );
+    
+    toast({
+      title: "Default payment method updated",
+      description: "Your default payment method has been updated successfully."
+    });
+  };
+
+  const handleCancelSubscription = () => {
+    toast({
+      title: "Subscription cancellation",
+      description: "Please contact support to cancel your subscription.",
+      variant: "destructive"
+    });
   };
 
   return (
-    <div className="w-full space-y-6">
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="details">Subscription</TabsTrigger>
-          <TabsTrigger value="payment">Payment Method</TabsTrigger>
-          <TabsTrigger value="history">Billing History</TabsTrigger>
+    <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="subscription" className="flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            Subscription
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payment Methods
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Billing History
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="details">
-          <SubscriptionDetails 
+
+        <TabsContent value="subscription">
+          <SubscriptionDetails
             subscription={subscription}
             loading={loading}
+            onCancelSubscription={handleCancelSubscription}
           />
         </TabsContent>
-        
+
         <TabsContent value="payment">
-          <PaymentMethod 
+          <PaymentMethod
             paymentMethods={paymentMethods}
             loading={loading}
             onSetDefault={handleSetDefaultPaymentMethod}
           />
         </TabsContent>
-        
+
         <TabsContent value="history">
-          <BillingHistory 
+          <BillingHistory
             billingHistory={billingHistory}
             loading={loading}
           />
