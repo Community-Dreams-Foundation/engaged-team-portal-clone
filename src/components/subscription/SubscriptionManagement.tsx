@@ -1,61 +1,47 @@
 
-import { useState, useEffect } from 'react';
-import { doc, getDoc, collection, query, where, getDocs, getFirestore, orderBy, limit } from 'firebase/firestore';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SubscriptionDetails } from './SubscriptionDetails';
-import { BillingHistory } from './BillingHistory';
-import { PaymentMethod } from './PaymentMethod';
-
-interface Subscription {
-  subscriptionID: string;
-  status: string;
-  planType: string;
-  createdAt: { toDate: () => Date };
-  dueDate: string;
-  price: number;
-}
-
-interface PaymentHistory {
-  id: string;
-  amount: number;
-  date: { toDate: () => Date };
-  status: 'completed' | 'pending' | 'failed';
-  method: string;
-  description: string;
-}
+import { useState, useEffect } from "react";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { SubscriptionDetails } from "./SubscriptionDetails";
+import { BillingHistory } from "./BillingHistory";
+import { PaymentMethod } from "./PaymentMethod";
 
 export function SubscriptionManagement() {
   const { currentUser } = useAuth();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
-  const [activeTab, setActiveTab] = useState("details");
-  const db = getFirestore();
   const { toast } = useToast();
 
+  // Fetch subscription data
   useEffect(() => {
-    const fetchSubscription = async () => {
-      if (!currentUser) return;
+    if (!currentUser) return;
 
+    const fetchSubscription = async () => {
       try {
-        const subscriptionDoc = await getDoc(doc(db, 'subscriptions', currentUser.uid));
-        if (subscriptionDoc.exists()) {
-          setSubscription(subscriptionDoc.data() as Subscription);
-        }
+        // Mock subscription data for demonstration
+        const mockSubscription = {
+          planType: "professional",
+          status: "ACTIVE",
+          createdAt: { toDate: () => new Date(2023, 5, 15) },
+          dueDate: new Date(2023, 11, 15).toISOString(),
+          price: 29.99
+        };
+        
+        setSubscription(mockSubscription);
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching subscription:', error);
+        console.error("Error fetching subscription:", error);
         toast({
-          variant: "destructive",
           title: "Error",
-          description: "Failed to fetch subscription details"
+          description: "Failed to load subscription details",
+          variant: "destructive",
         });
-      } finally {
         setLoading(false);
       }
     };
@@ -63,85 +49,82 @@ export function SubscriptionManagement() {
     fetchSubscription();
   }, [currentUser, toast, db]);
 
+  // Fetch payment history
   useEffect(() => {
-    const fetchPaymentHistory = async () => {
-      if (!currentUser) return;
+    if (!currentUser) return;
 
-      setHistoryLoading(true);
+    const fetchPaymentHistory = async () => {
       try {
-        // This would fetch payment history from Firestore
-        // In a real app, this might be from a payment processor's API
-        const paymentsQuery = query(
-          collection(db, 'payments'),
-          where('userId', '==', currentUser.uid),
-          orderBy('date', 'desc'),
-          limit(10)
-        );
-        
-        const paymentsSnapshot = await getDocs(paymentsQuery);
-        const payments: PaymentHistory[] = [];
-        
-        paymentsSnapshot.forEach(doc => {
-          payments.push({ id: doc.id, ...doc.data() } as PaymentHistory);
-        });
-        
-        // If no real payment history exists, add some mock data for display
-        if (payments.length === 0 && subscription) {
-          // Generate 3 months of payment history based on current subscription
-          const mockPayments: PaymentHistory[] = [];
-          const today = new Date();
-          
-          for (let i = 0; i < 3; i++) {
-            const paymentDate = new Date();
-            paymentDate.setMonth(today.getMonth() - i);
-            
-            mockPayments.push({
-              id: `mock-payment-${i}`,
-              amount: subscription.price,
-              date: { toDate: () => paymentDate },
-              status: 'completed',
-              method: 'paypal',
-              description: `${subscription.planType} subscription payment`
-            });
+        // Mock payment history data
+        const mockPaymentHistory = [
+          {
+            id: "payment1",
+            date: { toDate: () => new Date(2023, 10, 15) },
+            amount: 29.99,
+            status: "completed",
+            method: "PayPal",
+            description: "Professional Plan - Monthly"
+          },
+          {
+            id: "payment2",
+            date: { toDate: () => new Date(2023, 9, 15) },
+            amount: 29.99,
+            status: "completed",
+            method: "PayPal",
+            description: "Professional Plan - Monthly"
+          },
+          {
+            id: "payment3",
+            date: { toDate: () => new Date(2023, 8, 15) },
+            amount: 29.99,
+            status: "completed",
+            method: "PayPal",
+            description: "Professional Plan - Monthly"
           }
-          
-          setPaymentHistory(mockPayments);
-        } else {
-          setPaymentHistory(payments);
-        }
+        ];
+        
+        setPaymentHistory(mockPaymentHistory);
+        setHistoryLoading(false);
       } catch (error) {
-        console.error('Error fetching payment history:', error);
+        console.error("Error fetching payment history:", error);
         toast({
-          variant: "destructive",
           title: "Error",
-          description: "Failed to fetch payment history"
+          description: "Failed to load billing history",
+          variant: "destructive",
         });
-      } finally {
         setHistoryLoading(false);
       }
     };
 
-    if (subscription) {
-      fetchPaymentHistory();
-    }
-  }, [currentUser, subscription, toast, db]);
+    fetchPaymentHistory();
+  }, [currentUser, toast, db]);
 
   const handleCancelSubscription = async () => {
     if (!currentUser || !subscription) return;
-
+    
     setCancelling(true);
+    
     try {
-      // Note: This would typically call a PayPal API endpoint to cancel the subscription
+      // Mock cancellation API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update the subscription status
+      setSubscription({
+        ...subscription,
+        status: "CANCELED"
+      });
+      
       toast({
-        title: "Subscription Cancelled",
-        description: "Your subscription will remain active until the end of the current billing period."
+        title: "Subscription canceled",
+        description: "Your subscription has been successfully canceled.",
+        variant: "default",
       });
     } catch (error) {
-      console.error('Error cancelling subscription:', error);
+      console.error("Error canceling subscription:", error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to cancel subscription"
+        description: "Failed to cancel subscription. Please try again later.",
+        variant: "destructive",
       });
     } finally {
       setCancelling(false);
@@ -149,79 +132,63 @@ export function SubscriptionManagement() {
   };
 
   const handleDownloadInvoice = (paymentId: string) => {
-    // In a real app, this would generate and download a PDF invoice
     toast({
-      title: "Invoice Download",
-      description: "Your invoice is being generated and will download shortly."
+      title: "Download started",
+      description: `Invoice ${paymentId} is being prepared for download.`,
+      variant: "default",
     });
     
-    // Simulate invoice generation delay
+    // Mock download functionality
     setTimeout(() => {
-      console.log(`Downloading invoice for payment ${paymentId}`);
-      // In reality, this would trigger the download of a generated PDF
+      console.log(`Downloading invoice: ${paymentId}`);
     }, 1500);
   };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'suspended':
-        return 'bg-yellow-100 text-yellow-800';
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "canceled":
+        return "bg-red-100 text-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex justify-center items-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!subscription) {
-    return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-semibold mb-4">No Active Subscription</h2>
-        <p className="text-muted-foreground">You don't have an active subscription.</p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="details">Subscription Details</TabsTrigger>
-          <TabsTrigger value="history">Billing History</TabsTrigger>
-          <TabsTrigger value="payment">Payment Method</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="details">
-          <SubscriptionDetails 
-            subscription={subscription}
-            cancelling={cancelling}
-            handleCancelSubscription={handleCancelSubscription}
-            getStatusBadgeColor={getStatusBadgeColor}
-          />
-        </TabsContent>
-        
-        <TabsContent value="history">
-          <BillingHistory 
-            paymentHistory={paymentHistory}
-            historyLoading={historyLoading}
-            handleDownloadInvoice={handleDownloadInvoice}
-          />
-        </TabsContent>
-        
-        <TabsContent value="payment">
-          <PaymentMethod dueDate={subscription.dueDate} />
-        </TabsContent>
-      </Tabs>
-    </Card>
+    <div className="space-y-8">
+      {subscription && (
+        <SubscriptionDetails 
+          subscription={subscription}
+          cancelling={cancelling}
+          handleCancelSubscription={handleCancelSubscription}
+          getStatusBadgeColor={getStatusBadgeColor}
+        />
+      )}
+      
+      <div className="my-8 border-t pt-8">
+        <PaymentMethod 
+          dueDate={subscription?.dueDate || new Date().toISOString()}
+        />
+      </div>
+      
+      <div className="mt-8">
+        <BillingHistory 
+          paymentHistory={paymentHistory}
+          historyLoading={historyLoading}
+          handleDownloadInvoice={handleDownloadInvoice}
+        />
+      </div>
+    </div>
   );
 }

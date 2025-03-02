@@ -2,12 +2,23 @@
 import { format } from 'date-fns';
 import { CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentMethodProps {
   dueDate: string;
 }
 
 export function PaymentMethod({ dueDate }: PaymentMethodProps) {
+  const { toast } = useToast();
+  
+  const handleUpdatePayment = () => {
+    toast({
+      title: "Update payment method",
+      description: "This feature is not implemented yet.",
+      variant: "default",
+    });
+  };
+
   return (
     <div>
       <h3 className="text-xl font-semibold mb-4">Payment Method</h3>
@@ -21,7 +32,7 @@ export function PaymentMethod({ dueDate }: PaymentMethodProps) {
         </div>
       </div>
       
-      <Button variant="outline">Update Payment Method</Button>
+      <Button variant="outline" onClick={handleUpdatePayment}>Update Payment Method</Button>
     </div>
   );
 }
