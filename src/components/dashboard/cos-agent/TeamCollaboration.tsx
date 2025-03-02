@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -58,8 +57,11 @@ const SHARED_TASKS: Task[] = [
     actualDuration: 60,
     assignedTo: "team",
     metadata: {
-      sharedTask: true,
       complexity: "medium",
+      impact: "medium",
+      businessValue: 7,
+      learningOpportunity: 5,
+      sharedTask: true,
       teamMembers: ["user-1", "user-2", "user-3"]
     }
   },
@@ -72,8 +74,11 @@ const SHARED_TASKS: Task[] = [
     actualDuration: 0,
     assignedTo: "team",
     metadata: {
-      sharedTask: true,
       complexity: "low",
+      impact: "medium",
+      businessValue: 6,
+      learningOpportunity: 4,
+      sharedTask: true,
       teamMembers: ["user-1", "user-3"]
     }
   }

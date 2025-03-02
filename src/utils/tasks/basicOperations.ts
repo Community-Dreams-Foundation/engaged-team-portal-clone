@@ -224,7 +224,8 @@ export const createTeamTask = async (
           ...(task.metadata || {}),
           originalCreator: userId,
           originalTaskId: taskId,
-          sharedTask: true
+          sharedTask: true,
+          teamMembers: assignedUserIds
         }
       });
     }

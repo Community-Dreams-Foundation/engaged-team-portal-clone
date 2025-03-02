@@ -76,6 +76,11 @@ export interface Task {
       leaderboardPosition?: number
       skillProgress?: Record<string, number> // skill name -> progress (0-100)
     }
+    // Add new fields for team collaboration
+    sharedTask?: boolean
+    teamMembers?: string[]
+    originalCreator?: string
+    originalTaskId?: string
   }
 }
 

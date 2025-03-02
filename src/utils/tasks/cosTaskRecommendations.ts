@@ -1,4 +1,3 @@
-
 import { Task, CoSRecommendation } from "@/types/task";
 
 // Generate task recommendations based on user activity and team context
