@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Bot, Brain, Users, Target } from "lucide-react"
+import { Bot, Brain, Users, Target, ClipboardList } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Agent } from "@/types/task"
@@ -14,6 +13,8 @@ import { CreateAgentDialog } from "./cos-agent/CreateAgentDialog"
 import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 
 export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
@@ -110,7 +111,7 @@ export function CosAgent() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-4 gap-4">
+        <TabsList className="grid grid-cols-5 gap-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Overview
@@ -126,6 +127,10 @@ export function CosAgent() {
           <TabsTrigger value="team" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Team
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Tasks
           </TabsTrigger>
         </TabsList>
 
@@ -160,6 +165,50 @@ export function CosAgent() {
             <Users className="h-12 w-12 mx-auto text-muted-foreground" />
             <h3 className="mt-2 font-semibold">Team Management</h3>
             <p className="text-muted-foreground">Coming soon</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium">Task Assistance</h4>
+            <Button variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Generate Tasks
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <Card className="p-4">
+              <h5 className="text-sm font-medium mb-2">Task Optimization</h5>
+              <p className="text-sm text-muted-foreground mb-4">
+                Your CoS agent can analyze your tasks and suggest optimizations 
+                to improve your productivity.
+              </p>
+              <div className="flex justify-end">
+                <Button size="sm">Analyze Tasks</Button>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <h5 className="text-sm font-medium mb-2">Time Estimation</h5>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get AI-powered time estimates for your tasks based on 
+                historical data and task complexity.
+              </p>
+              <div className="flex justify-end">
+                <Button size="sm">Estimate Times</Button>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <h5 className="text-sm font-medium mb-2">Task Prioritization</h5>
+              <p className="text-sm text-muted-foreground mb-4">
+                Let your CoS agent help you prioritize your tasks based on 
+                deadlines, importance, and your work preferences.
+              </p>
+              <div className="flex justify-end">
+                <Button size="sm">Prioritize Tasks</Button>
+              </div>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
