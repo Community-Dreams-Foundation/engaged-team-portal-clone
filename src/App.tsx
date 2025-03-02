@@ -1,36 +1,45 @@
 
-import { useEffect } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom"
-import Landing from "./pages/Landing"
-import Index from "./pages/Index"
-import Intake from "./pages/Intake"
-import NotFound from "./pages/NotFound"
-import Settings from "./pages/Settings"
-import Completion from "./pages/Completion"
-import SimulateCoS from "./pages/SimulateCoS"
-import SubmitIdea from "./pages/SubmitIdea"
-import FeeTracking from "./pages/FeeTracking"
-import CustomizeCoS from "./pages/CustomizeCoS"
-import FinalizeCoS from "./pages/FinalizeCoS"
-import OnboardingDocuments from "./pages/OnboardingDocuments"
-import AdminIndex from "./pages/admin/Index"
-import AdminWaiverDashboard from "./pages/admin/waiver/WaiverDashboard"
 import { AuthProvider } from "./contexts/AuthContext"
 import { NotificationProvider } from "./contexts/NotificationContext"
 import { Toaster } from "./components/ui/toaster"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import MeetingsPage from "./pages/Meetings"
-import TrainingPage from "./pages/TrainingPage"
-import PerformancePage from "./pages/PerformancePage"
-import CommunityPage from "./pages/CommunityPage"
-import PortfolioPage from "./pages/PortfolioPage"
-import CosAgentPage from "./pages/CosAgentPage"
-import SupportPage from "./pages/SupportPage"
+import { SocketProvider } from './contexts/SocketContext';
+
+// Import core components directly (used on initial load)
+import Landing from "./pages/Landing"
+import NotFound from "./pages/NotFound"
+
+// Lazy load all other pages for better performance
+const Index = lazy(() => import("./pages/Index"))
+const Intake = lazy(() => import("./pages/Intake"))
+const Settings = lazy(() => import("./pages/Settings"))
+const Completion = lazy(() => import("./pages/Completion"))
+const SimulateCoS = lazy(() => import("./pages/SimulateCoS"))
+const SubmitIdea = lazy(() => import("./pages/SubmitIdea"))
+const FeeTracking = lazy(() => import("./pages/FeeTracking"))
+const CustomizeCoS = lazy(() => import("./pages/CustomizeCoS"))
+const FinalizeCoS = lazy(() => import("./pages/FinalizeCoS"))
+const OnboardingDocuments = lazy(() => import("./pages/OnboardingDocuments"))
+const AdminIndex = lazy(() => import("./pages/admin/Index"))
+const AdminWaiverDashboard = lazy(() => import("./pages/admin/waiver/WaiverDashboard"))
+const MeetingsPage = lazy(() => import("./pages/Meetings"))
+const TrainingPage = lazy(() => import("./pages/TrainingPage"))
+const PerformancePage = lazy(() => import("./pages/PerformancePage"))
+const CommunityPage = lazy(() => import("./pages/CommunityPage"))
+const PortfolioPage = lazy(() => import("./pages/PortfolioPage"))
+const CosAgentPage = lazy(() => import("./pages/CosAgentPage"))
+const SupportPage = lazy(() => import("./pages/SupportPage"))
 
 import "./App.css"
 
-// No dynamic import that could fail with "require is not defined"
-import { SocketProvider } from './contexts/SocketContext';
+// Loading component for Suspense fallback
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-primary"></div>
+  </div>
+);
 
 // Redirect component to handle /index -> / redirection
 const IndexRedirect = () => {
@@ -61,34 +70,36 @@ function App() {
         <NotificationProvider>
           <SocketProvider>
             <Router>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/index" element={<IndexRedirect />} />
-                <Route path="/dashboard" element={<Index />} />
-                <Route path="/intake" element={<Intake />} />
-                <Route path="/onboarding-documents" element={<OnboardingDocuments />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/completion" element={<Completion />} />
-                <Route path="/submit-idea" element={<SubmitIdea />} />
-                <Route path="/simulate" element={<SimulateCoS />} />
-                <Route path="/fees" element={<FeeTracking />} />
-                <Route path="/customize" element={<CustomizeCoS />} />
-                <Route path="/customize-cos" element={<CustomizeCoS />} />
-                <Route path="/finalize-cos" element={<FinalizeCoS />} />
-                <Route path="/admin" element={<AdminIndex />} />
-                <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
-                <Route path="/meetings" element={<MeetingsPage />} />
-                
-                {/* New separate pages */}
-                <Route path="/training" element={<TrainingPage />} />
-                <Route path="/performance" element={<PerformancePage />} />
-                <Route path="/community" element={<CommunityPage />} />
-                <Route path="/portfolio" element={<PortfolioPage />} />
-                <Route path="/cos-agent" element={<CosAgentPage />} />
-                <Route path="/support" element={<SupportPage />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/index" element={<IndexRedirect />} />
+                  <Route path="/dashboard" element={<Index />} />
+                  <Route path="/intake" element={<Intake />} />
+                  <Route path="/onboarding-documents" element={<OnboardingDocuments />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/completion" element={<Completion />} />
+                  <Route path="/submit-idea" element={<SubmitIdea />} />
+                  <Route path="/simulate" element={<SimulateCoS />} />
+                  <Route path="/fees" element={<FeeTracking />} />
+                  <Route path="/customize" element={<CustomizeCoS />} />
+                  <Route path="/customize-cos" element={<CustomizeCoS />} />
+                  <Route path="/finalize-cos" element={<FinalizeCoS />} />
+                  <Route path="/admin" element={<AdminIndex />} />
+                  <Route path="/admin/waivers" element={<AdminWaiverDashboard />} />
+                  <Route path="/meetings" element={<MeetingsPage />} />
+                  
+                  {/* New separate pages */}
+                  <Route path="/training" element={<TrainingPage />} />
+                  <Route path="/performance" element={<PerformancePage />} />
+                  <Route path="/community" element={<CommunityPage />} />
+                  <Route path="/portfolio" element={<PortfolioPage />} />
+                  <Route path="/cos-agent" element={<CosAgentPage />} />
+                  <Route path="/support" element={<SupportPage />} />
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
               <Toaster />
             </Router>
           </SocketProvider>

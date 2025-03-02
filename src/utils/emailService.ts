@@ -1,6 +1,5 @@
 
-import { db } from "../lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { callApi, ApiDomain } from "@/api/gateway";
 
 // Types for email data
 export interface EmailData {
@@ -22,33 +21,19 @@ export interface EmailRecord extends EmailData {
 }
 
 /**
- * Sends an email via Firebase-backed email service
- * In a production environment, this would connect to a Cloud Function
- * that handles the actual email sending via a service like SendGrid, Mailgun, etc.
+ * Sends an email via Firebase-backed email service using the API gateway
  */
 export const sendEmail = async (emailData: EmailData): Promise<string> => {
   try {
-    // Store the email request in Firestore for tracking/auditing
-    const emailRecord = {
-      ...emailData,
-      status: 'queued',
-      createdAt: serverTimestamp(),
-    };
+    // Use the API gateway to send the email
+    const emailId = await callApi<EmailData, string>(
+      ApiDomain.COMMUNICATION, 
+      'sendEmail', 
+      emailData
+    );
     
-    // Add to the emails collection in Firestore
-    const docRef = await addDoc(collection(db, "emails"), emailRecord);
-    console.log(`Email queued with ID: ${docRef.id}`);
-    
-    // In production, a Cloud Function would be triggered by this write
-    // to process the email sending via a proper email service
-
-    // Simulate successful delivery after a delay
-    // This would be removed in production as the Cloud Function would handle it
-    setTimeout(() => {
-      console.log(`Email to ${emailData.to} processed and sent`);
-    }, 1500);
-    
-    return docRef.id;
+    console.log(`Email queued with ID: ${emailId}`);
+    return emailId;
   } catch (error) {
     console.error("Error sending email:", error);
     throw new Error("Failed to send email");

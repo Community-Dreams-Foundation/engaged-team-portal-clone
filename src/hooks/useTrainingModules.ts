@@ -4,7 +4,8 @@ import { useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { getDatabase, ref, onValue, off } from "firebase/database"
 import { useToast } from "@/hooks/use-toast"
-import { fetchTrainingModules, updateModuleProgress, TrainingModule } from "@/utils/trainingModules"
+import { TrainingApi } from "@/api/gateway"
+import { TrainingModule } from "@/utils/trainingModules"
 
 export const useTrainingModules = () => {
   const { currentUser } = useAuth()
@@ -13,7 +14,20 @@ export const useTrainingModules = () => {
   
   const { data: modules = [] } = useQuery({
     queryKey: ['trainingModules', currentUser?.uid],
-    queryFn: () => fetchTrainingModules(currentUser?.uid || ''),
+    queryFn: () => {
+      if (!currentUser?.uid) return []
+      // Use the new API gateway
+      return TrainingApi.fetchModules(currentUser.uid)
+        .catch(error => {
+          console.error("Error fetching training modules:", error)
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load training modules. Please try again."
+          })
+          return []
+        })
+    },
     enabled: !!currentUser,
   })
 
@@ -43,7 +57,13 @@ export const useTrainingModules = () => {
     const completed = newProgress === 100
 
     try {
-      await updateModuleProgress(currentUser.uid, moduleId, newProgress, completed)
+      // Use the new API gateway
+      await TrainingApi.updateProgress({
+        userId: currentUser.uid,
+        moduleId,
+        progress: newProgress,
+        completed
+      })
 
       toast({
         title: completed ? "Module Completed!" : "Progress Updated",
@@ -67,4 +87,3 @@ export const useTrainingModules = () => {
     isAuthenticated: !!currentUser
   }
 }
-
