@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DocumentAgreement } from "@/components/intake/DocumentAgreement";
@@ -7,6 +6,8 @@ import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { sendExecutedDocumentsEmail } from "@/utils/emailService";
+import { documentTitles } from "@/components/intake/DocumentConstants";
 
 const OnboardingDocuments = () => {
   const navigate = useNavigate();
@@ -16,20 +17,6 @@ const OnboardingDocuments = () => {
 
   const handleBackClick = () => {
     navigate("/intake");
-  };
-
-  // Function to simulate sending emails with executed documents
-  const sendExecutedDocumentsEmail = async (userEmail: string) => {
-    // In a real implementation, this would connect to an email service API
-    console.log(`Sending executed documents to email: ${userEmail}`);
-    
-    // Simulating API call to email service
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        console.log("Email sent successfully with executed documents");
-        resolve();
-      }, 1000);
-    });
   };
 
   const handleContinueClick = () => {
@@ -57,11 +44,14 @@ const OnboardingDocuments = () => {
     });
 
     // Trigger email delivery with executed documents
-    // In production, we would get the user's email from authentication or form data
+    // In production, we would get the user's email and name from authentication or form data
     const userEmail = "user@example.com"; // This would come from auth context in real app
-    sendExecutedDocumentsEmail(userEmail)
-      .then(() => {
-        console.log("Executed documents email delivery triggered successfully");
+    const userName = "New Dreamer"; // This would come from auth context in real app
+    const documentTypes = Object.values(documentTitles);
+    
+    sendExecutedDocumentsEmail(userEmail, userName, documentTypes)
+      .then((emailId) => {
+        console.log(`Executed documents email queued with ID: ${emailId}`);
       })
       .catch((error) => {
         console.error("Error sending executed documents email:", error);
