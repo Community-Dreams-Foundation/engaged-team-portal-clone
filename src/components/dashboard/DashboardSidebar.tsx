@@ -62,12 +62,7 @@ export function DashboardSidebar() {
       <SidebarHeader className="h-14">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-2">
-            <img
-              src="/lovable-uploads/cc37c25a-85ca-4af3-a844-a7f5a90aea97.png"
-              alt="DreamStream Logo"
-              className="h-8 w-8"
-            />
-            <span className="font-semibold text-sm">DreamStream</span>
+            <span className="font-semibold">DreamStream</span>
           </div>
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />
