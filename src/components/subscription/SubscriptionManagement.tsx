@@ -1,13 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionDetails } from "./SubscriptionDetails";
 import { BillingHistory } from "./BillingHistory";
 import { PaymentMethod } from "./PaymentMethod";
+import { db } from "@/lib/firebase";
 
 export function SubscriptionManagement() {
   const { currentUser } = useAuth();
@@ -47,7 +46,7 @@ export function SubscriptionManagement() {
     };
 
     fetchSubscription();
-  }, [currentUser, toast, db]);
+  }, [currentUser, toast]);
 
   // Fetch payment history
   useEffect(() => {
@@ -97,7 +96,7 @@ export function SubscriptionManagement() {
     };
 
     fetchPaymentHistory();
-  }, [currentUser, toast, db]);
+  }, [currentUser, toast]);
 
   const handleCancelSubscription = async () => {
     if (!currentUser || !subscription) return;
