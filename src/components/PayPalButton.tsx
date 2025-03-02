@@ -15,7 +15,7 @@ const plans = {
   monthly: {
     planId: 'P-1C748246YG018921SM6DKRYI',
     price: 15,
-    newMemberPrice: 10
+    newMemberPrice: 15
   },
   quarterly: {
     planId: 'YOUR_QUARTERLY_PLAN_ID',
