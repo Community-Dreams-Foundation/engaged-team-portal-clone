@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { Plus, Pencil, Trash, Timer, MoreVertical, Bot } from "lucide-react"
+import { Plus, Pencil, Trash, Timer, MoreVertical, Bot, CalendarIcon } from "lucide-react"
 import { Task, TaskStatus } from "@/types/task"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
@@ -18,7 +18,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
@@ -31,14 +30,12 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PopoverClose
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon } from "@radix-ui/react-icons"
-import { PopoverClose } from "@radix-ui/react-popover"
-import { useTaskOperations } from "@/hooks/useTaskOperations"
-import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { fetchTasks } from "@/utils/tasks/basicOperations"
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
