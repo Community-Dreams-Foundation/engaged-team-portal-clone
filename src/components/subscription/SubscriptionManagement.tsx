@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Loader2, Download, CreditCard, AlertCircle } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
 
