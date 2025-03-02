@@ -51,7 +51,7 @@ export const updateTask = async (userId: string, taskId: string, updateData: Par
     ...updateData,
     updatedAt: now,
     lastActivity: {
-      type: "update",
+      type: "status_change", // Changed from "update" to "status_change" which is an allowed activity type
       timestamp: now,
       details: "Task updated"
     }
