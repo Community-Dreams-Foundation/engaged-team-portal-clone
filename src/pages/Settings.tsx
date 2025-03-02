@@ -8,6 +8,7 @@ import { LeadershipMetrics } from "@/components/leadership/LeadershipMetrics"
 import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import NotificationSettings from "@/components/notifications/NotificationSettings"
 import { 
   Shield, 
   Bell, 
@@ -735,18 +736,7 @@ export default function Settings() {
           </TabsContent>
           
           <TabsContent value="notifications">
-            <Card className="p-6">
-              <h2 className="text-2xl font-semibold mb-4">Notification Preferences</h2>
-              <p className="text-muted-foreground mb-6">Control how and when you receive notifications</p>
-              
-              <div className="space-y-4">
-                <div className="bg-muted/50 p-6 rounded-lg">
-                  <p className="text-center text-muted-foreground">
-                    Notification settings coming soon...
-                  </p>
-                </div>
-              </div>
-            </Card>
+            <NotificationSettings />
           </TabsContent>
 
           <TabsContent value="leadership">

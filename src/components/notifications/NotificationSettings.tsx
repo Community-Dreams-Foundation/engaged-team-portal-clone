@@ -1,322 +1,367 @@
 
-import React, { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { useNotifications } from "@/contexts/NotificationContext"
-import { getDatabase, ref, get, set } from "firebase/database"
+import { Save, Bell, Mail, Clock } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
+import { getDatabase, ref, update, get } from "firebase/database"
 import { useAuth } from "@/contexts/AuthContext"
+import { Separator } from "@/components/ui/separator"
 
 interface NotificationPreference {
-  type: string;
-  displayName: string;
-  description: string;
   enabled: boolean;
   channel: "in-app" | "email" | "both";
   frequency: "immediate" | "hourly" | "daily";
 }
 
-export function NotificationSettings() {
-  const { toast } = useToast()
-  const { currentUser } = useAuth()
-  const { getNotificationsByType } = useNotifications()
-  
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([
-    {
-      type: "meeting",
-      displayName: "Meeting Notifications",
-      description: "Updates about scheduled meetings, reminders and recordings",
-      enabled: true,
-      channel: "both",
-      frequency: "immediate"
-    },
-    {
-      type: "task_alert",
-      displayName: "Task Alerts",
-      description: "Notifications about task assignments and deadlines",
-      enabled: true,
-      channel: "in-app",
-      frequency: "immediate"
-    },
-    {
-      type: "performance_update",
-      displayName: "Performance Updates",
-      description: "Updates about your performance metrics and evaluations",
-      enabled: true,
-      channel: "in-app",
-      frequency: "daily"
-    },
-    {
-      type: "leadership",
-      displayName: "Leadership Updates",
-      description: "Leadership level changes and opportunities",
-      enabled: true,
-      channel: "both",
-      frequency: "immediate"
-    },
-    {
-      type: "waiver",
-      displayName: "Waiver Notifications",
-      description: "Updates about waiver requests and approvals",
-      enabled: true,
-      channel: "in-app",
-      frequency: "immediate"
-    },
-    {
-      type: "payment",
-      displayName: "Payment Notifications",
-      description: "Updates about payments and fee reminders",
-      enabled: true,
-      channel: "both",
-      frequency: "immediate"
-    },
-    {
-      type: "comment",
-      displayName: "Comment Notifications",
-      description: "Notifications when someone comments on your tasks",
-      enabled: true,
-      channel: "in-app",
-      frequency: "immediate"
-    },
-    {
-      type: "system",
-      displayName: "System Notifications",
-      description: "Important system announcements and updates",
-      enabled: true,
-      channel: "both",
-      frequency: "immediate"
-    }
-  ])
-  
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+type NotificationPreferences = Record<string, NotificationPreference>;
 
-  // Load user preferences from Firebase
+export default function NotificationSettings() {
+  const { currentUser } = useAuth()
+  const [preferences, setPreferences] = useState<NotificationPreferences>({})
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasChanges, setHasChanges] = useState(false)
+
+  // Load user notification preferences
   useEffect(() => {
     async function loadPreferences() {
       if (!currentUser) return
       
       try {
+        setIsLoading(true)
         const db = getDatabase()
         const prefsRef = ref(db, `users/${currentUser.uid}/notificationPreferences`)
         const snapshot = await get(prefsRef)
         
         if (snapshot.exists()) {
-          const savedPrefs = snapshot.val()
-          setPreferences(prevPrefs => 
-            prevPrefs.map(pref => ({
-              ...pref,
-              ...savedPrefs[pref.type]
-            }))
-          )
+          setPreferences(snapshot.val())
+        } else {
+          // Set default preferences if none exist
+          const defaultPreferences: NotificationPreferences = {
+            meeting: {
+              enabled: true,
+              channel: "both",
+              frequency: "immediate"
+            },
+            task_alert: {
+              enabled: true,
+              channel: "both",
+              frequency: "immediate"
+            },
+            fee_reminder: {
+              enabled: true,
+              channel: "both",
+              frequency: "immediate"
+            },
+            performance_update: {
+              enabled: true,
+              channel: "in-app",
+              frequency: "daily"
+            },
+            leadership: {
+              enabled: true,
+              channel: "in-app",
+              frequency: "daily"
+            },
+            support: {
+              enabled: true,
+              channel: "both",
+              frequency: "immediate"
+            },
+            waiver: {
+              enabled: true,
+              channel: "both",
+              frequency: "immediate"
+            },
+            training: {
+              enabled: true,
+              channel: "in-app",
+              frequency: "daily"
+            },
+            system: {
+              enabled: true,
+              channel: "in-app",
+              frequency: "immediate"
+            }
+          }
+          setPreferences(defaultPreferences)
         }
       } catch (error) {
         console.error("Error loading notification preferences:", error)
         toast({
           variant: "destructive",
-          title: "Failed to load preferences",
-          description: "Your notification preferences could not be loaded."
+          title: "Failed to load notification preferences",
+          description: "Please try again later"
         })
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
     
     loadPreferences()
-  }, [currentUser, toast])
-  
-  const handleToggleChange = (type: string, enabled: boolean) => {
-    setPreferences(prevPrefs => 
-      prevPrefs.map(pref => 
-        pref.type === type ? { ...pref, enabled } : pref
-      )
-    )
+  }, [currentUser])
+
+  const handleToggleNotification = (type: string, enabled: boolean) => {
+    setPreferences(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        enabled
+      }
+    }))
+    setHasChanges(true)
   }
-  
+
   const handleChannelChange = (type: string, channel: "in-app" | "email" | "both") => {
-    setPreferences(prevPrefs => 
-      prevPrefs.map(pref => 
-        pref.type === type ? { ...pref, channel } : pref
-      )
-    )
+    setPreferences(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        channel
+      }
+    }))
+    setHasChanges(true)
   }
-  
+
   const handleFrequencyChange = (type: string, frequency: "immediate" | "hourly" | "daily") => {
-    setPreferences(prevPrefs => 
-      prevPrefs.map(pref => 
-        pref.type === type ? { ...pref, frequency } : pref
-      )
-    )
+    setPreferences(prev => ({
+      ...prev, 
+      [type]: {
+        ...prev[type],
+        frequency
+      }
+    }))
+    setHasChanges(true)
   }
-  
+
   const savePreferences = async () => {
     if (!currentUser) return
     
-    setSaving(true)
     try {
       const db = getDatabase()
       const prefsRef = ref(db, `users/${currentUser.uid}/notificationPreferences`)
-      
-      // Convert array to object format for storage
-      const prefsObject = preferences.reduce((acc, pref) => {
-        acc[pref.type] = {
-          enabled: pref.enabled,
-          channel: pref.channel,
-          frequency: pref.frequency
-        }
-        return acc
-      }, {} as Record<string, Omit<NotificationPreference, 'type' | 'displayName' | 'description'>>)
-      
-      await set(prefsRef, prefsObject)
+      await update(prefsRef, preferences)
       
       toast({
         title: "Preferences saved",
-        description: "Your notification preferences have been updated."
+        description: "Your notification preferences have been updated"
       })
+      setHasChanges(false)
     } catch (error) {
       console.error("Error saving notification preferences:", error)
       toast({
         variant: "destructive",
         title: "Failed to save preferences",
-        description: "Your notification preferences could not be saved."
+        description: "Please try again"
       })
-    } finally {
-      setSaving(false)
     }
   }
-  
-  const handleAllToggle = (enabled: boolean) => {
-    setPreferences(prevPrefs => 
-      prevPrefs.map(pref => ({ ...pref, enabled }))
+
+  const getNotificationTitle = (type: string): string => {
+    switch (type) {
+      case "meeting": return "Meeting Updates"
+      case "support": return "Support Messages"
+      case "task_alert": return "Task Alerts"
+      case "fee_reminder": return "Fee Reminders"
+      case "performance_update": return "Performance Updates"
+      case "leadership": return "Leadership Opportunities"
+      case "waiver": return "Waiver Status Changes"
+      case "training": return "Training Modules"
+      case "system": return "System Notifications"
+      default: return type.charAt(0).toUpperCase() + type.slice(1)
+    }
+  }
+
+  const getNotificationDescription = (type: string): string => {
+    switch (type) {
+      case "meeting": 
+        return "Get notified about meeting invites, changes, reminders, and recordings."
+      case "support": 
+        return "Receive notifications when you get a response to your support tickets."
+      case "task_alert": 
+        return "Be alerted when tasks are assigned to you or approaching deadlines."
+      case "fee_reminder": 
+        return "Stay updated on payment due dates and fee changes."
+      case "performance_update": 
+        return "Receive updates about your performance metrics and improvements."
+      case "leadership": 
+        return "Get notified about leadership opportunities and recognition."
+      case "waiver": 
+        return "Get updates on your waiver application status and requests."
+      case "training": 
+        return "Stay informed about new training modules and educational content."
+      case "system": 
+        return "Receive important system announcements and updates."
+      default: 
+        return "Notifications related to your account activities."
+    }
+  }
+
+  const getNotificationImportance = (type: string): "low" | "medium" | "high" => {
+    switch (type) {
+      case "fee_reminder":
+      case "task_alert":
+      case "waiver":
+        return "high"
+      case "meeting":
+      case "support":
+      case "system":
+        return "medium"
+      default:
+        return "low"
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <CardHeader>
+          <CardTitle>Notification Preferences</CardTitle>
+          <CardDescription>Loading your notification settings...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center justify-between space-x-2 rounded-lg border p-4 animate-pulse">
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-muted rounded"></div>
+                  <div className="h-3 w-48 bg-muted rounded"></div>
+                </div>
+                <div className="h-6 w-12 bg-muted rounded"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
-  if (loading) {
-    return <div className="text-center p-4">Loading notification preferences...</div>
-  }
-
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader>
         <CardTitle>Notification Preferences</CardTitle>
         <CardDescription>
           Control how and when you receive notifications
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="all">
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All Notifications</TabsTrigger>
-            <TabsTrigger value="delivery">Delivery Methods</TabsTrigger>
-            <TabsTrigger value="frequency">Frequency</TabsTrigger>
-          </TabsList>
+      <CardContent className="space-y-6">
+        {Object.entries(preferences).map(([type, preference]) => {
+          const importance = getNotificationImportance(type)
           
-          <TabsContent value="all" className="space-y-4">
-            <div className="flex items-center justify-between pb-4 border-b">
-              <div>
-                <h3 className="font-medium">Enable All Notifications</h3>
-                <p className="text-sm text-muted-foreground">Quickly toggle all notification types</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={preferences.every(p => p.enabled)} 
-                  onCheckedChange={handleAllToggle}
-                  id="all-notifications"
-                />
-              </div>
-            </div>
-            
-            {preferences.map((pref) => (
-              <div key={pref.type} className="flex items-center justify-between py-2">
-                <div>
-                  <Label htmlFor={`${pref.type}-toggle`} className="font-medium">
-                    {pref.displayName}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">{pref.description}</p>
-                  {pref.type === "meeting" && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {getNotificationsByType("meeting").length} recent notifications
-                    </div>
-                  )}
+          return (
+            <div key={type} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-base font-medium">{getNotificationTitle(type)}</h3>
+                    <Badge
+                      variant={
+                        importance === "high" ? "destructive" :
+                        importance === "medium" ? "secondary" :
+                        "outline"
+                      }
+                    >
+                      {importance}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {getNotificationDescription(type)}
+                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch 
-                    id={`${pref.type}-toggle`}
-                    checked={pref.enabled}
-                    onCheckedChange={(checked) => handleToggleChange(pref.type, checked)}
+                  <Switch
+                    id={`enable-${type}`}
+                    checked={preference.enabled}
+                    onCheckedChange={(checked) => handleToggleNotification(type, checked)}
                   />
+                  <Label htmlFor={`enable-${type}`} className="sr-only">
+                    Enable {getNotificationTitle(type)}
+                  </Label>
                 </div>
               </div>
-            ))}
-          </TabsContent>
-          
-          <TabsContent value="delivery" className="space-y-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Choose how you want to receive each type of notification
-            </p>
-            
-            {preferences.map((pref) => (
-              <div key={`${pref.type}-delivery`} className="flex items-center justify-between py-2">
-                <div>
-                  <Label className="font-medium">{pref.displayName}</Label>
+              
+              {preference.enabled && (
+                <div className="ml-6 grid md:grid-cols-2 gap-6 pl-4 border-l-2 border-muted">
+                  <div className="space-y-2">
+                    <Label className="flex items-center space-x-2">
+                      <Bell className="h-4 w-4" />
+                      <span>Delivery Method</span>
+                    </Label>
+                    <RadioGroup 
+                      value={preference.channel} 
+                      onValueChange={(value) => handleChannelChange(type, value as "in-app" | "email" | "both")}
+                      className="flex flex-col space-y-1"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="in-app" id={`channel-in-app-${type}`} />
+                        <Label htmlFor={`channel-in-app-${type}`} className="flex items-center space-x-2 text-sm cursor-pointer">
+                          <Bell className="h-4 w-4" />
+                          <span>In-app only</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="email" id={`channel-email-${type}`} />
+                        <Label htmlFor={`channel-email-${type}`} className="flex items-center space-x-2 text-sm cursor-pointer">
+                          <Mail className="h-4 w-4" />
+                          <span>Email only</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="both" id={`channel-both-${type}`} />
+                        <Label htmlFor={`channel-both-${type}`} className="flex items-center space-x-2 text-sm cursor-pointer">
+                          <span>Both in-app and email</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4" />
+                      <span>Notification Frequency</span>
+                    </Label>
+                    <Select 
+                      value={preference.frequency} 
+                      onValueChange={(value) => handleFrequencyChange(type, value as "immediate" | "hourly" | "daily")}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="hourly">Hourly digest</SelectItem>
+                        <SelectItem value="daily">Daily digest</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {preference.frequency === "immediate" 
+                        ? "Get notified as soon as events happen" 
+                        : preference.frequency === "hourly"
+                        ? "Receive an hourly summary of all notifications" 
+                        : "Receive a daily digest of all notifications"}
+                    </p>
+                  </div>
                 </div>
-                <Select 
-                  value={pref.channel} 
-                  onValueChange={(value) => handleChannelChange(pref.type, value as any)}
-                  disabled={!pref.enabled}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Select delivery" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in-app">In-app only</SelectItem>
-                    <SelectItem value="email">Email only</SelectItem>
-                    <SelectItem value="both">Both in-app & email</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </TabsContent>
-          
-          <TabsContent value="frequency" className="space-y-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Control how frequently you receive notifications
-            </p>
-            
-            {preferences.map((pref) => (
-              <div key={`${pref.type}-frequency`} className="flex items-center justify-between py-2">
-                <div>
-                  <Label className="font-medium">{pref.displayName}</Label>
-                </div>
-                <Select 
-                  value={pref.frequency} 
-                  onValueChange={(value) => handleFrequencyChange(pref.type, value as any)}
-                  disabled={!pref.enabled}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Select frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="immediate">Immediate</SelectItem>
-                    <SelectItem value="hourly">Hourly digest</SelectItem>
-                    <SelectItem value="daily">Daily digest</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </TabsContent>
-        </Tabs>
-        
-        <div className="mt-6 flex justify-end">
-          <Button onClick={savePreferences} disabled={saving}>
-            {saving ? "Saving..." : "Save Preferences"}
-          </Button>
-        </div>
+              )}
+              <Separator />
+            </div>
+          )
+        })}
       </CardContent>
+      <CardFooter className="flex justify-end space-x-2 bg-muted/10 py-4">
+        <Button variant="outline" disabled={!hasChanges}>
+          Reset to Default
+        </Button>
+        <Button disabled={!hasChanges} onClick={savePreferences}>
+          <Save className="mr-2 h-4 w-4" />
+          Save Preferences
+        </Button>
+      </CardFooter>
     </Card>
   )
 }
