@@ -15,6 +15,7 @@ interface SettingsFormProps<T extends z.ZodTypeAny> {
   children: React.ReactNode;
   submitButtonText?: string;
   className?: string;
+  id?: string; // Added id prop
 }
 
 export function SettingsForm<T extends z.ZodTypeAny>({
@@ -24,6 +25,7 @@ export function SettingsForm<T extends z.ZodTypeAny>({
   children,
   submitButtonText = "Save Changes",
   className,
+  id, // Added id prop
 }: SettingsFormProps<T>) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -56,7 +58,11 @@ export function SettingsForm<T extends z.ZodTypeAny>({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className={className}>
+      <form 
+        onSubmit={form.handleSubmit(handleSubmit)} 
+        className={className}
+        id={id} // Added id to the form element
+      >
         {children}
         <div className="flex justify-end mt-4">
           <Button type="submit" disabled={isSubmitting} className="gap-2">
