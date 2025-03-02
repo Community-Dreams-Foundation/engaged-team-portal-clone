@@ -1,4 +1,3 @@
-
 /**
  * API Gateway for Firebase Functions
  * 
@@ -120,4 +119,16 @@ export const AdminApi = {
   fetchWaivers: () => callApi(ApiDomain.ADMIN, 'fetchWaivers', {}),
   approveWaiver: (waiverId: string) => callApi(ApiDomain.ADMIN, 'approveWaiver', { waiverId }),
   rejectWaiver: (data: any) => callApi(ApiDomain.ADMIN, 'rejectWaiver', data),
+};
+
+// Add LeadershipApi for leadership-related endpoints
+export const LeadershipApi = {
+  fetchProfile: (userId: string): Promise<any> => 
+    callApi(ApiDomain.PERFORMANCE, 'fetchLeadershipProfile', { userId }),
+  updateProfile: (data: any) => 
+    callApi(ApiDomain.PERFORMANCE, 'updateLeadershipProfile', data),
+  fetchPromotionRequirements: (userId: string, targetTier: string) => 
+    callApi(ApiDomain.PERFORMANCE, 'fetchPromotionRequirements', { userId, targetTier }),
+  submitPromotionRequest: (data: any) => 
+    callApi(ApiDomain.PERFORMANCE, 'submitPromotionRequest', data),
 };
