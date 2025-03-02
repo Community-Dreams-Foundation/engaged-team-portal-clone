@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import NotificationSettings from "@/components/notifications/NotificationSettings";
+import { NotificationSettings } from "@/components/notifications/NotificationSettings";
 import { LeadershipSettings } from "@/components/leadership/LeadershipSettings";
 
 const Settings = () => {
