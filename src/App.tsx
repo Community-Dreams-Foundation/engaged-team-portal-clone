@@ -18,7 +18,6 @@ const Settings = lazy(() => import("./pages/Settings"))
 const Completion = lazy(() => import("./pages/Completion"))
 const SimulateCoS = lazy(() => import("./pages/SimulateCoS"))
 const SubmitIdea = lazy(() => import("./pages/SubmitIdea"))
-const FeeTracking = lazy(() => import("./pages/FeeTracking"))
 const CustomizeCoS = lazy(() => import("./pages/CustomizeCoS"))
 const FinalizeCoS = lazy(() => import("./pages/FinalizeCoS"))
 const OnboardingDocuments = lazy(() => import("./pages/OnboardingDocuments"))
@@ -81,7 +80,6 @@ function App() {
                   <Route path="/completion" element={<Completion />} />
                   <Route path="/submit-idea" element={<SubmitIdea />} />
                   <Route path="/simulate" element={<SimulateCoS />} />
-                  <Route path="/fees" element={<FeeTracking />} />
                   <Route path="/customize" element={<CustomizeCoS />} />
                   <Route path="/customize-cos" element={<CustomizeCoS />} />
                   <Route path="/finalize-cos" element={<FinalizeCoS />} />
