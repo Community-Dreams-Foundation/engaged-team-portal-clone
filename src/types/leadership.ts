@@ -145,12 +145,13 @@ export interface LeadershipProfile {
     timestamp: number;
     approvedBy?: string;
   }>;
-  // New fields needed for LeadershipSettings
+  // Update mentorshipPreferences to have required properties inside the object
   mentorshipPreferences?: {
     availableAsMentor: boolean;
     seekingMentor: boolean;
     preferredMentorshipAreas: string[];
   };
+  // Update displaySettings to have required properties inside the object
   displaySettings?: {
     showAchievements: boolean;
     showMetrics: boolean;
