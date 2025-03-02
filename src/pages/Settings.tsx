@@ -17,6 +17,7 @@ import { GamificationProfile } from "@/components/dashboard/gamification/Gamific
 import { CommunityMemberProfile } from "@/components/dashboard/community/CommunityMemberProfile"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { RewardTier } from "@/types/gamification"
 
 export default function Settings() {
   const { currentUser } = useAuth()
@@ -50,7 +51,7 @@ export default function Settings() {
     : 'N/A'
 
   const mockGamificationProfile = {
-    userId: currentUser?.uid || "guest-user", // Add the missing userId property
+    userId: currentUser?.uid || "guest-user",
     level: 12,
     points: 8750,
     badges: ["Early Adopter", "Team Player", "Task Master", "Problem Solver"],
@@ -60,13 +61,13 @@ export default function Settings() {
     longestStreak: 21,
     rewards: [
       {
-        tier: "gold",
-        unlockedAt: "2023-05-15",
+        tier: "gold" as RewardTier,
+        unlockedAt: Date.parse("2023-05-15"),
         benefits: ["Priority Support", "Custom Portfolio Theme", "Premium Analytics"]
       },
       {
-        tier: "silver",
-        unlockedAt: "2023-03-01",
+        tier: "silver" as RewardTier,
+        unlockedAt: Date.parse("2023-03-01"),
         benefits: ["Increased Storage", "Access to Team Challenges"]
       }
     ]
