@@ -53,63 +53,72 @@ export interface NotificationSchedule {
   };
 }
 
+// Create icon components functions to avoid using JSX directly in the object
+const createWrenchIcon = () => React.createElement(Wrench, { className: "h-4 w-4" });
+const createShieldIcon = () => React.createElement(Shield, { className: "h-4 w-4" });
+const createClipboardListIcon = () => React.createElement(ClipboardList, { className: "h-4 w-4" });
+const createCalendarIcon = () => React.createElement(Calendar, { className: "h-4 w-4" });
+const createCreditCardIcon = () => React.createElement(CreditCard, { className: "h-4 w-4" });
+
 export const notificationGroups: GroupedPreferences = {
   system: {
     types: ["system"],
     label: "System",
-    icon: <Wrench className="h-4 w-4" />,
+    icon: createWrenchIcon(),
     description: "Platform updates, maintenance notifications, and service announcements",
   },
   leadership: {
     types: ["leadership", "performance_update"],
     label: "Leadership",
-    icon: <Shield className="h-4 w-4" />,
+    icon: createShieldIcon(),
     description: "Leadership assessments, challenges, and tier updates",
   },
   productivity: {
     types: ["task_alert", "comment", "waiver"],
     label: "Tasks & Productivity",
-    icon: <ClipboardList className="h-4 w-4" />,
+    icon: createClipboardListIcon(),
     description: "Task assignments, deadlines, comments, and waiver notifications",
   },
   meetings: {
     types: ["meeting", "support"],
     label: "Meetings & Support",
-    icon: <Calendar className="h-4 w-4" />,
+    icon: createCalendarIcon(),
     description: "Meeting reminders, recording availability, and support tickets",
   },
   financial: {
     types: ["fee_reminder", "payment"],
     label: "Financial",
-    icon: <CreditCard className="h-4 w-4" />,
+    icon: createCreditCardIcon(),
     description: "Fee reminders, payment confirmations, and financial updates",
   },
 };
 
 export const getNotificationIcon = (type: string, size = 4) => {
+  const className = `h-${size} w-${size}`;
+  
   switch (type) {
     case "meeting":
-      return <Calendar className={`h-${size} w-${size}`} />;
+      return React.createElement(Calendar, { className });
     case "support":
-      return <MessageSquare className={`h-${size} w-${size}`} />;
+      return React.createElement(MessageSquare, { className });
     case "task_alert":
-      return <ClipboardList className={`h-${size} w-${size}`} />;
+      return React.createElement(ClipboardList, { className });
     case "fee_reminder":
-      return <CreditCard className={`h-${size} w-${size}`} />;
+      return React.createElement(CreditCard, { className });
     case "performance_update":
-      return <Star className={`h-${size} w-${size}`} />;
+      return React.createElement(Star, { className });
     case "leadership":
-      return <Shield className={`h-${size} w-${size}`} />;
+      return React.createElement(Shield, { className });
     case "waiver":
-      return <User className={`h-${size} w-${size}`} />;
+      return React.createElement(User, { className });
     case "payment":
-      return <CreditCard className={`h-${size} w-${size}`} />;
+      return React.createElement(CreditCard, { className });
     case "comment":
-      return <MessageSquare className={`h-${size} w-${size}`} />;
+      return React.createElement(MessageSquare, { className });
     case "system":
-      return <Wrench className={`h-${size} w-${size}`} />;
+      return React.createElement(Wrench, { className });
     default:
-      return <Bell className={`h-${size} w-${size}`} />;
+      return React.createElement(Bell, { className });
   }
 };
 
