@@ -1,6 +1,6 @@
 
 import { useCallback } from "react";
-import { Task, TaskStatus } from "@/types/task";
+import { Task, TaskStatus, TaskInput } from "@/types/task";
 import { 
   createTask as createTaskOperation,
   updateTask, 
@@ -16,7 +16,7 @@ export function useTaskOperations() {
   /**
    * Create a new task
    */
-  const createTask = useCallback(async (userId: string, taskData: Omit<Task, "id">) => {
+  const createTask = useCallback(async (userId: string, taskData: TaskInput) => {
     try {
       return await createTaskOperation(userId, taskData);
     } catch (error) {

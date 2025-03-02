@@ -37,3 +37,30 @@ export const createTask = async (userId: string, task: TaskInput): Promise<strin
   
   return taskId;
 }
+
+export const updateTask = async (userId: string, taskId: string, updateData: Partial<Task>): Promise<void> => {
+  console.log('Updating mock task for user:', userId, 'taskId:', taskId);
+  if (!mockTasks[userId]) return;
+  
+  const taskIndex = mockTasks[userId].findIndex(task => task.id === taskId);
+  if (taskIndex === -1) return;
+  
+  const now = Date.now();
+  mockTasks[userId][taskIndex] = {
+    ...mockTasks[userId][taskIndex],
+    ...updateData,
+    updatedAt: now,
+    lastActivity: {
+      type: "update",
+      timestamp: now,
+      details: "Task updated"
+    }
+  };
+}
+
+export const deleteTask = async (userId: string, taskId: string): Promise<void> => {
+  console.log('Deleting mock task for user:', userId, 'taskId:', taskId);
+  if (!mockTasks[userId]) return;
+  
+  mockTasks[userId] = mockTasks[userId].filter(task => task.id !== taskId);
+}

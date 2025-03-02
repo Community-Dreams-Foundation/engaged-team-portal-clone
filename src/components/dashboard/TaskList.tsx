@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -35,7 +36,8 @@ import {
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { fetchTasks } from "@/utils/tasks/basicOperations"
+import { useTaskOperations } from "@/hooks/useTaskOperations"
+import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -87,7 +89,17 @@ export function TaskList() {
         description: "",
         status: "todo",
         estimatedDuration: 60,
-        actualDuration: 0
+        actualDuration: 0,
+        isTimerRunning: false,
+        totalElapsedTime: 0,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        completionPercentage: 0,
+        lastActivity: {
+          type: "status_change",
+          timestamp: Date.now(),
+          details: "Task created"
+        }
       }])
 
       setNewTask("")
