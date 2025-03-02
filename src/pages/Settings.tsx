@@ -50,6 +50,7 @@ export default function Settings() {
     : 'N/A'
 
   const mockGamificationProfile = {
+    userId: currentUser?.uid || "guest-user", // Add the missing userId property
     level: 12,
     points: 8750,
     badges: ["Early Adopter", "Team Player", "Task Master", "Problem Solver"],
