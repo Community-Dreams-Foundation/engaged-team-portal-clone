@@ -228,8 +228,8 @@ export default function Settings() {
             
             <div className="grid gap-8 md:grid-cols-1">
               <Card className="bg-card border shadow-md">
-                <CardHeader className="relative">
-                  <div className="absolute right-6 top-6 flex gap-2">
+                <div className="flex justify-end p-4 border-b">
+                  <div className="flex gap-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -257,6 +257,9 @@ export default function Settings() {
                       <span>{isEditing ? "Cancel" : "Edit Profile"}</span>
                     </Button>
                   </div>
+                </div>
+                
+                <CardHeader>
                   <CardTitle className="text-2xl font-bold">
                     {showPreview ? "Public Profile Preview" : "Profile Information"}
                   </CardTitle>
