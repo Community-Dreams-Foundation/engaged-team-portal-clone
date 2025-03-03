@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -7,7 +8,6 @@ import { checkRole, logAuditEvent } from '@/utils/authUtils';
 import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
 import { AccountApi } from '@/api/gateway';
-import { useNavigate } from 'react-router-dom';
 import type { UserRole, ExtendedUser, Session, ActivityLogEntry } from '@/types/auth';
 import type { AuthContextType } from '@/types/authContext';
 
@@ -26,8 +26,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>();
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
-  const navigate = useNavigate();
-  
   const { 
     signup, 
     login, 
@@ -55,6 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useFirebaseToken(setCurrentUser, setUserRole);
   useFirebaseAuth(setCurrentUser, setUserRole, setLoading);
 
+  // Account session management functions
   const getActiveSessions = async (): Promise<Session[]> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -106,6 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           : "All sessions including current have been logged out"
       });
       
+      // If current session is also terminated, logout the user
       if (!excludeCurrentSession) {
         await handleLogout(currentUser.uid, userRole);
         setUserRole(undefined);
@@ -121,6 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Account activity log functions
   const getAccountActivity = async (limit: number = 20): Promise<ActivityLogEntry[]> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -138,12 +139,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Data export function
   const exportUserData = async (): Promise<Blob> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
     }
     try {
       const userData = await AccountApi.exportUserData(currentUser.uid);
+      // Convert the data to a JSON blob
       const jsonString = JSON.stringify(userData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       
@@ -183,6 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signup: async (email: string, password: string) => {
       console.log('AuthContext: Starting signup process');
       await signup(email, password);
+      setIsNewUser(true);
     },
     logout: async () => {
       console.log('AuthContext: Starting logout process');
@@ -196,23 +200,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('AuthContext: Starting Google sign-in process');
       const role = await signInWithGoogle();
       setUserRole(role);
-      
-      const userIsNew = !role || role === 'member';
-      setIsNewUser(userIsNew);
-      
-      if (userIsNew) {
-        toast({ 
-          title: "Welcome to DreamStream!", 
-          description: "Please complete your profile to get started." 
-        });
-        navigate('/intake');
-      } else {
-        toast({ 
-          title: "Welcome back!", 
-          description: "You've been successfully signed in." 
-        });
-        navigate('/dashboard');
-      }
+      setIsNewUser(!role);
+      toast({ title: "Logged in successfully", description: "Welcome to DreamStream!" });
     },
     loading,
     isNewUser,
@@ -224,6 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resendVerificationEmail,
     setupMFA,
     completeMFASetup,
+    // Add the new required methods
     getActiveSessions,
     terminateSession,
     terminateAllSessions,

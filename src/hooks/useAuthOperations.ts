@@ -36,20 +36,13 @@ export const useAuthOperations = () => {
       await sendEmailVerification(result.user);
       console.log('Verification email sent');
       
-      try {
-        await createUserDocument(result.user.uid, email);
-        console.log('User document created in Firestore');
-      } catch (firestoreError) {
-        // Log error but don't fail the signup - they'll get another chance to create
-        // their profile when they complete the verification and log in
-        console.error('Error creating user document, will retry at login:', firestoreError);
-      }
+      await createUserDocument(result.user.uid, email);
+      console.log('User document created in Firestore');
       
-      // Sign out the user immediately to force them to verify their email
-      await signOut(auth);
-      console.log('Signed out user after registration, waiting for email verification');
-      
-      // Don't show toast here - let the calling component handle it
+      toast({ 
+        title: "Account created successfully", 
+        description: "Please check your email to verify your account." 
+      });
     } catch (error: any) {
       console.error('Signup error:', error);
       const errorMessage = error.code ? `Error (${error.code}): ${error.message}` : error.message;
@@ -275,17 +268,15 @@ export const useAuthOperations = () => {
         
         if (!userDoc.exists()) {
           console.log('Creating new user document for Google auth user');
-          // Create a basic document with minimal information to avoid permission issues
+          // Directly create user document with setDoc instead of using helper
           await setDoc(userDocRef, {
             email: result.user.email,
-            displayName: result.user.displayName || '',
-            photoURL: result.user.photoURL || '',
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
             role: 'member',
             createdAt: Date.now(),
             authProvider: 'google'
-          }, { merge: true }); // Use merge to be safer
-          
-          console.log('Basic user document created, returning member role');
+          });
           return 'member' as UserRole;
         } else {
           console.log('Existing user document found');
@@ -293,11 +284,7 @@ export const useAuthOperations = () => {
           const role = userData.role as UserRole;
           
           if (role === 'super_admin') {
-            try {
-              await logAuditEvent(result.user.uid, 'super_admin_google_login', { email: result.user.email });
-            } catch (auditError) {
-              console.error('Failed to log audit event, but continuing:', auditError);
-            }
+            await logAuditEvent(result.user.uid, 'super_admin_google_login', { email: result.user.email });
           }
           
           return role;
