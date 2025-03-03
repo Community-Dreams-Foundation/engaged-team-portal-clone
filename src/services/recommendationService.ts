@@ -1,7 +1,7 @@
-
 import { getDatabase, ref, update, push } from "firebase/database";
 import { CoSRecommendation } from "@/types/task";
 import { toast } from "@/hooks/use-toast";
+import { analyzeDocumentWithAI, parseDocumentContent } from "@/utils/documentParser";
 
 /**
  * Records feedback for a recommendation in Firebase
@@ -148,4 +148,138 @@ export const createDefaultRecommendations = async (
     console.error("Error creating default recommendations:", error);
     throw error;
   }
+};
+
+/**
+ * Generates recommendations from document content
+ */
+export const generateRecommendationsFromDocument = async (
+  userId: string,
+  fileContent: string,
+  fileType: string
+): Promise<{
+  recommendations: CoSRecommendation[];
+  tasks: Partial<Task>[];
+  keyInsights: string[];
+}> => {
+  try {
+    // Analyze document content
+    const analysis = await analyzeDocumentWithAI(fileContent, fileType);
+    
+    // Store recommendations in Firebase
+    const db = getDatabase();
+    const recommendationsRef = ref(db, `users/${userId}/recommendations`);
+    
+    const savedRecommendations: CoSRecommendation[] = [];
+    
+    // Process and save each recommendation
+    for (const rec of analysis.recommendations) {
+      const newRecKey = push(recommendationsRef).key;
+      
+      if (!newRecKey) continue;
+      
+      const newRecommendation: CoSRecommendation = {
+        id: newRecKey,
+        type: rec.type || "task",
+        content: rec.content || "",
+        timestamp: Date.now(),
+        priority: rec.priority || "medium",
+        impact: rec.impact || 50,
+        actualDuration: rec.actualDuration,
+        metadata: rec.metadata || {}
+      };
+      
+      await update(ref(db, `users/${userId}/recommendations/${newRecKey}`), newRecommendation);
+      savedRecommendations.push(newRecommendation);
+    }
+    
+    return {
+      recommendations: savedRecommendations,
+      tasks: analysis.tasks,
+      keyInsights: analysis.metadata.keyInsights
+    };
+  } catch (error) {
+    console.error("Error generating recommendations from document:", error);
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Failed to analyze document content. Please try again."
+    });
+    return {
+      recommendations: [],
+      tasks: [],
+      keyInsights: []
+    };
+  }
+};
+
+/**
+ * Processes a document and creates tasks and recommendations
+ */
+export const processDocumentForTaskCreation = async (
+  userId: string,
+  file: File
+): Promise<{
+  success: boolean;
+  recommendations: CoSRecommendation[];
+  tasks: Partial<Task>[];
+  insights: string[];
+}> => {
+  try {
+    // Read file content
+    const content = await readFileContent(file);
+    if (!content) {
+      throw new Error("Failed to read file content");
+    }
+    
+    // Generate recommendations and tasks
+    const result = await generateRecommendationsFromDocument(
+      userId,
+      content,
+      file.type
+    );
+    
+    return {
+      success: true,
+      recommendations: result.recommendations,
+      tasks: result.tasks,
+      insights: result.keyInsights
+    };
+  } catch (error) {
+    console.error("Error processing document for task creation:", error);
+    return {
+      success: false,
+      recommendations: [],
+      tasks: [],
+      insights: []
+    };
+  }
+};
+
+/**
+ * Reads content from a file
+ */
+const readFileContent = async (file: File): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        resolve(e.target.result as string);
+      } else {
+        resolve(null);
+      }
+    };
+    
+    reader.onerror = () => {
+      console.error("Error reading file");
+      resolve(null);
+    };
+    
+    if (file.type.includes("image")) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
+  });
 };

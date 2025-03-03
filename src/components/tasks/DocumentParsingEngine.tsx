@@ -1,159 +1,179 @@
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { KnowledgeGraph } from "@/components/dashboard/cos-agent/KnowledgeGraph";
-import { DocumentType, ParseDocumentResult, DocumentParsingConfig } from "@/types/document-parser";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "@/components/ui/use-toast";
+import { processDocumentForTaskCreation } from "@/services/recommendationService";
+import { CoSRecommendation, Task } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2, FileText, CheckCircle, AlertCircle } from "lucide-react";
 
 interface DocumentParsingEngineProps {
-  onDocumentParsed: (result: ParseDocumentResult) => void;
+  onTasksExtracted: (tasks: Partial<Task>[]) => void;
+  onRecommendationsGenerated: (recommendations: CoSRecommendation[]) => void;
 }
 
-export function DocumentParsingEngine({ onDocumentParsed }: DocumentParsingEngineProps) {
+export function DocumentParsingEngine({
+  onTasksExtracted,
+  onRecommendationsGenerated
+}: DocumentParsingEngineProps) {
   const { currentUser } = useAuth();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [documentType, setDocumentType] = useState<DocumentType>("project-charter");
   const [file, setFile] = useState<File | null>(null);
-
-  const defaultConfig: DocumentParsingConfig = {
-    maxTaskDuration: 180, // 3 hours in minutes
-    autoSplitThreshold: 90, // 90% of estimated time
-    minTaskSize: 30, // 30 minutes
-    complexityThreshold: 75,
-    requiresDependencyMapping: true,
-    includeMetadataEnrichment: true,
-    nlpOptions: {
-      performSentimentAnalysis: true,
-      extractTechnicalTerms: true,
-      identifyStakeholders: true,
-      calculateComplexity: true,
-    },
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [insights, setInsights] = useState<string[]>([]);
+  const [parsingComplete, setParsingComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setError(null);
+      setParsingComplete(false);
+      setInsights([]);
     }
   };
 
   const handleProcess = async () => {
-    if (!file || !currentUser) return;
+    if (!file || !currentUser) {
+      setError("Please select a file and ensure you're logged in");
+      return;
+    }
 
-    setIsProcessing(true);
+    setIsLoading(true);
+    setProgress(10);
+    setError(null);
+
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("documentType", documentType);
-      formData.append("config", JSON.stringify(defaultConfig));
-      formData.append("userId", currentUser.uid);
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
 
-      const response = await fetch("/api/parse-document", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Failed to parse document");
-
-      const result: ParseDocumentResult = await response.json();
-      onDocumentParsed(result);
-
-      toast({
-        title: "Document Parsed Successfully",
-        description: `Generated ${result.generatedTasks.length} tasks and identified ${result.graphUpdateSummary.entitiesIdentified} entities.`,
-      });
+      // Process the document
+      const result = await processDocumentForTaskCreation(currentUser.uid, file);
+      
+      clearInterval(progressInterval);
+      setProgress(100);
+      
+      if (result.success) {
+        setParsingComplete(true);
+        setInsights(result.insights);
+        
+        // Pass tasks and recommendations to parent components
+        onTasksExtracted(result.tasks);
+        onRecommendationsGenerated(result.recommendations);
+        
+        toast({
+          title: "Document Processed",
+          description: `Successfully extracted ${result.tasks.length} tasks and generated ${result.recommendations.length} recommendations.`
+        });
+      } else {
+        setError("Failed to process document. Please try again with a different file.");
+      }
     } catch (error) {
-      console.error("Error parsing document:", error);
-      toast({
-        variant: "destructive",
-        title: "Error Parsing Document",
-        description: "Failed to process the document. Please try again.",
-      });
+      console.error("Error processing document:", error);
+      setError("An unexpected error occurred while processing the document");
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Card className="p-6 space-y-6">
+    <Card className="p-4 space-y-4">
       <div className="space-y-2">
-        <h3 className="text-2xl font-semibold tracking-tight">Document Parser</h3>
+        <h3 className="text-lg font-medium">Document Parsing Engine</h3>
         <p className="text-sm text-muted-foreground">
-          Upload project documentation to automatically generate tasks and update the knowledge graph.
+          Upload project documentation to automatically extract tasks and generate recommendations.
         </p>
       </div>
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList>
-          <TabsTrigger value="upload">Upload</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="graph">Knowledge Graph</TabsTrigger>
-        </TabsList>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="document-upload" className="text-sm font-medium">
+            Upload Documentation
+          </label>
+          <Input
+            id="document-upload"
+            type="file"
+            accept=".txt,.md,.doc,.docx,.pdf"
+            onChange={handleFileChange}
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Supported formats: TXT, Markdown, DOC, DOCX, PDF
+          </p>
+        </div>
 
-        <TabsContent value="upload" className="space-y-4">
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Document Type</label>
-              <select
-                className="w-full p-2 border rounded-md"
-                value={documentType}
-                onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-              >
-                <option value="project-charter">Project Charter</option>
-                <option value="prd">Product Requirements Document</option>
-                <option value="execution-calendar">Execution Calendar</option>
-                <option value="sprint-plan">Sprint Plan</option>
-              </select>
-            </div>
-
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Upload Document</label>
-              <Input
-                type="file"
-                accept=".pdf,.doc,.docx,.txt"
-                onChange={handleFileChange}
-              />
-            </div>
+        {file && (
+          <div className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4" />
+            <span>{file.name}</span>
           </div>
+        )}
 
-          <Button
-            onClick={handleProcess}
-            disabled={!file || isProcessing}
-            className="w-full"
-          >
-            {isProcessing ? "Processing..." : "Parse Document"}
-          </Button>
-        </TabsContent>
-
-        <TabsContent value="preview" className="space-y-4">
-          {file && (
-            <div className="border rounded-lg p-4">
-              <p className="font-medium">Selected File: {file.name}</p>
-              <p className="text-sm text-muted-foreground">
-                Type: {documentType}
-                <br />
-                Size: {(file.size / 1024).toFixed(2)} KB
-              </p>
+        {isLoading && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Processing document...</span>
             </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
+        {parsingComplete && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-primary">
+              <CheckCircle className="h-4 w-4" />
+              <span className="text-sm font-medium">Document processing complete!</span>
+            </div>
+            {insights.length > 0 && (
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium">Key Insights:</h4>
+                <ul className="text-xs space-y-1">
+                  {insights.map((insight, index) => (
+                    <li key={index} className="flex items-start gap-1">
+                      <span className="text-primary">•</span>
+                      <span>{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        <Button
+          onClick={handleProcess}
+          disabled={!file || isLoading}
+          className="w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            "Process Document"
           )}
-        </TabsContent>
-
-        <TabsContent value="graph">
-          <div className="h-[400px] border rounded-lg">
-            <KnowledgeGraph
-              data={{
-                nodes: [],
-                edges: []
-              }}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        </Button>
+      </div>
     </Card>
   );
 }

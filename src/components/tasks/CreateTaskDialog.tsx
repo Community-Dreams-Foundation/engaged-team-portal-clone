@@ -1,217 +1,241 @@
-import { useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
-import { createTask } from "@/utils/tasks/basicOperations"
-import { TaskInput, TaskPriority } from "@/types/task"
+
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentParsingEngine } from "./DocumentParsingEngine";
+import { CoSRecommendation, Task } from "@/types/task";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/components/ui/use-toast";
 
 interface CreateTaskDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onTaskCreated?: (taskId?: string, title?: string) => void
+  onTaskCreated: (task: Partial<Task>) => void;
+  onRecommendationsGenerated?: (recommendations: CoSRecommendation[]) => void;
 }
 
-export function CreateTaskDialog({ open, onOpenChange, onTaskCreated }: CreateTaskDialogProps) {
-  const { currentUser } = useAuth()
-  const { toast } = useToast()
-  
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [estimatedDuration, setEstimatedDuration] = useState(30)
-  const [priority, setPriority] = useState<TaskPriority>("medium")
-  const [tags, setTags] = useState("")
-  const [complexity, setComplexity] = useState<"low" | "medium" | "high">("medium")
-  
+const CreateTaskDialog = ({ 
+  onTaskCreated,
+  onRecommendationsGenerated 
+}: CreateTaskDialogProps) => {
+  const { currentUser } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [estimatedDuration, setEstimatedDuration] = useState(60);
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [extractedTasks, setExtractedTasks] = useState<Partial<Task>[]>([]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title) {
+      toast({
+        variant: "destructive",
+        title: "Title Required",
+        description: "Please enter a task title"
+      });
+      return;
+    }
+
+    const newTask: Partial<Task> = {
+      title,
+      description,
+      estimatedDuration,
+      priority,
+      status: "todo",
+      actualDuration: 0
+    };
+
+    onTaskCreated(newTask);
+    resetForm();
+    setOpen(false);
+  };
+
+  const handleTasksExtracted = (tasks: Partial<Task>[]) => {
+    setExtractedTasks(tasks);
+  };
+
+  const handleRecommendationsGenerated = (recommendations: CoSRecommendation[]) => {
+    if (onRecommendationsGenerated) {
+      onRecommendationsGenerated(recommendations);
+    }
+  };
+
+  const handleCreateExtractedTask = (task: Partial<Task>) => {
+    onTaskCreated(task);
+    
+    // Remove from list
+    setExtractedTasks(extractedTasks.filter(t => t.title !== task.title));
+    
+    toast({
+      title: "Task Created",
+      description: `Added "${task.title}" to your tasks`
+    });
+  };
+
   const resetForm = () => {
-    setTitle("")
-    setDescription("")
-    setEstimatedDuration(30)
-    setPriority("medium")
-    setTags("")
-    setComplexity("medium")
-  }
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!currentUser?.uid) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in to create tasks",
-      })
-      return
-    }
-    
-    if (!title.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Task",
-        description: "Task title is required",
-      })
-      return
-    }
-    
-    try {
-      const taskInput: TaskInput = {
-        title,
-        description,
-        status: "todo",
-        estimatedDuration,
-        actualDuration: 0,
-        priority,
-        tags: tags.split(",").map(tag => tag.trim()).filter(Boolean),
-        assignedTo: currentUser.uid,
-        completionPercentage: 0,
-        metadata: {
-          complexity,
-          impact: "medium",
-          businessValue: 7,
-          learningOpportunity: 7,
-          autoSplitEligible: complexity === "high",
-        }
-      }
-      
-      const taskId = await createTask(currentUser.uid, taskInput)
-      
-      toast({
-        title: "Task Created",
-        description: "Your new task has been created successfully",
-      })
-      
-      resetForm()
-      onOpenChange(false)
-      if (onTaskCreated) onTaskCreated(taskId, title)
-      
-    } catch (error) {
-      console.error("Error creating task:", error)
-      toast({
-        variant: "destructive",
-        title: "Error Creating Task",
-        description: "Failed to create your task. Please try again.",
-      })
-    }
-  }
-  
+    setTitle("");
+    setDescription("");
+    setEstimatedDuration(60);
+    setPriority("medium");
+    setExtractedTasks([]);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="flex items-center gap-1">
+          <Plus className="h-4 w-4" />
+          <span>New Task</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Add a new task to your board. Fill in the details below.
-          </DialogDescription>
+          <DialogTitle>Create a new task</DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Task title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
+
+        <Tabs defaultValue="manual" className="mt-4">
+          <TabsList className="grid grid-cols-2">
+            <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+            <TabsTrigger value="document">Document Import</TabsTrigger>
+          </TabsList>
           
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Task description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
+          <TabsContent value="manual" className="mt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Task title"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the task"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Estimated Duration (minutes)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={1}
+                    max={180}
+                    value={estimatedDuration}
+                    onChange={(e) => setEstimatedDuration(parseInt(e.target.value, 10))}
+                  />
+                  <p className="text-xs text-muted-foreground">Maximum 3 hours (180 minutes)</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={priority}
+                    onValueChange={(value) => setPriority(value as "low" | "medium" | "high")}
+                  >
+                    <SelectTrigger id="priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    resetForm();
+                    setOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Create Task</Button>
+              </div>
+            </form>
+          </TabsContent>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="duration">Estimated Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min={5}
-                value={estimatedDuration}
-                onChange={(e) => setEstimatedDuration(parseInt(e.target.value) || 30)}
+          <TabsContent value="document" className="mt-4">
+            <div className="space-y-4">
+              <DocumentParsingEngine
+                onTasksExtracted={handleTasksExtracted}
+                onRecommendationsGenerated={handleRecommendationsGenerated}
               />
+              
+              {extractedTasks.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Extracted Tasks</h3>
+                  <div className="border rounded-md divide-y">
+                    {extractedTasks.map((task, index) => (
+                      <div key={index} className="p-3 flex justify-between items-center">
+                        <div>
+                          <h4 className="text-sm font-medium">{task.title}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {task.estimatedDuration} minutes • {task.priority} priority
+                          </p>
+                        </div>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleCreateExtractedTask(task)}
+                        >
+                          Add Task
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    resetForm();
+                    setOpen(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={(value: TaskPriority) => setPriority(value)}>
-                <SelectTrigger id="priority">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tags">Tags (comma-separated)</Label>
-            <Input
-              id="tags"
-              placeholder="development, design, research"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Complexity</Label>
-            <RadioGroup 
-              value={complexity} 
-              onValueChange={(value: "low" | "medium" | "high") => setComplexity(value)}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="low" id="complexity-low" />
-                <Label htmlFor="complexity-low">Low</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="medium" id="complexity-medium" />
-                <Label htmlFor="complexity-medium">Medium</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="high" id="complexity-high" />
-                <Label htmlFor="complexity-high">High</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Task</Button>
-          </DialogFooter>
-        </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
+
+export default CreateTaskDialog;
