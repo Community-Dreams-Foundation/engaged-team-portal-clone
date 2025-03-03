@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Bot, Brain, Users, Target, Mic, FileImage, FilePlus } from "lucide-react"
@@ -127,7 +128,8 @@ export function CosAgent() {
           priority: "medium" as const,
           impact: 70
         }
-        setRecommendations(prev => [mockRecommendation, ...prev])
+        // Fix the type error by directly passing the new array instead of a function
+        setRecommendations([mockRecommendation, ...recommendations])
       }, 3000)
     }
   }
