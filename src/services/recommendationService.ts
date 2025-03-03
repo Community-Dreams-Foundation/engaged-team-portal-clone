@@ -219,7 +219,8 @@ export const generateRecommendationsFromDocument = async (
  */
 export const processDocumentForTaskCreation = async (
   userId: string, 
-  file: File
+  file: File,
+  textContent?: string
 ): Promise<{
   success: boolean;
   tasks: Partial<Task>[];
@@ -227,8 +228,13 @@ export const processDocumentForTaskCreation = async (
   insights: string[];
 }> => {
   try {
-    // Read the file content
-    const content = await readFileAsText(file);
+    // Read the file content or use provided text content
+    let content: string;
+    if (textContent) {
+      content = textContent;
+    } else {
+      content = await readFileAsText(file);
+    }
     
     // Analyze the document content using AI
     const analysis = await analyzeDocumentWithAI(content, file.type);

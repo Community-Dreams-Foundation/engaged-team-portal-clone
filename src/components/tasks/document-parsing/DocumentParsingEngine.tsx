@@ -92,13 +92,26 @@ export function DocumentParsingEngine({
         });
       }, 500);
 
-      // Process the document - Fix here: Pass only the required arguments
-      // Check the signature of processDocumentForTaskCreation and pass only what it expects
-      const result = await processDocumentForTaskCreation(
-        currentUser.uid, 
-        file,
-        activeTab === "paste" ? text : undefined
-      );
+      // For text-only input, we need to adapt since the function expects a File
+      let result;
+      if (activeTab === "upload" && file) {
+        // When using file upload
+        result = await processDocumentForTaskCreation(
+          currentUser.uid, 
+          file
+        );
+      } else if (activeTab === "paste" && text) {
+        // When using pasted text, we need to create a temporary file
+        const textBlob = new Blob([text], { type: 'text/plain' });
+        const textFile = new File([textBlob], 'pasted-text.txt', { type: 'text/plain' });
+        
+        result = await processDocumentForTaskCreation(
+          currentUser.uid, 
+          textFile
+        );
+      } else {
+        throw new Error("No content provided");
+      }
       
       clearInterval(progressInterval);
       setProgress(100);
