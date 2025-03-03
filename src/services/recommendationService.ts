@@ -278,9 +278,14 @@ export const generateRecommendationsFromDocument = async (
       
       if (!newRecKey) continue;
       
+      // Ensure type is one of the allowed values
+      const recommendationType = (rec.type && ["agent", "leadership", "time", "task", "learning", "efficiency"].includes(rec.type)) 
+        ? (rec.type as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency") 
+        : "task";
+      
       const newRecommendation: CoSRecommendation = {
         id: newRecKey,
-        type: rec.type || "task",
+        type: recommendationType,
         content: rec.content || "",
         timestamp: Date.now(),
         priority: rec.priority || "medium",
@@ -369,21 +374,28 @@ export const processDocumentForTaskCreation = async (
     }
     
     // Format recommendations
-    const formattedRecommendations: CoSRecommendation[] = analysis.recommendations.map(rec => ({
-      id: rec.id || `rec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      type: (rec.type as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency") || "task",
-      content: rec.content || "",
-      timestamp: rec.timestamp || Date.now(),
-      priority: rec.priority || "medium",
-      impact: rec.impact || 50,
-      feedback: undefined,
-      actualDuration: undefined,
-      actedUpon: false,
-      metadata: {
-        ...(rec.metadata || {}),
-        skills: rec.metadata?.skills || []
-      }
-    }));
+    const formattedRecommendations: CoSRecommendation[] = analysis.recommendations.map(rec => {
+      // Ensure type is one of the allowed values
+      const recommendationType = (rec.type && ["agent", "leadership", "time", "task", "learning", "efficiency"].includes(rec.type)) 
+        ? (rec.type as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency") 
+        : "task";
+        
+      return {
+        id: rec.id || `rec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        type: recommendationType,
+        content: rec.content || "",
+        timestamp: rec.timestamp || Date.now(),
+        priority: rec.priority || "medium",
+        impact: rec.impact || 50,
+        feedback: undefined,
+        actualDuration: undefined,
+        actedUpon: false,
+        metadata: {
+          ...(rec.metadata || {}),
+          skills: rec.metadata?.skills || []
+        }
+      };
+    });
     
     return {
       success: true,
@@ -496,7 +508,12 @@ export const generatePersonalizedRecommendations = async (
     if (preferredType) {
       let content = "";
       
-      switch (preferredType) {
+      // Validate and ensure preferredType is one of the valid recommendation types
+      const validRecommendationType = ["agent", "leadership", "time", "task", "learning", "efficiency"].includes(preferredType)
+        ? (preferredType as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency")
+        : "task";
+      
+      switch (validRecommendationType) {
         case "efficiency":
           content = "Try the Pomodoro technique: 25 minutes of focused work followed by a 5-minute break. This could increase your productivity by 20%.";
           break;
@@ -512,7 +529,7 @@ export const generatePersonalizedRecommendations = async (
       
       recommendations.push({
         id: `personalized-rec-${Date.now()}-3`,
-        type: (preferredType as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency"),
+        type: validRecommendationType,
         content,
         timestamp: Date.now() - 3600000, // 1 hour ago
         priority: "medium",
