@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import CreateTaskDialog from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { Task } from "@/types/task"
 
 export function KanbanSection() {
   const [showCreateTask, setShowCreateTask] = useState(false)
@@ -14,18 +15,18 @@ export function KanbanSection() {
   const kanbanBoardRef = useRef<any>(null)
   const { createTaskRecommendation } = useCosRecommendations()
   
-  const handleTaskCreated = (taskId?: string, title?: string) => {
+  const handleTaskCreated = (task: Partial<Task>) => {
     // Force reload tasks in KanbanBoard
     if (kanbanBoardRef.current && kanbanBoardRef.current.loadTasks) {
       kanbanBoardRef.current.loadTasks()
     }
     
     // Generate a recommendation if we have task info
-    if (taskId && title) {
+    if (task.id && task.title) {
       createTaskRecommendation(
-        taskId,
-        title,
-        `Consider breaking down "${title}" into smaller subtasks for better management and tracking.`,
+        task.id,
+        task.title,
+        `Consider breaking down "${task.title}" into smaller subtasks for better management and tracking.`,
         "medium"
       )
     }
