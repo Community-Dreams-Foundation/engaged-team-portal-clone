@@ -6,12 +6,17 @@ import { toast } from "@/components/ui/use-toast";
 import { processDocumentForTaskCreation } from "@/services/recommendationService";
 import { CoSRecommendation, Task } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, FileText, FileCode, FileSpreadsheet, FileImage } from "lucide-react";
+import { Loader2, FileText, FileCode, FileSpreadsheet, FileImage, Copy, ClipboardList } from "lucide-react";
 import { FileUploadSection } from "./FileUploadSection";
 import { ProgressIndicator } from "./ProgressIndicator";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { ParsingResults } from "./ParsingResults";
 import { AiInsightPanel } from "./AiInsightPanel";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DomainCategory } from "@/utils/documents/types";
 
 interface DocumentParsingEngineProps {
   onTasksExtracted: (tasks: Partial<Task>[]) => void;
@@ -24,6 +29,8 @@ export function DocumentParsingEngine({
 }: DocumentParsingEngineProps) {
   const { currentUser } = useAuth();
   const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState<string>("");
+  const [selectedDomain, setSelectedDomain] = useState<DomainCategory>("strategy");
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [insights, setInsights] = useState<string[]>([]);
@@ -32,6 +39,7 @@ export function DocumentParsingEngine({
   const [parsingComplete, setParsingComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extractedTaskCount, setExtractedTaskCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -63,8 +71,8 @@ export function DocumentParsingEngine({
   };
 
   const handleProcess = async () => {
-    if (!file || !currentUser) {
-      setError("Please select a file and ensure you're logged in");
+    if ((!file && !text) || !currentUser) {
+      setError("Please provide document content and ensure you're logged in");
       return;
     }
 
@@ -85,7 +93,12 @@ export function DocumentParsingEngine({
       }, 500);
 
       // Process the document
-      const result = await processDocumentForTaskCreation(currentUser.uid, file);
+      const result = await processDocumentForTaskCreation(
+        currentUser.uid, 
+        file,
+        activeTab === "paste" ? text : undefined,
+        selectedDomain
+      );
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -128,6 +141,19 @@ export function DocumentParsingEngine({
     }
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    setError(null);
+    setParsingComplete(false);
+    setInsights([]);
+    setSuggestedSkills([]);
+    setEstimatedEffort(0);
+  };
+
+  const handleDomainChange = (value: string) => {
+    setSelectedDomain(value as DomainCategory);
+  };
+
   return (
     <Card className="p-4 space-y-4">
       <div className="space-y-2">
@@ -137,48 +163,116 @@ export function DocumentParsingEngine({
         </p>
       </div>
 
-      <div className="space-y-4">
-        <FileUploadSection 
-          file={file} 
-          isLoading={isLoading} 
-          handleFileChange={handleFileChange}
-          fileIcon={getFileIcon()}  
-        />
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "upload" | "paste")} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Upload Document
+          </TabsTrigger>
+          <TabsTrigger value="paste" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Paste Text
+          </TabsTrigger>
+        </TabsList>
         
-        <ProgressIndicator isLoading={isLoading} progress={progress} />
+        <TabsContent value="upload">
+          <FileUploadSection 
+            file={file} 
+            isLoading={isLoading} 
+            handleFileChange={handleFileChange}
+            fileIcon={getFileIcon()}  
+          />
+        </TabsContent>
         
-        <ErrorDisplay error={error} />
-        
-        {parsingComplete && (
-          <>
-            <ParsingResults 
-              parsingComplete={parsingComplete} 
-              insights={[`Successfully extracted ${extractedTaskCount} tasks from the document.`]} 
+        <TabsContent value="paste">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="document-text" className="text-sm font-medium">
+                Paste document content
+              </label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-xs"
+                onClick={() => navigator.clipboard.readText().then(text => setText(text))}
+              >
+                <Copy className="h-3.5 w-3.5 mr-1" />
+                Paste from clipboard
+              </Button>
+            </div>
+            <Textarea
+              id="document-text"
+              placeholder="Paste project documentation, requirements, PRD, or other text content here..."
+              value={text}
+              onChange={handleTextChange}
+              rows={10}
+              className="font-mono text-sm"
+              disabled={isLoading}
             />
-            
-            <AiInsightPanel 
-              insights={insights}
-              suggestedSkills={suggestedSkills}
-              estimatedEffort={estimatedEffort}
-            />
-          </>
-        )}
-
-        <Button
-          onClick={handleProcess}
-          disabled={!file || isLoading}
-          className="w-full"
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      <div className="space-y-2">
+        <label htmlFor="domain-selector" className="text-sm font-medium">
+          Select Document Domain
+        </label>
+        <Select
+          value={selectedDomain}
+          onValueChange={handleDomainChange}
+          disabled={isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing with CoS AI...
-            </>
-          ) : (
-            "Process Document"
-          )}
-        </Button>
+          <SelectTrigger className="w-full" id="domain-selector">
+            <SelectValue placeholder="Select domain" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="strategy">Strategy</SelectItem>
+            <SelectItem value="product-design">Product Design</SelectItem>
+            <SelectItem value="frontend">Frontend</SelectItem>
+            <SelectItem value="data-engineering">Data Engineering</SelectItem>
+            <SelectItem value="engagement">Engagement</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          The domain helps categorize tasks and determine appropriate skill requirements.
+        </p>
       </div>
+      
+      <ProgressIndicator isLoading={isLoading} progress={progress} />
+      
+      <ErrorDisplay error={error} />
+      
+      {parsingComplete && (
+        <>
+          <Separator />
+          
+          <ParsingResults 
+            parsingComplete={parsingComplete} 
+            insights={[`Successfully extracted ${extractedTaskCount} tasks from the document.`]} 
+          />
+          
+          <AiInsightPanel 
+            insights={insights}
+            suggestedSkills={suggestedSkills}
+            estimatedEffort={estimatedEffort}
+          />
+        </>
+      )}
+
+      <Button
+        onClick={handleProcess}
+        disabled={(!file && !text) || isLoading}
+        className="w-full"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing with CoS AI...
+          </>
+        ) : (
+          "Process Document"
+        )}
+      </Button>
     </Card>
   );
 }
