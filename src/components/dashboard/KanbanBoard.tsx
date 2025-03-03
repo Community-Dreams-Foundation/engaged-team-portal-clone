@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, forwardRef, useImperativeHandle } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus, RecurringTaskConfig } from "@/types/task"
@@ -20,7 +19,6 @@ interface KanbanBoardProps {
   showRecurring?: boolean;
 }
 
-// Extending the component to support ref
 export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBoardProps>(
   ({ filters, showRecurring = false }, ref) => {
     const { currentUser } = useAuth()
@@ -39,7 +37,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
         setLoading(true)
         const fetchedTasks = await fetchTasks(currentUser.uid)
         
-        // Handle recurring tasks - check for any that need to be recreated
         if (showRecurring) {
           const now = new Date().getTime()
           const tasksToCreate: Task[] = []
@@ -50,7 +47,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
                 task.recurringConfig.nextOccurrence && 
                 task.recurringConfig.nextOccurrence <= now) {
               
-              // Check if we've hit the end conditions
               let shouldCreateNew = true
               
               if (task.recurringConfig.endDate && 
@@ -65,11 +61,9 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
               }
               
               if (shouldCreateNew) {
-                // Create a copy of the task for the next occurrence
                 const nextDate = new Date(task.recurringConfig.nextOccurrence)
                 let subsequentDate = new Date(task.recurringConfig.nextOccurrence)
                 
-                // Calculate the next occurrence
                 switch (task.recurringConfig.pattern) {
                   case "daily":
                     subsequentDate = addDays(nextDate, task.recurringConfig.interval)
@@ -87,10 +81,9 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
                     subsequentDate = addDays(nextDate, task.recurringConfig.interval)
                 }
                 
-                // Create a new task based on the original
                 const newTask: Task = {
                   ...task,
-                  id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // generate new ID
+                  id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                   status: "todo",
                   isTimerRunning: false,
                   totalElapsedTime: 0,
@@ -116,7 +109,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
                 
                 tasksToCreate.push(newTask)
                 
-                // Update the original task's recurring config
                 const taskIndex = fetchedTasks.findIndex(t => t.id === task.id)
                 if (taskIndex >= 0) {
                   fetchedTasks[taskIndex] = {
@@ -131,14 +123,12 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
             }
           })
           
-          // Add newly created recurring tasks
           if (tasksToCreate.length > 0) {
             fetchedTasks.push(...tasksToCreate)
             
             toast({
               title: "Recurring Tasks Created",
               description: `${tasksToCreate.length} recurring task${tasksToCreate.length > 1 ? 's were' : ' was'} automatically created.`,
-              duration: 5000,
             })
           }
         }
@@ -156,7 +146,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       }
     }, [currentUser?.uid, toast, showRecurring])
 
-    // Apply filters to tasks
     useEffect(() => {
       if (!filters) {
         setFilteredTasks(tasks);
@@ -165,7 +154,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       
       let filtered = [...tasks];
       
-      // Apply search query filter
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
         filtered = filtered.filter(task => 
@@ -175,7 +163,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
         );
       }
       
-      // Apply date range filter
       if (filters.dateRange.from || filters.dateRange.to) {
         filtered = filtered.filter(task => {
           if (!task.dueDate) return false;
@@ -199,14 +186,12 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
         });
       }
       
-      // Apply priority filter
       if (filters.priorities.length > 0) {
         filtered = filtered.filter(task => 
           task.priority && filters.priorities.includes(task.priority)
         );
       }
       
-      // Apply tags filter
       if (filters.tags.length > 0) {
         filtered = filtered.filter(task => 
           task.tags && filters.tags.some(tag => task.tags?.includes(tag))
@@ -216,7 +201,6 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       setFilteredTasks(filtered);
     }, [tasks, filters]);
 
-    // Expose loadTasks method via ref
     useImperativeHandle(ref, () => ({
       loadTasks
     }))

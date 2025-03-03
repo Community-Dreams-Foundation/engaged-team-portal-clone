@@ -263,7 +263,7 @@ export function TaskDetailDialog({
           </TabsContent>
           
           <TabsContent value="activity" className="flex-1 overflow-auto p-1">
-            <TaskActivity task={task} />
+            <TaskActivity activities={task.activities} />
           </TabsContent>
         </Tabs>
         

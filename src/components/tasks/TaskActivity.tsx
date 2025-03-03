@@ -1,5 +1,5 @@
 
-import { Activity } from "@/types/task"
+import { Activity, Task } from "@/types/task"
 import { 
   Clock, 
   ExternalLink, 
@@ -13,11 +13,15 @@ import {
 import { formatDistanceToNow } from "date-fns"
 
 interface TaskActivityProps {
-  activities: Activity[]
+  activities?: Activity[]
+  task?: Task // Add task as an optional prop
 }
 
-export function TaskActivity({ activities }: TaskActivityProps) {
-  if (!activities || activities.length === 0) {
+export function TaskActivity({ activities, task }: TaskActivityProps) {
+  // Use the activities from props if provided, otherwise use task.activities
+  const activityList = activities || task?.activities || []
+  
+  if (!activityList || activityList.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p>No activity recorded yet</p>
@@ -52,7 +56,7 @@ export function TaskActivity({ activities }: TaskActivityProps) {
     <div className="space-y-3">
       <h3 className="text-sm font-medium">Activity History</h3>
       <div className="space-y-2">
-        {activities.map((activity, index) => (
+        {activityList.map((activity, index) => (
           <div key={index} className="flex items-start gap-3 text-sm">
             <div className="mt-0.5 text-muted-foreground">
               {getActivityIcon(activity.type)}
