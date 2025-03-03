@@ -14,6 +14,7 @@ import { ConversationThreads } from "@/components/dashboard/cos-agent/Conversati
 import { ConversationContent } from "@/components/dashboard/cos-agent/ConversationContent"
 import { CosTutorial } from "@/components/dashboard/cos-agent/CosTutorial"
 import type { ConversationThread } from "@/types/conversation"
+import type { Task } from "@/types/task"
 
 export default function CosAgentPage() {
   const { currentUser } = useAuth()
@@ -26,6 +27,7 @@ export default function CosAgentPage() {
   const agentName = agents?.[0]?.name || "CoS Agent"
   
   const [threads, setThreads] = useState<ConversationThread[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
   const [newThreadTitle, setNewThreadTitle] = useState("")
   const [newMessage, setNewMessage] = useState("")
@@ -106,6 +108,24 @@ export default function CosAgentPage() {
       }
     })
     
+    // Fetch tasks for task integration
+    const fetchTasks = async () => {
+      try {
+        const tasksRef = ref(db, `users/${currentUser.uid}/tasks`)
+        const tasksSnapshot = await get(tasksRef)
+        
+        if (tasksSnapshot.exists()) {
+          const tasksData = tasksSnapshot.val()
+          const tasksList = Object.values(tasksData) as Task[]
+          setTasks(tasksList)
+        }
+      } catch (error) {
+        console.error("Error fetching tasks:", error)
+      }
+    }
+    
+    fetchTasks()
+    
     return () => {
       off(threadsRef)
       unsubscribe()
@@ -137,14 +157,22 @@ export default function CosAgentPage() {
         title: title.trim(),
         createdAt: now,
         lastMessageAt: now,
+        category: title.toLowerCase().includes("task") ? "task" : "general"
       }
       
       await update(newThreadRef, threadData)
       
       const messagesRef = ref(db, `users/${currentUser.uid}/conversationThreads/${newThreadRef.key}/messages`)
       const welcomeMessageRef = push(messagesRef)
+      
+      let welcomeMessage = `Welcome to your "${title.trim()}" conversation! How can I help you today?`
+      
+      if (title.toLowerCase().includes("task")) {
+        welcomeMessage = `I see you've created a task-focused thread. How can I help you manage, break down, or analyze this task?`
+      }
+      
       await update(welcomeMessageRef, {
-        content: `Welcome to your "${title.trim()}" conversation! How can I help you today?`,
+        content: welcomeMessage,
         sender: 'bot',
         timestamp: now
       })
@@ -181,8 +209,35 @@ export default function CosAgentPage() {
       setNewMessage("")
       
       setTimeout(async () => {
+        // Generate a more contextual response based on the message content
+        let botResponse = `I've received your message: "${newMessage.trim()}". How else can I assist you?`
+        
+        // Check for task-related keywords
+        const taskKeywords = ['task', 'breakdown', 'split', 'complex', 'analyze', 'priority']
+        const containsTaskKeywords = taskKeywords.some(keyword => 
+          newMessage.toLowerCase().includes(keyword)
+        )
+        
+        // Check if message contains a task ID pattern (ID: abc123)
+        const taskIdMatch = newMessage.match(/ID: ([a-zA-Z0-9-_]+)/)
+        const taskId = taskIdMatch ? taskIdMatch[1] : null
+        
+        if (containsTaskKeywords) {
+          if (taskId) {
+            // Attempt to look up the specific task
+            const taskRef = ref(db, `users/${currentUser.uid}/tasks/${taskId}`)
+            const taskSnapshot = await get(taskRef)
+            
+            if (taskSnapshot.exists()) {
+              const task = taskSnapshot.val()
+              botResponse = `I see you're asking about the task "${task.title}". This ${task.metadata?.complexity || 'standard'} complexity task is currently ${task.status}. Would you like me to help analyze it, break it down, or provide suggestions?`
+            }
+          } else {
+            botResponse = `I understand you're asking about task management. Would you like me to help prioritize your tasks, break down a complex task, or provide an analysis of your current workload?`
+          }
+        }
+        
         const botMessageRef = push(messagesRef)
-        const botResponse = `I've received your message: "${newMessage.trim()}". How else can I assist you with this topic?`
         
         await update(botMessageRef, {
           content: botResponse,
@@ -249,6 +304,7 @@ export default function CosAgentPage() {
                   createNewThread={createNewThread}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
+                  tasks={tasks}
                 />
               </Card>
             </div>
