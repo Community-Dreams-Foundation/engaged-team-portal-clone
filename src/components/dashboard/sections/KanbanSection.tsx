@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
 import { ChevronRight, Kanban, Filter, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
+import CreateTaskDialog from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 

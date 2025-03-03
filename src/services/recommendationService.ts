@@ -1,5 +1,6 @@
+
 import { getDatabase, ref, update, push } from "firebase/database";
-import { CoSRecommendation } from "@/types/task";
+import { CoSRecommendation, Task } from "@/types/task";
 import { toast } from "@/hooks/use-toast";
 import { analyzeDocumentWithAI, parseDocumentContent } from "@/utils/documentParser";
 

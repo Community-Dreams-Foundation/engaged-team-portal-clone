@@ -30,7 +30,8 @@ export const parseDocumentContent = async (
     if (fileType.includes("markdown") || fileType.includes("md") || fileType.includes("text/plain")) {
       // Parse markdown content
       const parsedContent = marked.parse(content);
-      const sanitizedContent = DOMPurify.sanitize(parsedContent);
+      // Fix the typing issue by ensuring we're working with a string
+      const sanitizedContent = DOMPurify.sanitize(parsedContent.toString());
       
       // Extract title from first heading
       const titleMatch = sanitizedContent.match(/<h1[^>]*>(.*?)<\/h1>/);
