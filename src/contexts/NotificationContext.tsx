@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { getDatabase, ref, onValue, update, push, get } from "firebase/database"
@@ -61,7 +60,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const unreadCount = notifications.filter(n => n.status === "unread").length
 
-  // Setup Firebase Realtime Database listener for notifications
   useEffect(() => {
     if (!currentUser) return
 
@@ -85,7 +83,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => unsubscribe()
   }, [currentUser])
 
-  // Load user notification preferences
   useEffect(() => {
     if (!currentUser) return
     
@@ -103,14 +100,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => unsubscribe()
   }, [currentUser])
 
-  // Setup Socket.IO event listeners for real-time notifications
   useEffect(() => {
     if (!currentUser) return
 
-    // Connect to Socket.IO
     socketService.connect(currentUser.uid)
 
-    // Setup event listeners for meeting-related events
     const handleMeetingUpdated = (event: CustomEvent<any>) => {
       const data = event.detail
       addNotification({
@@ -215,7 +209,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       })
     }
 
-    // Add event listeners
     window.addEventListener("meeting:updated", handleMeetingUpdated as EventListener)
     window.addEventListener("meeting:reminder", handleMeetingReminder as EventListener)
     window.addEventListener("meeting:started", handleMeetingStarted as EventListener)
@@ -223,7 +216,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     window.addEventListener("meeting:recording", handleMeetingRecording as EventListener)
     window.addEventListener("meeting:transcript", handleMeetingTranscript as EventListener)
 
-    // Clean up event listeners
     return () => {
       window.removeEventListener("meeting:updated", handleMeetingUpdated as EventListener)
       window.removeEventListener("meeting:reminder", handleMeetingReminder as EventListener)
@@ -232,7 +224,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       window.removeEventListener("meeting:recording", handleMeetingRecording as EventListener)
       window.removeEventListener("meeting:transcript", handleMeetingTranscript as EventListener)
       
-      // Disconnect from Socket.IO
       socketService.disconnect()
     }
   }, [currentUser])
@@ -268,18 +259,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const addNotification = async (notification: Omit<Notification, "id" | "status" | "timestamp">) => {
     if (!currentUser) return
     
-    // Check notification preferences if they exist
     if (preferences) {
       const pref = preferences[notification.type]
       
-      // If preferences exist for this notification type and it's disabled, don't add it
       if (pref && !pref.enabled) {
         return
       }
       
-      // Handle email notification based on preferences
       if (pref && (pref.channel === "email" || pref.channel === "both")) {
-        // Send email notification based on frequency
         if (pref.frequency === "immediate") {
           try {
             await sendEmail({
@@ -296,11 +283,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             console.error("Failed to send email notification:", error)
           }
         }
-        // For hourly and daily digests, we'd need a separate aggregation system
-        // that would collect notifications and send them on schedule
       }
       
-      // If channel is email-only and not in-app, don't store the notification
       if (pref && pref.channel === "email") {
         return
       }

@@ -36,7 +36,6 @@ export function usePersonalizedRecommendations() {
 
     return () => {
       off(profileRef);
-      profileListener();
     };
   }, [currentUser]);
 

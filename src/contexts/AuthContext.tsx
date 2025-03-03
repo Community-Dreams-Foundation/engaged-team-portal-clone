@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -53,7 +52,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useFirebaseToken(setCurrentUser, setUserRole);
   useFirebaseAuth(setCurrentUser, setUserRole, setLoading);
 
-  // Account session management functions
   const getActiveSessions = async (): Promise<Session[]> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -105,7 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           : "All sessions including current have been logged out"
       });
       
-      // If current session is also terminated, logout the user
       if (!excludeCurrentSession) {
         await handleLogout(currentUser.uid, userRole);
         setUserRole(undefined);
@@ -121,7 +118,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Account activity log functions
   const getAccountActivity = async (limit: number = 20): Promise<ActivityLogEntry[]> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
@@ -139,14 +135,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Data export function
   const exportUserData = async (): Promise<Blob> => {
     if (!currentUser) {
       throw new Error('User not authenticated');
     }
     try {
       const userData = await AccountApi.exportUserData(currentUser.uid);
-      // Convert the data to a JSON blob
       const jsonString = JSON.stringify(userData, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       
@@ -213,7 +207,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resendVerificationEmail,
     setupMFA,
     completeMFASetup,
-    // Add the new required methods
     getActiveSessions,
     terminateSession,
     terminateAllSessions,

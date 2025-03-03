@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -11,7 +12,8 @@ const firebaseConfig = {
   storageBucket: "dreamstream-28360.firebasestorage.app",
   messagingSenderId: "739633660375",
   appId: "1:739633660375:web:f30ad000a6205106d8cb92",
-  measurementId: "G-GFHPX8M7CT"
+  measurementId: "G-GFHPX8M7CT",
+  databaseURL: "https://dreamstream-28360-default-rtdb.firebaseio.com"
 };
 
 // Initialize Firebase only once
@@ -23,6 +25,9 @@ auth.useDeviceLanguage(); // Set language to device default
 
 // Initialize Firestore with persistence
 export const db = getFirestore(app);
+
+// Initialize Realtime Database
+export const rtdb = getDatabase(app);
 
 // Enable offline persistence for Firestore
 enableIndexedDbPersistence(db).catch((err) => {
@@ -56,4 +61,3 @@ export const checkFirebaseConnection = async () => {
     return false;
   }
 };
-
