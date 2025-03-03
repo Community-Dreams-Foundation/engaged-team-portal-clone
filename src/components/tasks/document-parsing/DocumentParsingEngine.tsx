@@ -2,13 +2,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
 import { processDocumentForTaskCreation } from "@/services/recommendationService";
 import { CoSRecommendation, Task } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { FileUploadSection } from "./FileUploadSection";
+import { ProgressIndicator } from "./ProgressIndicator";
+import { ErrorDisplay } from "./ErrorDisplay";
+import { ParsingResults } from "./ParsingResults";
 
 interface DocumentParsingEngineProps {
   onTasksExtracted: (tasks: Partial<Task>[]) => void;
@@ -97,67 +99,17 @@ export function DocumentParsingEngine({
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="document-upload" className="text-sm font-medium">
-            Upload Documentation
-          </label>
-          <Input
-            id="document-upload"
-            type="file"
-            accept=".txt,.md,.doc,.docx,.pdf"
-            onChange={handleFileChange}
-            disabled={isLoading}
-          />
-          <p className="text-xs text-muted-foreground">
-            Supported formats: TXT, Markdown, DOC, DOCX, PDF
-          </p>
-        </div>
-
-        {file && (
-          <div className="flex items-center gap-2 text-sm">
-            <FileText className="h-4 w-4" />
-            <span>{file.name}</span>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Processing document...</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
-        )}
-
-        {error && (
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error}</span>
-          </div>
-        )}
-
-        {parsingComplete && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-primary">
-              <CheckCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">Document processing complete!</span>
-            </div>
-            {insights.length > 0 && (
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium">Key Insights:</h4>
-                <ul className="text-xs space-y-1">
-                  {insights.map((insight, index) => (
-                    <li key={index} className="flex items-start gap-1">
-                      <span className="text-primary">•</span>
-                      <span>{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
+        <FileUploadSection 
+          file={file} 
+          isLoading={isLoading} 
+          handleFileChange={handleFileChange} 
+        />
+        
+        <ProgressIndicator isLoading={isLoading} progress={progress} />
+        
+        <ErrorDisplay error={error} />
+        
+        <ParsingResults parsingComplete={parsingComplete} insights={insights} />
 
         <Button
           onClick={handleProcess}

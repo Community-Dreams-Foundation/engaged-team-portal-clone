@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DocumentParsingEngine } from "@/components/tasks/DocumentParsingEngine";
+import { DocumentParsingEngine } from "@/components/tasks/document-parsing";
 import { Task, CoSRecommendation } from "@/types/task";
 
 interface DocumentImportTabProps {
