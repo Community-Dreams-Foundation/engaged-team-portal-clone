@@ -2,7 +2,6 @@
 import { Task } from "@/types/task";
 import { getDatabase, ref, set, get, push, onValue, off } from "firebase/database";
 import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
 import { AlertType } from "@/types/monitoring";
 
 // Store alerts in Firebase
@@ -226,9 +225,10 @@ export const useTaskAlerts = (userId: string, tasks: Task[]) => {
         title: "Task Overdue",
         description: `"${task.title}" was due on ${new Date(task.dueDate!).toLocaleDateString()}`,
         variant: "destructive",
-        action: (
-          <ToastAction altText="View Task">View Task</ToastAction>
-        ),
+        action: {
+          label: "View Task",
+          onClick: () => console.log("View task clicked", task.id)
+        }
       });
     });
   };
@@ -248,9 +248,10 @@ export const useTaskAlerts = (userId: string, tasks: Task[]) => {
         title: "Approaching Deadline",
         description: `"${task.title}" is due in less than 24 hours`,
         variant: "default",
-        action: (
-          <ToastAction altText="View Task">View Task</ToastAction>
-        ),
+        action: {
+          label: "View Task",
+          onClick: () => console.log("View task clicked", task.id)
+        }
       });
     });
   };
@@ -270,9 +271,10 @@ export const useTaskAlerts = (userId: string, tasks: Task[]) => {
         title: "Duration Exceeded",
         description: `"${task.title}" has taken longer than the estimated ${task.estimatedDuration} minutes`,
         variant: "default",
-        action: (
-          <ToastAction altText="View Task">View Task</ToastAction>
-        ),
+        action: {
+          label: "View Task",
+          onClick: () => console.log("View task clicked", task.id)
+        }
       });
     });
   };
