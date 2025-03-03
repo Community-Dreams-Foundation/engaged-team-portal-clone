@@ -75,7 +75,11 @@ export function TaskDetailDialog({
           ...task.metadata,
           parentTaskId: task.id,
           hasSubtasks: false,
-          subtaskIds: []
+          subtaskIds: [],
+          complexity: task.metadata?.complexity || "medium",
+          impact: task.metadata?.impact || "medium",
+          businessValue: task.metadata?.businessValue || 5,
+          learningOpportunity: task.metadata?.learningOpportunity || 5
         }
       }
       

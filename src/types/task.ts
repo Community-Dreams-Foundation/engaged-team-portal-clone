@@ -91,6 +91,8 @@ export interface Task {
     timeExpectation?: number // expected completion time in minutes
     autoSplitEligible?: boolean // whether the task can be auto-split
     personalizationScore?: number // 0-100, calculated based on user match
+    remindedAt?: boolean // Added for task reminders
+    overdueReminded?: number // Added for tracking when we reminded about overdue tasks
     agentRecommendations?: {
       suggestedAgentType?: AgentType
       confidence: number

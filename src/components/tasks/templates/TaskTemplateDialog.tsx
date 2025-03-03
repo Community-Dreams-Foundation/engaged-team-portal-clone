@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { Task } from "@/types/task";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, Plus, Save, Template } from "lucide-react";
+import { CalendarIcon, Check, Plus, Save, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -31,14 +30,12 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
   const [loading, setLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   
-  // Create template form state
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateCategory, setTemplateCategory] = useState("general");
   const [templateTags, setTemplateTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   
-  // Use template form state
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskDueDate, setTaskDueDate] = useState<Date | undefined>(undefined);
@@ -46,14 +43,12 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
   const { toast } = useToast();
   const { currentUser } = useAuth();
   
-  // Load templates when dialog opens
   useEffect(() => {
     if (open && currentUser?.uid) {
       loadTemplates();
     }
   }, [open, currentUser]);
   
-  // Load template details when selected
   useEffect(() => {
     if (selectedTemplate && templates.length > 0) {
       const template = templates.find(t => t.id === selectedTemplate);
@@ -134,16 +129,13 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
         description: "Your task template has been saved successfully."
       });
       
-      // Reset form
       setTemplateName("");
       setTemplateDescription("");
       setTemplateCategory("general");
       setTemplateTags([]);
       
-      // Reload templates
       loadTemplates();
       
-      // Switch to use tab
       setActiveTab("use");
     } catch (error) {
       console.error("Error creating template:", error);
@@ -181,17 +173,14 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
         description: "Your task has been created from the template."
       });
       
-      // Reset form
       setTaskTitle("");
       setTaskDescription("");
       setTaskDueDate(undefined);
       
-      // Notify parent component
       if (onTaskCreated) {
         onTaskCreated({ id: taskId, title: taskTitle });
       }
       
-      // Close dialog
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating task from template:", error);
@@ -210,7 +199,7 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Template className="h-5 w-5" />
+            <FileText className="h-5 w-5" />
             Task Templates
           </DialogTitle>
           <DialogDescription>
@@ -227,7 +216,7 @@ export function TaskTemplateDialog({ open, onOpenChange, onTaskCreated }: TaskTe
           <TabsContent value="use" className="space-y-4 py-4">
             {templates.length === 0 ? (
               <div className="text-center py-10">
-                <Template className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                <FileText className="h-10 w-10 mx-auto text-gray-400 mb-2" />
                 <h3 className="text-lg font-medium">No Templates Available</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   You haven't created any task templates yet.

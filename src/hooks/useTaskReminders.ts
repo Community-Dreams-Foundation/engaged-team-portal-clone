@@ -105,7 +105,7 @@ export function useTaskReminders() {
         
         // Skip if task has no due date, is already completed, or is already reminded
         if (!task.dueDate || task.status === "completed" || 
-            task.metadata?.remindedAt === true) return;
+            (task.metadata?.remindedAt === true)) return;
         
         const dueDate = new Date(task.dueDate);
         const daysUntilDue = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -132,8 +132,11 @@ export function useTaskReminders() {
           }
           
           // Mark task as reminded
-          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}/metadata`), {
-            remindedAt: true
+          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}`), {
+            metadata: {
+              ...task.metadata,
+              remindedAt: true
+            }
           });
         }
         
@@ -158,8 +161,11 @@ export function useTaskReminders() {
           }
           
           // Mark task as reminded
-          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}/metadata`), {
-            remindedAt: true
+          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}`), {
+            metadata: {
+              ...task.metadata,
+              remindedAt: true
+            }
           });
         }
         
@@ -186,8 +192,11 @@ export function useTaskReminders() {
           }
           
           // Mark when we reminded about overdue
-          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}/metadata`), {
-            overdueReminded: now.getTime()
+          update(ref(db, `users/${currentUser.uid}/tasks/${task.id}`), {
+            metadata: {
+              ...task.metadata,
+              overdueReminded: now.getTime()
+            }
           });
         }
       });

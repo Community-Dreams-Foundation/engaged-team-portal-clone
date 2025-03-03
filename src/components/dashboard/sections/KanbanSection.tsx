@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
-import { ChevronRight, Kanban, Filter, Plus, Search, RotateCw, Template } from "lucide-react"
+import { ChevronRight, Kanban, Filter, Plus, Search, RotateCw, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CreateTaskDialog from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
@@ -128,7 +128,7 @@ export function KanbanSection() {
                 className="text-sm gap-1"
                 onClick={() => setShowTemplates(true)}
               >
-                <Template className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Templates
               </Button>
               <Button 
