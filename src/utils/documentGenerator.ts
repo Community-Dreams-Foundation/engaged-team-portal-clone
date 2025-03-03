@@ -1,9 +1,9 @@
 
 import { documentTitles, documentDescriptions } from "@/components/intake/DocumentConstants";
-import { Task } from "@/types/task";
+import { Task, SkillLevel } from "@/types/task";
 
 // Define domain categories
-export type DomainCategory = "strategy" | "data-engineering" | "frontend" | "backend" | "product" | "design";
+export type DomainCategory = "strategy" | "data-engineering" | "frontend" | "product-design" | "engagement";
 
 // Standard document types that should be created for every domain
 export type StandardDocumentType = "project-charter" | "prd" | "execution-calendar" | "sprint-plan";
@@ -13,9 +13,8 @@ export const domainSpecificDocuments: Record<DomainCategory, string[]> = {
   "strategy": ["market-analysis", "competitive-landscape", "strategic-roadmap"],
   "data-engineering": ["data-schema", "etl-workflow", "data-governance-plan"],
   "frontend": ["ui-mockups", "component-library", "accessibility-guidelines"],
-  "backend": ["api-specifications", "database-design", "security-protocols"],
-  "product": ["feature-prioritization", "user-stories", "acceptance-criteria"],
-  "design": ["design-system", "user-flow", "ux-research-findings"]
+  "product-design": ["design-system", "user-flow", "ux-research-findings"],
+  "engagement": ["communication-plan", "stakeholder-matrix", "client-feedback-process"]
 };
 
 // Generate standard documents for a domain
@@ -310,7 +309,49 @@ Deadline: ${deadline}
 - Vulnerability assessment
 `;
     }
-  } else if (domain === "frontend" || domain === "backend" || domain === "product" || domain === "design") {
+  } else if (domain === "engagement") {
+    if (documentType === "communication-plan") {
+      content = `## Communication Channels
+- Primary and secondary channels
+- Communication frequency
+- Escalation pathways
+- Reporting structure
+
+## Stakeholder Engagement
+- Communication templates
+- Meeting schedules
+- Status reporting cadence
+- Feedback mechanisms
+`;
+    } else if (documentType === "stakeholder-matrix") {
+      content = `## Key Stakeholders
+- Decision makers
+- Influencers
+- End users
+- Technical teams
+- Support teams
+
+## Engagement Strategy
+- Stakeholder needs and expectations
+- Communication preferences
+- Engagement frequency
+- Success metrics
+`;
+    } else if (documentType === "client-feedback-process") {
+      content = `## Feedback Collection
+- Feedback channels
+- Survey methodology
+- Interview process
+- Metrics tracking
+
+## Implementation Process
+- Feedback prioritization
+- Action item assignment
+- Implementation timeline
+- Success validation
+`;
+    }
+  } else if (domain === "frontend" || domain === "product-design") {
     // Generic content for other domains if specific content not defined
     content = `## Key Components
 - Component 1: Description and requirements
@@ -408,6 +449,7 @@ export const generateTasksFromDocuments = (
             complexity: "medium",
             impact: "medium",
             businessValue: 7,
+            learningOpportunity: 5, // Add missing required field
             domain: domain
           }
         });
@@ -427,10 +469,63 @@ export const generateTasksFromDocuments = (
         complexity: "low",
         impact: "high",
         businessValue: 8,
+        learningOpportunity: 4, // Add missing required field
         domain: domain
       }
     });
   });
   
   return tasks;
+};
+
+// Generate full project documentation and tasks across all domains
+export const generateFullProjectDocumentation = (
+  projectTitle: string,
+  projectDescription: string,
+  priority: string,
+  deadline: string
+): { documents: Record<string, Record<string, string>>, tasks: Partial<Task>[] } => {
+  const allDomains: DomainCategory[] = ["strategy", "data-engineering", "frontend", "product-design", "engagement"];
+  const allDocuments: Record<string, Record<string, string>> = {};
+  let allTasks: Partial<Task>[] = [];
+  
+  // Generate standard documents (common for the project)
+  const standardDocs = createAllStandardDocuments(
+    projectTitle,
+    projectDescription, 
+    priority,
+    deadline
+  );
+  
+  allDocuments["standard"] = standardDocs;
+  
+  // Generate domain-specific documents and tasks for each domain
+  allDomains.forEach(domain => {
+    // Generate domain-specific documents
+    const domainDocs = createDomainSpecificDocuments(
+      domain,
+      projectTitle,
+      projectDescription,
+      priority,
+      deadline
+    );
+    
+    // Store domain documents
+    allDocuments[domain] = domainDocs;
+    
+    // Generate tasks from domain documents
+    const domainTasks = generateTasksFromDocuments(domainDocs, domain);
+    
+    // Add tasks to overall list
+    allTasks = [...allTasks, ...domainTasks];
+  });
+  
+  // Generate tasks from standard documents (assign them to strategy domain for simplicity)
+  const standardTasks = generateTasksFromDocuments(standardDocs, "strategy");
+  allTasks = [...allTasks, ...standardTasks];
+  
+  return {
+    documents: allDocuments,
+    tasks: allTasks
+  };
 };

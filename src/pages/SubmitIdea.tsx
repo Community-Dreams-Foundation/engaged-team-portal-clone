@@ -33,7 +33,10 @@ import { ArrowLeft, FileText, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { DomainCategory, createAllStandardDocuments, createDomainSpecificDocuments, generateTasksFromDocuments } from "@/utils/documentGenerator";
+import { 
+  DomainCategory, 
+  generateFullProjectDocumentation 
+} from "@/utils/documentGenerator";
 import { processDocumentForTaskCreation } from "@/services/recommendationService";
 
 const formSchema = z.object({
@@ -41,7 +44,7 @@ const formSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
   priority: z.enum(["low", "medium", "high"]),
   deadline: z.string().min(1, "Please select a deadline"),
-  domain: z.enum(["strategy", "data-engineering", "frontend", "backend", "product", "design"]),
+  primaryDomain: z.enum(["strategy", "data-engineering", "frontend", "product-design", "engagement"]),
 });
 
 const SubmitIdea = () => {
@@ -49,9 +52,10 @@ const SubmitIdea = () => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [generatedDocuments, setGeneratedDocuments] = useState<Record<string, string>>({});
+  const [generatedDocuments, setGeneratedDocuments] = useState<Record<string, Record<string, string>>>({});
   const [generatedTasks, setGeneratedTasks] = useState<any[]>([]);
   const [documentProcessingComplete, setDocumentProcessingComplete] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,7 +64,7 @@ const SubmitIdea = () => {
       description: "",
       priority: "medium",
       deadline: "",
-      domain: "product",
+      primaryDomain: "product-design",
     },
   });
 
@@ -76,60 +80,62 @@ const SubmitIdea = () => {
 
     setIsSubmitting(true);
     try {
-      // Generate standard documents for the selected domain
-      const standardDocs = createAllStandardDocuments(
+      setProcessingProgress(10);
+      
+      // Generate full project documentation for all domains
+      const fullDocumentation = generateFullProjectDocumentation(
         values.title,
         values.description,
         values.priority,
         values.deadline
       );
-
-      // Generate domain-specific documents
-      const domainDocs = createDomainSpecificDocuments(
-        values.domain as DomainCategory,
-        values.title,
-        values.description,
-        values.priority,
-        values.deadline
-      );
-
-      // Combine all documents
-      const allDocuments = {
-        ...standardDocs,
-        ...domainDocs
-      };
-
-      setGeneratedDocuments(allDocuments);
-
-      // Generate tasks from documents
-      const tasks = generateTasksFromDocuments(allDocuments, values.domain as DomainCategory);
-      setGeneratedTasks(tasks);
-
+      
+      setProcessingProgress(30);
+      setGeneratedDocuments(fullDocumentation.documents);
+      setGeneratedTasks(fullDocumentation.tasks);
+      
       // Process documents to extract more insights and recommendations
-      for (const [docType, content] of Object.entries(allDocuments)) {
-        // Create a file blob from the document content
-        const file = new File(
-          [content], 
-          `${values.domain}-${docType}.md`, 
-          { type: "text/markdown" }
-        );
+      if (currentUser?.uid) {
+        let processedCount = 0;
+        const totalDocuments = Object.values(fullDocumentation.documents)
+          .reduce((count, domainDocs) => count + Object.keys(domainDocs).length, 0);
+        
+        // Process each document across all domains
+        for (const [domain, domainDocs] of Object.entries(fullDocumentation.documents)) {
+          for (const [docType, content] of Object.entries(domainDocs)) {
+            // Create a file blob from the document content
+            const file = new File(
+              [content], 
+              `${domain}-${docType}.md`, 
+              { type: "text/markdown" }
+            );
 
-        // Process the document using our existing document parsing engine
-        if (currentUser?.uid) {
-          const result = await processDocumentForTaskCreation(currentUser.uid, file);
-          
-          if (result.success) {
-            // Additional tasks and recommendations have been created and stored in Firebase
-            console.log(`Processed document ${docType} with ${result.tasks.length} tasks and ${result.recommendations.length} recommendations`);
+            // Process the document using our existing document parsing engine
+            if (currentUser?.uid) {
+              try {
+                const result = await processDocumentForTaskCreation(currentUser.uid, file);
+                
+                if (result.success) {
+                  console.log(`Processed document ${domain}/${docType} with ${result.tasks.length} tasks and ${result.recommendations.length} recommendations`);
+                }
+              } catch (error) {
+                console.error(`Error processing document ${domain}/${docType}:`, error);
+              }
+              
+              // Update progress
+              processedCount++;
+              setProcessingProgress(30 + Math.floor((processedCount / totalDocuments) * 60));
+            }
           }
         }
       }
-
+      
+      setProcessingProgress(100);
       setDocumentProcessingComplete(true);
 
       toast({
         title: "Success!",
-        description: "Your idea has been submitted and documents have been created.",
+        description: "Your idea has been submitted and documents have been created across all domains.",
       });
 
       // We don't immediately navigate away so the user can see the confirmation
@@ -207,27 +213,26 @@ const SubmitIdea = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
-                    name="domain"
+                    name="primaryDomain"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Domain Category</FormLabel>
+                        <FormLabel>Primary Domain Category</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select domain category" />
+                              <SelectValue placeholder="Select primary domain" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="strategy">Strategy</SelectItem>
                             <SelectItem value="data-engineering">Data Engineering</SelectItem>
                             <SelectItem value="frontend">Frontend</SelectItem>
-                            <SelectItem value="backend">Backend</SelectItem>
-                            <SelectItem value="product">Product</SelectItem>
-                            <SelectItem value="design">Design</SelectItem>
+                            <SelectItem value="product-design">Product & Design</SelectItem>
+                            <SelectItem value="engagement">Engagement</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Choose the primary domain for your project
+                          Choose the primary domain for your project (all domains will be covered)
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -280,10 +285,12 @@ const SubmitIdea = () => {
 
                 <div className="pt-4">
                   <Button type="submit" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? "Submitting..." : "Submit Project Idea"}
+                    {isSubmitting ? 
+                      `Processing... ${processingProgress}%` : 
+                      "Submit Project Idea"}
                   </Button>
                   <FormDescription className="text-center mt-2">
-                    This will create standardized documents and tasks for your project
+                    This will create documents and tasks for all domains of your project
                   </FormDescription>
                 </div>
               </form>
@@ -300,7 +307,7 @@ const SubmitIdea = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Standard Documents:</h3>
+                  <h3 className="text-sm font-medium">Standard Documents (All Domains):</h3>
                   <ul className="space-y-1 text-sm">
                     <li className="flex items-center gap-2 text-muted-foreground">
                       <FileText className="h-4 w-4" />
@@ -322,11 +329,64 @@ const SubmitIdea = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Domain-Specific Documents:</h3>
-                  <div className="text-sm text-muted-foreground">
-                    Domain-specific documents will be generated based on your selected domain.
+                  <h3 className="text-sm font-medium">Domain Documents:</h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium text-primary">Strategy</p>
+                      <ul className="text-muted-foreground">
+                        <li>Market Analysis</li>
+                        <li>Competitive Landscape</li>
+                        <li>Strategic Roadmap</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-primary">Data Engineering</p>
+                      <ul className="text-muted-foreground">
+                        <li>Data Schema</li>
+                        <li>ETL Workflow</li>
+                        <li>Data Governance</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-primary">Frontend</p>
+                      <ul className="text-muted-foreground">
+                        <li>UI Mockups</li>
+                        <li>Component Library</li>
+                        <li>Accessibility Guidelines</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium text-primary">Product & Design</p>
+                      <ul className="text-muted-foreground">
+                        <li>Design System</li>
+                        <li>User Flow</li>
+                        <li>UX Research</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <p className="font-medium text-primary">Engagement</p>
+                      <ul className="text-muted-foreground">
+                        <li>Communication Plan</li>
+                        <li>Stakeholder Matrix</li>
+                        <li>Client Feedback Process</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
+
+                {isSubmitting && !documentProcessingComplete && (
+                  <div className="mt-4 p-3 bg-primary/10 rounded-md border border-primary/20">
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Processing documents...</p>
+                      <div className="h-2 bg-primary/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-300 ease-in-out"
+                          style={{ width: `${processingProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {documentProcessingComplete && (
                   <div className="mt-4 p-3 bg-primary/10 rounded-md border border-primary/20">
@@ -335,7 +395,8 @@ const SubmitIdea = () => {
                       <span className="font-medium">Processing Complete</span>
                     </div>
                     <p className="text-xs mt-1 text-muted-foreground">
-                      {Object.keys(generatedDocuments).length} documents created
+                      {Object.values(generatedDocuments)
+                        .reduce((count, domainDocs) => count + Object.keys(domainDocs).length, 0)} documents created
                       and {generatedTasks.length} tasks generated
                     </p>
                   </div>
