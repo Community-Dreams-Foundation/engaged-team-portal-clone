@@ -1,7 +1,6 @@
-
 import { useState } from "react"
 import { Task } from "@/types/task"
-import { Clock, MoreVertical, Tag, ArrowRightCircle, CheckCircle, Rotate, GitBranch, GitMerge, Link } from "lucide-react"
+import { Clock, MoreVertical, Tag, ArrowRightCircle, CheckCircle, Rotate3D, GitBranch, GitMerge, Link } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -35,7 +34,6 @@ export function TaskCard({
   const [showDetails, setShowDetails] = useState(false)
   const [canStart, setCanStart] = useState(true)
 
-  // Check if task can be started (dependencies completed)
   useState(() => {
     if (task.status === "todo" || task.status === "not-started") {
       canStartTask(task.id).then(result => setCanStart(result))
@@ -125,7 +123,6 @@ export function TaskCard({
         </div>
 
         <div className="flex flex-wrap gap-1 mt-2">
-          {/* Timer info */}
           {task.totalElapsedTime !== undefined && task.totalElapsedTime > 0 && (
             <Badge variant="secondary" className="text-xs">
               <Clock className="h-3 w-3 mr-1" />
@@ -133,7 +130,6 @@ export function TaskCard({
             </Badge>
           )}
           
-          {/* Completion percentage */}
           {task.completionPercentage !== undefined && task.completionPercentage > 0 && (
             <Badge variant="secondary" className="text-xs">
               <CheckCircle className="h-3 w-3 mr-1" />
@@ -141,15 +137,13 @@ export function TaskCard({
             </Badge>
           )}
           
-          {/* Recurring indicator */}
           {task.recurringConfig?.isRecurring && (
             <Badge variant="secondary" className="text-xs text-blue-500 bg-blue-50">
-              <Rotate className="h-3 w-3 mr-1" />
+              <Rotate3D className="h-3 w-3 mr-1" />
               Recurring
             </Badge>
           )}
           
-          {/* Dependency indicator */}
           {task.dependencies && task.dependencies.length > 0 && (
             <Badge variant="secondary" className="text-xs text-gray-500 bg-gray-50">
               <Link className="h-3 w-3 mr-1" />
@@ -157,7 +151,6 @@ export function TaskCard({
             </Badge>
           )}
           
-          {/* Subtasks indicator */}
           {task.metadata?.hasSubtasks && (
             <Badge variant="secondary" className="text-xs text-purple-500 bg-purple-50">
               <GitBranch className="h-3 w-3 mr-1" />
@@ -165,7 +158,6 @@ export function TaskCard({
             </Badge>
           )}
           
-          {/* Parent task indicator */}
           {task.metadata?.parentTaskId && (
             <Badge variant="secondary" className="text-xs text-indigo-500 bg-indigo-50">
               <GitMerge className="h-3 w-3 mr-1" />
@@ -181,7 +173,6 @@ export function TaskCard({
           </div>
         )}
         
-        {/* Tags shown at the bottom */}
         {task.tags && task.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {task.tags.map((tag, index) => (

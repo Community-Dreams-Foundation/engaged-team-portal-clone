@@ -65,14 +65,14 @@ export function TaskDetailDialog({
     if (!currentUser?.uid) return
     
     try {
-      const subtask: Partial<Task> = {
+      const subtask: TaskInput = {
         title: `Subtask of: ${task.title}`,
         description: `This is a subtask of "${task.title}"`,
         status: "todo",
         estimatedDuration: 30,
         actualDuration: 0,
-        priority: task.priority,
-        tags: task.tags,
+        priority: task.priority || "medium",
+        tags: task.tags || [],
         metadata: {
           ...task.metadata,
           parentTaskId: task.id,
