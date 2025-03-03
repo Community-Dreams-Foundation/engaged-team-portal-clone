@@ -4,15 +4,9 @@ import { Task } from "@/types/task"
 import { useToast } from "@/hooks/use-toast"
 import { updateTaskTimer } from "@/utils/tasks/timerOperations"
 import { recordTimerUpdate } from "@/utils/tasks/activityOperations"
-import { useTaskAlerts } from "@/services/monitoringService"
 
 export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, userId?: string) {
   const { toast } = useToast()
-
-  // Use the monitoring service to check for alerts
-  if (userId) {
-    useTaskAlerts(userId, tasks);
-  }
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,8 +16,14 @@ export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetSt
             const elapsedSinceStart = Date.now() - task.startTime
             const totalElapsed = (task.totalElapsedTime || 0) + elapsedSinceStart
             
-            // We don't need to show the toast here anymore as the monitoringService will handle alerts
-            
+            if (totalElapsed > task.estimatedDuration * 60 * 1000) {
+              toast({
+                title: "Task Duration Alert",
+                description: `Task "${task.title}" has exceeded its estimated duration`,
+                variant: "destructive"
+              })
+            }
+
             return {
               ...task,
               totalElapsedTime: totalElapsed
@@ -35,7 +35,7 @@ export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetSt
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [setTasks])
+  }, [toast, setTasks])
 
   const toggleTimer = useCallback(async (taskId: string) => {
     if (!userId) return
@@ -74,21 +74,9 @@ export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetSt
           ...t,
           isTimerRunning,
           startTime,
-          totalElapsedTime,
-          // Update the last activity - this helps with real-time monitoring
-          lastActivity: {
-            type: "timer_update",
-            timestamp: now,
-            details: isTimerRunning ? "Timer started" : "Timer stopped"
-          }
+          totalElapsedTime
         } : t
       ))
-
-      toast({
-        title: isTimerRunning ? "Timer Started" : "Timer Stopped",
-        description: `${task.title} timer has been ${isTimerRunning ? "started" : "stopped"}`,
-        variant: "default",
-      })
 
     } catch (error) {
       console.error("Error updating timer:", error)
