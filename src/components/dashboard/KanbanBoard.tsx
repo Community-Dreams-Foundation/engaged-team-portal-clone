@@ -16,7 +16,9 @@ import { TaskFiltersState } from "@/components/tasks/TaskFilters"
 import { isAfter, isBefore, isWithinInterval, addDays, addWeeks, addMonths } from "date-fns"
 import { BatchActions } from "@/components/tasks/BatchActions"
 import { Button } from "@/components/ui/button"
-import { Check, Clipboard, CheckSquare } from "lucide-react"
+import { Check, Clipboard, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface KanbanBoardProps {
   filters?: TaskFiltersState;
@@ -32,6 +34,8 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
     const [loading, setLoading] = useState(true)
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
     const [selectMode, setSelectMode] = useState(false)
+    const [activeColumn, setActiveColumn] = useState<TaskStatus>("todo")
+    const isMobile = useIsMobile()
 
     const { toggleTimer } = useTaskTimer(filteredTasks, setFilteredTasks, currentUser?.uid)
     const { handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(filteredTasks, setFilteredTasks, currentUser?.uid)
@@ -275,6 +279,19 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       )
     }
 
+    // Mobile column navigation
+    const handleNextColumn = () => {
+      const currentIndex = columns.findIndex(col => col.status === activeColumn);
+      const nextIndex = (currentIndex + 1) % columns.length;
+      setActiveColumn(columns[nextIndex].status);
+    };
+
+    const handlePrevColumn = () => {
+      const currentIndex = columns.findIndex(col => col.status === activeColumn);
+      const prevIndex = currentIndex === 0 ? columns.length - 1 : currentIndex - 1;
+      setActiveColumn(columns[prevIndex].status);
+    };
+
     return (
       <div className="space-y-6">
         <TaskAnalytics tasks={filteredTasks} />
@@ -301,25 +318,95 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {columns.map(column => (
-            <TaskColumn
-              key={column.status}
-              title={column.title}
-              status={column.status}
-              tasks={filteredTasks}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragStart={handleDragStart}
-              onTimerToggle={toggleTimer}
-              formatDuration={formatDuration}
-              canStartTask={canStartTask}
-              onTaskUpdated={handleTaskUpdated}
-              selectedTasks={selectMode ? selectedTaskIds : []}
-              onTaskSelect={selectMode ? handleSelectTask : undefined}
-            />
-          ))}
-        </div>
+        {isMobile ? (
+          <div className="space-y-4">
+            {/* Mobile tab selector for columns */}
+            <Tabs value={activeColumn} onValueChange={(val) => setActiveColumn(val as TaskStatus)}>
+              <TabsList className="w-full">
+                {columns.map(column => (
+                  <TabsTrigger 
+                    key={column.status} 
+                    value={column.status}
+                    className="flex-1"
+                  >
+                    {column.title}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+            
+            {/* Mobile column switcher with arrows */}
+            <div className="flex items-center justify-between mb-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePrevColumn}
+                className="flex items-center"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> 
+                Prev
+              </Button>
+              
+              <h3 className="font-medium">
+                {columns.find(col => col.status === activeColumn)?.title}
+              </h3>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleNextColumn}
+                className="flex items-center"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+            
+            {/* Mobile single column view */}
+            <div>
+              {columns
+                .filter(column => column.status === activeColumn)
+                .map(column => (
+                  <TaskColumn
+                    key={column.status}
+                    title={column.title}
+                    status={column.status}
+                    tasks={filteredTasks}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragStart={handleDragStart}
+                    onTimerToggle={toggleTimer}
+                    formatDuration={formatDuration}
+                    canStartTask={canStartTask}
+                    onTaskUpdated={handleTaskUpdated}
+                    selectedTasks={selectMode ? selectedTaskIds : []}
+                    onTaskSelect={selectMode ? handleSelectTask : undefined}
+                  />
+                ))
+              }
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {columns.map(column => (
+              <TaskColumn
+                key={column.status}
+                title={column.title}
+                status={column.status}
+                tasks={filteredTasks}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragStart={handleDragStart}
+                onTimerToggle={toggleTimer}
+                formatDuration={formatDuration}
+                canStartTask={canStartTask}
+                onTaskUpdated={handleTaskUpdated}
+                selectedTasks={selectMode ? selectedTaskIds : []}
+                onTaskSelect={selectMode ? handleSelectTask : undefined}
+              />
+            ))}
+          </div>
+        )}
         
         {selectedTaskIds.length > 0 && (
           <BatchActions

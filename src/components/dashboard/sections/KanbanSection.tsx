@@ -12,6 +12,8 @@ import { Task } from "@/types/task"
 import { TaskFilters, TaskFiltersState } from "@/components/tasks/TaskFilters"
 import { useAuth } from "@/contexts/AuthContext"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
+import { TaskPrioritizationMatrix } from "@/components/tasks/prioritization/TaskPrioritizationMatrix"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function KanbanSection() {
   const [showCreateTask, setShowCreateTask] = useState(false)
@@ -19,9 +21,11 @@ export function KanbanSection() {
   const [showFilters, setShowFilters] = useState(false)
   const [showTemplates, setShowTemplates] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const kanbanBoardRef = useRef<any>(null)
   const { createTaskRecommendation } = useCosRecommendations()
   const { currentUser } = useAuth()
+  const isMobile = useIsMobile()
   
   const [filters, setFilters] = useState<TaskFiltersState>({
     searchQuery: "",
@@ -32,6 +36,22 @@ export function KanbanSection() {
     priorities: [],
     tags: [],
   })
+  
+  // Load tasks
+  useEffect(() => {
+    if (!currentUser?.uid) return
+    
+    const loadTasks = async () => {
+      try {
+        const fetchedTasks = await fetchTasks(currentUser.uid)
+        setTasks(fetchedTasks)
+      } catch (error) {
+        console.error("Error fetching tasks:", error)
+      }
+    }
+    
+    loadTasks()
+  }, [currentUser?.uid])
   
   // Load all tags for filter dropdown
   useEffect(() => {
@@ -107,12 +127,12 @@ export function KanbanSection() {
     <div className="col-span-full">
       <Card className="overflow-hidden border-none shadow-md">
         <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-xl font-semibold flex items-center">
               <Kanban className="mr-2 h-5 w-5 text-primary" />
               Task Management Board
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button 
                 variant={showFilters ? "default" : "outline"} 
                 size="sm" 
@@ -165,7 +185,21 @@ export function KanbanSection() {
             </div>
           )}
         </CardHeader>
+        
         <CardContent className="p-4">
+          {/* Task Prioritization Matrix */}
+          <div className="mb-6">
+            <TaskPrioritizationMatrix 
+              tasks={tasks} 
+              onTaskUpdated={() => {
+                if (kanbanBoardRef.current && kanbanBoardRef.current.loadTasks) {
+                  kanbanBoardRef.current.loadTasks()
+                }
+              }}
+            />
+          </div>
+          
+          {/* Kanban Board */}
           <KanbanBoard 
             ref={kanbanBoardRef} 
             filters={filters}
