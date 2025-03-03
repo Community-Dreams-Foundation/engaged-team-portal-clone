@@ -160,13 +160,13 @@ export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: 
       high: "text-red-500 border-red-500",
       medium: "text-yellow-500 border-yellow-500",
       low: "text-green-500 border-green-500"
-    }
+    };
     return priority ? (
       <Badge variant="outline" className={colors[priority.toLowerCase()]}>
         {priority}
       </Badge>
-    ) : null
-  }
+    ) : null;
+  };
 
   const shouldRecommendSplit = task.status === "in-progress" && 
     task.totalElapsedTime && task.estimatedDuration &&
@@ -193,7 +193,7 @@ export function TaskCard({ task, onTimerToggle, formatDuration, canStartTask }: 
               >
                 {task.title}
               </h4>
-              <p className="text-sm text-muted-foreground">{task.description}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>
               
               <div className="flex flex-wrap gap-2 mt-2">
                 {getPriorityBadge(task.priority)}

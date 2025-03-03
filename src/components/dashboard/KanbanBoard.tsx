@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, forwardRef, useImperativeHandle } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus } from "@/types/task"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
@@ -13,7 +13,8 @@ import { TaskAnalytics } from "./monitoring/TaskAnalytics"
 import { useTaskTimer } from "@/hooks/useTaskTimer"
 import { useTaskDragDrop } from "@/hooks/useTaskDragDrop"
 
-export function KanbanBoard() {
+// Extending the component to support ref
+export const KanbanBoard = forwardRef((props, ref) => {
   const { currentUser } = useAuth()
   const { toast } = useToast()
   const [tasks, setTasks] = useState<Task[]>([])
@@ -22,28 +23,33 @@ export function KanbanBoard() {
   const { toggleTimer } = useTaskTimer(tasks, setTasks, currentUser?.uid)
   const { handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(tasks, setTasks, currentUser?.uid)
 
-  useEffect(() => {
-    const loadTasks = async () => {
-      if (!currentUser?.uid) return
-      
-      try {
-        setLoading(true)
-        const fetchedTasks = await fetchTasks(currentUser.uid)
-        setTasks(fetchedTasks)
-      } catch (error) {
-        console.error("Error fetching tasks:", error)
-        toast({
-          variant: "destructive",
-          title: "Error loading tasks",
-          description: "Failed to load your tasks. Please refresh the page."
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
+  const loadTasks = useCallback(async () => {
+    if (!currentUser?.uid) return
     
-    loadTasks()
+    try {
+      setLoading(true)
+      const fetchedTasks = await fetchTasks(currentUser.uid)
+      setTasks(fetchedTasks)
+    } catch (error) {
+      console.error("Error fetching tasks:", error)
+      toast({
+        variant: "destructive",
+        title: "Error loading tasks",
+        description: "Failed to load your tasks. Please refresh the page."
+      })
+    } finally {
+      setLoading(false)
+    }
   }, [currentUser?.uid, toast])
+
+  // Expose loadTasks method via ref
+  useImperativeHandle(ref, () => ({
+    loadTasks
+  }))
+
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
 
   const formatDuration = useCallback((milliseconds: number) => {
     const minutes = Math.floor(milliseconds / (1000 * 60))
@@ -102,4 +108,6 @@ export function KanbanBoard() {
       </div>
     </div>
   )
-}
+})
+
+KanbanBoard.displayName = "KanbanBoard"

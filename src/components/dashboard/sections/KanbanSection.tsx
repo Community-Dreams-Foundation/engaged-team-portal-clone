@@ -1,10 +1,29 @@
 
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
 import { ChevronRight, Kanban, Filter, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
+import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
 
 export function KanbanSection() {
+  const [showCreateTask, setShowCreateTask] = useState(false)
+  const [showAllTasks, setShowAllTasks] = useState(false)
+  const kanbanBoardRef = useRef<any>(null)
+  
+  const handleTaskCreated = () => {
+    // Force reload tasks in KanbanBoard
+    if (kanbanBoardRef.current && kanbanBoardRef.current.loadTasks) {
+      kanbanBoardRef.current.loadTasks()
+    }
+    // Reopen if needed
+    setShowAllTasks(prev => {
+      if (prev) return true // Keep open if it was already open
+      return false
+    })
+  }
+  
   return (
     <div className="col-span-full">
       <Card className="overflow-hidden border-none shadow-md">
@@ -19,11 +38,21 @@ export function KanbanSection() {
                 <Filter className="h-4 w-4" />
                 Filter
               </Button>
-              <Button variant="default" size="sm" className="text-sm gap-1">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="text-sm gap-1"
+                onClick={() => setShowCreateTask(true)}
+              >
                 <Plus className="h-4 w-4" />
                 Add Task
               </Button>
-              <Button variant="ghost" size="sm" className="text-sm text-primary hover:underline flex items-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-sm text-primary hover:underline flex items-center"
+                onClick={() => setShowAllTasks(true)}
+              >
                 View All <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -33,9 +62,22 @@ export function KanbanSection() {
           </p>
         </CardHeader>
         <CardContent className="p-4">
-          <KanbanBoard />
+          <KanbanBoard ref={kanbanBoardRef} />
         </CardContent>
       </Card>
+      
+      {/* Create Task Dialog */}
+      <CreateTaskDialog 
+        open={showCreateTask} 
+        onOpenChange={setShowCreateTask} 
+        onTaskCreated={handleTaskCreated}
+      />
+      
+      {/* View All Tasks Dialog */}
+      <ViewAllTasksDialog
+        open={showAllTasks}
+        onOpenChange={setShowAllTasks}
+      />
     </div>
   );
 }
