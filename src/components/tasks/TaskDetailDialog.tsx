@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import {
   Dialog,
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { 
   Calendar, Clock, Tag, AlertCircle, CheckCircle, 
   MessageSquare, RotateCw, Calendar as CalendarIcon,
-  GitBranch, GitMerge, Link, Plus
+  GitBranch, GitMerge, Link, Plus, Bell
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskCommentSection } from "./TaskCommentSection"
@@ -22,7 +21,7 @@ import { format } from "date-fns"
 import { DependencyVisualization } from "./DependencyVisualization"
 import { useAuth } from "@/contexts/AuthContext"
 import { fetchTasks, createTask } from "@/utils/tasks/basicOperations"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 interface TaskDetailDialogProps {
   task: Task
@@ -42,7 +41,6 @@ export function TaskDetailDialog({
   const { currentUser } = useAuth()
   const { toast } = useToast()
   
-  // Fetch all tasks when dependency tab is activated
   const handleTabChange = async (value: string) => {
     setActiveTab(value)
     
@@ -81,11 +79,8 @@ export function TaskDetailDialog({
         }
       }
       
-      // Create the subtask
       const newSubtaskId = await createTask(currentUser.uid, subtask)
       
-      // Update parent task's subtaskIds if needed
-      // Note: This would typically be handled by a backend function
       toast({
         title: "Subtask created",
         description: "Subtask has been created successfully."
@@ -214,6 +209,10 @@ export function TaskDetailDialog({
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
             <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+            <TabsTrigger value="reminders">
+              <Bell className="h-4 w-4 mr-1" />
+              Reminders
+            </TabsTrigger>
             <TabsTrigger value="comments">
               Comments
               {task.comments && task.comments.length > 0 && (
@@ -444,6 +443,82 @@ export function TaskDetailDialog({
                 <p>Subtasks are smaller, more manageable pieces of this task.</p>
                 <p>Managing tasks in hierarchies helps with organization and tracking progress.</p>
               </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="reminders" className="flex-1 overflow-auto p-4">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Task Reminders</h3>
+                <div>
+                  {task.dueDate ? (
+                    <Badge variant="outline" className={`${
+                      new Date(task.dueDate) < new Date() 
+                        ? "border-red-500 text-red-500" 
+                        : "border-green-500 text-green-500"
+                    }`}>
+                      Due: {format(new Date(task.dueDate), "PPP")}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">No due date set</Badge>
+                  )}
+                </div>
+              </div>
+              
+              {!task.dueDate ? (
+                <div className="text-center p-6 border border-dashed rounded-lg">
+                  <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <h4 className="font-medium mb-1">No Due Date Set</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Set a due date for this task to enable reminders
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-md p-4 space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Upcoming Reminders</h4>
+                    <div className="space-y-2">
+                      {task.metadata?.remindedAt ? (
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Reminder already sent</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Bell className="h-4 w-4 text-blue-500" />
+                            <span>
+                              You will be reminded according to your notification preferences
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Adjust your reminder settings in your profile to customize when you receive notifications
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">Task Status</h4>
+                    {new Date(task.dueDate) < new Date() ? (
+                      <div className="p-2 bg-red-50 border border-red-200 rounded flex items-center gap-2 text-red-700">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>This task is overdue!</span>
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-green-50 border border-green-200 rounded flex items-center gap-2 text-green-700">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {Math.ceil((new Date(task.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days remaining
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
           

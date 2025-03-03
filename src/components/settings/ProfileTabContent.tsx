@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import TaskReminderSettings from "@/components/tasks/reminders/TaskReminderSettings";
 
 interface ProfileData {
   displayName: string;
@@ -66,7 +66,6 @@ interface ProfileTabContentProps {
   isLoading?: boolean;
 }
 
-// Profile validation schema
 const profileSchema = z.object({
   displayName: z.string().min(2, "Display name must be at least 2 characters"),
   bio: z.string().max(500, "Bio must be less than 500 characters"),
@@ -78,7 +77,6 @@ const profileSchema = z.object({
   timezone: z.string(),
 });
 
-// List of common languages
 const languages = [
   { value: "en-US", label: "English (US)" },
   { value: "en-GB", label: "English (UK)" },
@@ -92,7 +90,6 @@ const languages = [
   { value: "ru", label: "Russian" },
 ];
 
-// List of common timezones
 const timezones = [
   { value: "America/New_York", label: "Eastern Time (ET)" },
   { value: "America/Chicago", label: "Central Time (CT)" },
@@ -108,16 +105,13 @@ const timezones = [
   { value: "Asia/Kolkata", label: "India Standard Time (IST)" },
 ];
 
-// Function to calculate profile completion percentage
 const calculateProfileCompletion = (profileData: ProfileData): number => {
   let completedFields = 0;
   let totalFields = 0;
 
-  // Count required fields
   if (profileData.displayName) completedFields++;
   totalFields++;
 
-  // Count optional fields
   if (profileData.bio) completedFields++;
   if (profileData.company) completedFields++;
   if (profileData.jobTitle) completedFields++;
@@ -128,7 +122,7 @@ const calculateProfileCompletion = (profileData: ProfileData): number => {
   if (profileData.language) completedFields++;
   if (profileData.timezone) completedFields++;
   
-  totalFields += 9; // Add the number of optional fields we're checking
+  totalFields += 9;
 
   return Math.round((completedFields / totalFields) * 100);
 };
@@ -163,13 +157,11 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
 
   const [completionPercentage, setCompletionPercentage] = useState(0);
   
-  // Calculate profile completion percentage when profileData changes
   useEffect(() => {
     setCompletionPercentage(calculateProfileCompletion(profileData));
   }, [profileData]);
 
   const handleSaveProfile = async (values: any) => {
-    // This would be an API call in a real application
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         setProfileData({
@@ -200,7 +192,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
       description: `Theme has been switched to ${profileData.darkMode ? 'light' : 'dark'} mode.`,
       variant: "success"
     });
-    // Here you would also update the actual theme in the application
   };
 
   const toggleHighContrast = () => {
@@ -301,7 +292,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
         </div>
       </SettingsCard>
 
-      {/* Profile Completion Card */}
       <SettingsCard
         title="Profile Completion"
         description="Complete your profile to get the most out of your experience"
@@ -601,7 +591,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
                       </p>
                     </div>
 
-                    {/* Language & Timezone Section */}
                     <div className="grid md:grid-cols-2 gap-6 mt-6">
                       <div>
                         <Label htmlFor="language">Preferred Language</Label>
@@ -875,7 +864,6 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
           </div>
         </SettingsCard>
 
-        {/* Accessibility Options Card */}
         <SettingsCard
           title="Accessibility & Preferences"
           description="Customize your experience with these accessibility options"
@@ -975,3 +963,5 @@ export const ProfileTabContent: React.FC<ProfileTabContentProps> = ({
     </div>
   );
 };
+
+export default ProfileTabContent;

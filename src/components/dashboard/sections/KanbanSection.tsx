@@ -2,10 +2,11 @@
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
-import { ChevronRight, Kanban, Filter, Plus, Search, RotateCw } from "lucide-react"
+import { ChevronRight, Kanban, Filter, Plus, Search, RotateCw, Template } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CreateTaskDialog from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
+import TaskTemplateDialog from "@/components/tasks/templates/TaskTemplateDialog"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 import { Task } from "@/types/task"
 import { TaskFilters, TaskFiltersState } from "@/components/tasks/TaskFilters"
@@ -16,6 +17,7 @@ export function KanbanSection() {
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showAllTasks, setShowAllTasks] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [showTemplates, setShowTemplates] = useState(false)
   const [allTags, setAllTags] = useState<string[]>([])
   const kanbanBoardRef = useRef<any>(null)
   const { createTaskRecommendation } = useCosRecommendations()
@@ -121,6 +123,15 @@ export function KanbanSection() {
                 {showFilters ? "Hide Filters" : "Show Filters"}
               </Button>
               <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-sm gap-1"
+                onClick={() => setShowTemplates(true)}
+              >
+                <Template className="h-4 w-4" />
+                Templates
+              </Button>
+              <Button 
                 variant="default" 
                 size="sm" 
                 className="text-sm gap-1"
@@ -174,6 +185,13 @@ export function KanbanSection() {
       <ViewAllTasksDialog
         open={showAllTasks}
         onOpenChange={setShowAllTasks}
+      />
+      
+      {/* Task Templates Dialog */}
+      <TaskTemplateDialog
+        open={showTemplates}
+        onOpenChange={setShowTemplates}
+        onTaskCreated={handleTaskCreated}
       />
     </div>
   );
