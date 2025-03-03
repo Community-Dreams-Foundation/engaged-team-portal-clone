@@ -54,12 +54,14 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
       } else {
         console.log('Calling signup function...');
         await signup(email, password)
-        console.log('Signup successful, navigating to intake form');
+        console.log('Signup successful, displaying verification message');
         toast({
           title: "Welcome to DreamStream!",
-          description: "Your account has been created successfully. Please complete your profile."
+          description: "Please check your email to verify your account before logging in."
         })
-        navigate("/intake")
+        // Don't navigate anywhere after signup - remain on the login page
+        // Just switch to login mode so they can log in after verification
+        setIsLogin(true)
       }
     } catch (error: any) {
       console.error('Auth error:', error)
@@ -119,11 +121,7 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
       console.log('Starting Google sign-in process');
       await signInWithGoogle();
       console.log('Google sign-in successful');
-      toast({
-        title: "Welcome!",
-        description: "Successfully signed in with Google"
-      });
-      navigate("/dashboard");
+      // Toast notification is now handled in the context based on isNewUser state
     } catch (error: any) {
       console.error('Google auth error:', error);
       
