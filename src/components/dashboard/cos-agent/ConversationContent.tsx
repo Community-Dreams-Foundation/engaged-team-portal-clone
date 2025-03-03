@@ -1,15 +1,31 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Bot, Folder, PlusCircle, Layers, PanelRight, Lightbulb } from "lucide-react";
+import { 
+  Bot, 
+  Folder, 
+  PlusCircle, 
+  Layers, 
+  PanelRight, 
+  Lightbulb, 
+  Mic, 
+  FileImage,
+  Paperclip,
+  Image as ImageIcon,
+  X,
+  Send,
+  Loader2
+} from "lucide-react";
 import { ConversationThread, ThreadMessage } from "@/types/conversation";
 import { Task } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDatabase, ref, get } from "firebase/database";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConversationContentProps {
   activeThread: ConversationThread | undefined;
@@ -29,7 +45,18 @@ export function ConversationContent({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentUser } = useAuth();
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeThread?.messages]);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -72,8 +99,100 @@ export function ConversationContent({
       return false;
     }).slice(0, 3);
   };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setAttachment(file);
+    
+    // Create preview if it's an image
+    if (file.type.includes("image")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAttachmentPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setAttachmentPreview(null);
+    }
+    
+    // Update message with attachment note
+    setNewMessage(newMessage + 
+      (newMessage ? "\n\n" : "") + 
+      `I'm sending you a ${file.type.includes("image") ? "image" : "file"}: ${file.name}`);
+  };
+  
+  const removeAttachment = () => {
+    setAttachment(null);
+    setAttachmentPreview(null);
+  };
+  
+  const toggleVoiceRecording = () => {
+    setIsRecording(!isRecording);
+    
+    if (!isRecording) {
+      // Mock voice recording
+      toast({
+        title: "Voice Recording Active",
+        description: "Speak clearly and I'll transcribe your message.",
+      });
+      
+      // Simulate recording for 3 seconds then add transcribed text
+      setTimeout(() => {
+        setIsRecording(false);
+        setNewMessage(prev => 
+          prev + (prev ? " " : "") + "This is a simulated voice transcription added to your message."
+        );
+        
+        toast({
+          title: "Voice Recording Complete",
+          description: "Your message has been transcribed.",
+        });
+      }, 3000);
+    }
+  };
 
   const taskSuggestions = getTaskSuggestions();
+
+  // Render rich media content in messages (like images, charts, etc.)
+  const renderMessageContent = (message: ThreadMessage) => {
+    // Check if message contains special content markers
+    if (message.content.includes("![IMAGE]")) {
+      // Extract image URL if present (in a real implementation)
+      const placeholderImage = "https://images.unsplash.com/photo-1461749280684-dccba630e2f6";
+      
+      return (
+        <div className="space-y-2">
+          <p>{message.content.replace("![IMAGE]", "")}</p>
+          <div className="rounded-md overflow-hidden border">
+            <img 
+              src={placeholderImage} 
+              alt="Attachment" 
+              className="max-h-60 object-contain"
+            />
+          </div>
+        </div>
+      );
+    }
+    
+    // Check for task visualization
+    if (message.content.includes("![CHART]")) {
+      return (
+        <div className="space-y-2">
+          <p>{message.content.replace("![CHART]", "")}</p>
+          <div className="bg-muted/30 p-4 rounded-md">
+            <div className="h-40 flex items-center justify-center">
+              <p className="text-muted-foreground">Task completion chart would appear here</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Regular text message
+    return <p>{message.content}</p>;
+  };
 
   if (!activeThread) {
     return (
@@ -158,13 +277,14 @@ export function ConversationContent({
                       : "bg-muted"
                   }`}
                 >
-                  <p>{message.content}</p>
+                  {renderMessageContent(message)}
                   <span className="text-xs opacity-70 mt-1 inline-block">
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
         
@@ -275,19 +395,74 @@ export function ConversationContent({
       </div>
       
       <div className="p-4 border-t">
+        {attachment && (
+          <div className="mb-2 p-2 border rounded-md flex items-center justify-between">
+            <div className="flex items-center">
+              {attachmentPreview ? (
+                <div className="w-10 h-10 mr-2 flex-shrink-0 overflow-hidden rounded">
+                  <img 
+                    src={attachmentPreview} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover" 
+                  />
+                </div>
+              ) : (
+                <FileImage className="w-5 h-5 mr-2 text-muted-foreground" />
+              )}
+              <span className="text-sm truncate max-w-[200px]">{attachment.name}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={removeAttachment}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             sendMessage();
+            // Clear attachment after sending
+            setAttachment(null);
+            setAttachmentPreview(null);
           }}
-          className="flex gap-2"
+          className="flex items-center gap-2"
         >
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileChange}
+            accept="image/*,.pdf,.doc,.docx,.txt"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={isRecording ? "text-red-500 animate-pulse" : ""}
+            onClick={toggleVoiceRecording}
+          >
+            <Mic className="h-5 w-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-5 w-5" />
+          </Button>
           <Input
             placeholder="Type your message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
+            className="flex-1"
           />
-          <Button type="submit" disabled={!newMessage.trim()}>
+          <Button type="submit" disabled={!newMessage.trim() && !attachment}>
+            <Send className="h-4 w-4 mr-2" />
             Send
           </Button>
         </form>

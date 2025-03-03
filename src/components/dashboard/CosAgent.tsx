@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Bot, Brain, Users, Target } from "lucide-react"
+import { Bot, Brain, Users, Target, Mic, FileImage, FilePlus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Agent } from "@/types/task"
@@ -15,6 +14,9 @@ import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 import { useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { MultiModalInput } from "./cos-agent/MultiModalInput"
 
 export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
@@ -27,6 +29,9 @@ export function CosAgent() {
   } = useCosRecommendations()
   const navigate = useNavigate()
   const [deploymentTarget, setDeploymentTarget] = useState<string | null>(null)
+  const [isRecording, setIsRecording] = useState(false)
+  const [showMultiModal, setShowMultiModal] = useState(false)
+
   const [metrics] = useState<PerformanceMetrics>({
     taskCompletionRate: 0.85,
     avgTaskTime: 45,
@@ -108,6 +113,25 @@ export function CosAgent() {
     handleAction(recId, actionType)
   }
 
+  const toggleVoiceRecording = () => {
+    setIsRecording(prev => !prev)
+    if (!isRecording) {
+      console.log("Starting voice recording...")
+      setTimeout(() => {
+        setIsRecording(false)
+        const mockRecommendation = {
+          id: `voice-rec-${Date.now()}`,
+          type: "task",
+          content: "I detected you mentioned creating a presentation. Would you like to create a task for this?",
+          timestamp: Date.now(),
+          priority: "medium" as const,
+          impact: 70
+        }
+        setRecommendations(prev => [mockRecommendation, ...prev])
+      }, 3000)
+    }
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -115,9 +139,31 @@ export function CosAgent() {
           <Bot className="h-5 w-5 text-primary" />
           <h3 className="font-semibold">CoS Agent</h3>
         </div>
-        <Badge variant="secondary" className="animate-pulse">
-          Active
-        </Badge>
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className={isRecording ? "animate-pulse bg-red-100" : ""}
+            onClick={toggleVoiceRecording}
+          >
+            <Mic className={`h-4 w-4 ${isRecording ? "text-red-500" : ""} mr-2`} />
+            {isRecording ? "Listening..." : "Voice Input"}
+          </Button>
+          <Popover open={showMultiModal} onOpenChange={setShowMultiModal}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <FileImage className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <MultiModalInput onClose={() => setShowMultiModal(false)} />
+            </PopoverContent>
+          </Popover>
+          <Badge variant="secondary" className="animate-pulse">
+            Active
+          </Badge>
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">

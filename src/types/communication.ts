@@ -1,4 +1,6 @@
 
+import { ThreadMessage } from "./conversation";
+
 export interface MessageFormat {
   bold?: boolean;
   italic?: boolean;
@@ -20,11 +22,20 @@ export interface Message {
   tags?: string[];
   mentionedUsers?: string[];
   attachments?: {
-    type: 'image' | 'link' | 'file';
+    type: 'image' | 'link' | 'file' | 'chart' | 'audio';
     url: string;
     name: string;
+    previewUrl?: string;
+    mimeType?: string;
+    size?: number;
+    durationInSeconds?: number;
   }[];
   groupId?: string;
+  voiceTranscription?: {
+    text: string;
+    confidence: number;
+    languageCode: string;
+  };
 }
 
 export interface Thread {
@@ -72,4 +83,21 @@ export interface Group {
   moderatorIds: string[];
   isPrivate: boolean;
   tags?: string[];
+}
+
+export interface VoiceTranscription {
+  text: string;
+  confidence: number;
+  languageCode: string;
+  durationInSeconds: number;
+}
+
+export interface MediaAnalysisResult {
+  type: 'image' | 'document' | 'audio';
+  content: string;
+  detectedObjects?: string[];
+  detectedText?: string;
+  summary?: string;
+  suggestedTasks?: string[];
+  confidence: number;
 }
