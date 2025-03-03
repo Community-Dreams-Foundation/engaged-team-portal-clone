@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
@@ -11,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,7 +27,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 interface CreateTaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onTaskCreated?: () => void
+  onTaskCreated?: (taskId?: string, title?: string) => void
 }
 
 export function CreateTaskDialog({ open, onOpenChange, onTaskCreated }: CreateTaskDialogProps) {
@@ -93,7 +91,7 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated }: CreateTa
         }
       }
       
-      await createTask(currentUser.uid, taskInput)
+      const taskId = await createTask(currentUser.uid, taskInput)
       
       toast({
         title: "Task Created",
@@ -102,7 +100,7 @@ export function CreateTaskDialog({ open, onOpenChange, onTaskCreated }: CreateTa
       
       resetForm()
       onOpenChange(false)
-      if (onTaskCreated) onTaskCreated()
+      if (onTaskCreated) onTaskCreated(taskId, title)
       
     } catch (error) {
       console.error("Error creating task:", error)

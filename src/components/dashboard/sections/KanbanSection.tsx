@@ -6,17 +6,30 @@ import { ChevronRight, Kanban, Filter, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
+import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 
 export function KanbanSection() {
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showAllTasks, setShowAllTasks] = useState(false)
   const kanbanBoardRef = useRef<any>(null)
+  const { createTaskRecommendation } = useCosRecommendations()
   
-  const handleTaskCreated = () => {
+  const handleTaskCreated = (taskId?: string, title?: string) => {
     // Force reload tasks in KanbanBoard
     if (kanbanBoardRef.current && kanbanBoardRef.current.loadTasks) {
       kanbanBoardRef.current.loadTasks()
     }
+    
+    // Generate a recommendation if we have task info
+    if (taskId && title) {
+      createTaskRecommendation(
+        taskId,
+        title,
+        `Consider breaking down "${title}" into smaller subtasks for better management and tracking.`,
+        "medium"
+      )
+    }
+    
     // Reopen if needed
     setShowAllTasks(prev => {
       if (prev) return true // Keep open if it was already open

@@ -1,4 +1,3 @@
-
 export type TaskStatus = "todo" | "not-started" | "in-progress" | "completed" | "blocked"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
@@ -12,13 +11,22 @@ export interface Activity {
 
 export interface CoSRecommendation {
   id: string
-  type: "task" | "time" | "leadership" | "agent"
+  type: "task" | "time" | "leadership" | "agent" | "learning" | "efficiency"
   content: string
   timestamp: number
   feedback?: "positive" | "negative"
   priority?: "low" | "medium" | "high"
   impact?: number // 0-100 score for recommendation impact
   actualDuration?: number // in minutes
+  actedUpon?: boolean // whether the user has acted on this recommendation
+  appliedAt?: number // timestamp when recommendation was applied
+  metadata?: {
+    taskId?: string
+    taskTitle?: string
+    moduleId?: number
+    resourceUrl?: string
+    [key: string]: any
+  }
 }
 
 export interface Task {

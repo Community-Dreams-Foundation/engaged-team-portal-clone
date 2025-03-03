@@ -14,11 +14,18 @@ import { CreateAgentDialog } from "./cos-agent/CreateAgentDialog"
 import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { useNavigate } from "react-router-dom"
 
 export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
   const { preferences, agents: fetchedAgents } = useCosData()
-  const { recommendations, setRecommendations, handleFeedback } = useCosRecommendations()
+  const { 
+    recommendations, 
+    setRecommendations, 
+    handleFeedback, 
+    handleAction 
+  } = useCosRecommendations()
+  const navigate = useNavigate()
   const [deploymentTarget, setDeploymentTarget] = useState<string | null>(null)
   const [metrics] = useState<PerformanceMetrics>({
     taskCompletionRate: 0.85,
@@ -97,6 +104,10 @@ export function CosAgent() {
     setDeploymentTarget(null)
   }
 
+  const handleRecommendationAction = (recId: string, actionType: string) => {
+    handleAction(recId, actionType)
+  }
+
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -132,9 +143,11 @@ export function CosAgent() {
         <TabsContent value="overview" className="space-y-4">
           {preferences && <AgentPreferences preferences={preferences} />}
           <AgentMetrics metrics={metrics} />
+          <h4 className="text-sm font-medium mb-3">Personalized Recommendations</h4>
           <Recommendations 
             recommendations={recommendations}
             onFeedback={handleFeedback}
+            onAction={handleRecommendationAction}
           />
         </TabsContent>
 
