@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -26,21 +25,34 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 
 interface CreateTaskDialogProps {
+  open?: boolean;
+  onOpenChange: (open: boolean) => void;
   onTaskCreated: (task: Partial<Task>) => void;
   onRecommendationsGenerated?: (recommendations: CoSRecommendation[]) => void;
 }
 
 const CreateTaskDialog = ({ 
+  open,
+  onOpenChange,
   onTaskCreated,
   onRecommendationsGenerated 
 }: CreateTaskDialogProps) => {
   const { currentUser } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [estimatedDuration, setEstimatedDuration] = useState(60);
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [extractedTasks, setExtractedTasks] = useState<Partial<Task>[]>([]);
+
+  const dialogOpen = open !== undefined ? open : internalOpen;
+  const setDialogOpen = (value: boolean) => {
+    if (open !== undefined) {
+      onOpenChange(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +77,7 @@ const CreateTaskDialog = ({
 
     onTaskCreated(newTask);
     resetForm();
-    setOpen(false);
+    setDialogOpen(false);
   };
 
   const handleTasksExtracted = (tasks: Partial<Task>[]) => {
@@ -81,7 +93,6 @@ const CreateTaskDialog = ({
   const handleCreateExtractedTask = (task: Partial<Task>) => {
     onTaskCreated(task);
     
-    // Remove from list
     setExtractedTasks(extractedTasks.filter(t => t.title !== task.title));
     
     toast({
@@ -99,7 +110,7 @@ const CreateTaskDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
         <Button className="flex items-center gap-1">
           <Plus className="h-4 w-4" />
@@ -178,7 +189,7 @@ const CreateTaskDialog = ({
                   variant="outline"
                   onClick={() => {
                     resetForm();
-                    setOpen(false);
+                    setDialogOpen(false);
                   }}
                 >
                   Cancel
@@ -224,7 +235,7 @@ const CreateTaskDialog = ({
                   variant="outline"
                   onClick={() => {
                     resetForm();
-                    setOpen(false);
+                    setDialogOpen(false);
                   }}
                 >
                   Close
