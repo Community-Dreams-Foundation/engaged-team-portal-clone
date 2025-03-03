@@ -36,7 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { 
   DomainCategory, 
   generateFullProjectDocumentation 
-} from "@/utils/documentGenerator";
+} from "@/utils/documents";
 import { processDocumentForTaskCreation } from "@/services/recommendationService";
 
 const formSchema = z.object({
