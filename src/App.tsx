@@ -1,4 +1,3 @@
-
 import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom"
 import { AuthProvider } from "./contexts/AuthContext"
@@ -31,6 +30,7 @@ const CommunityPage = lazy(() => import("./pages/CommunityPage"))
 const PortfolioPage = lazy(() => import("./pages/PortfolioPage"))
 const CosAgentPage = lazy(() => import("./pages/CosAgentPage"))
 const SupportPage = lazy(() => import("./pages/SupportPage"))
+const MonitoringSection = lazy(() => import("./pages/MonitoringSection"))
 
 import "./App.css"
 
@@ -96,6 +96,7 @@ function App() {
                   <Route path="/portfolio" element={<PortfolioPage />} />
                   <Route path="/cos-agent" element={<CosAgentPage />} />
                   <Route path="/support" element={<SupportPage />} />
+                  <Route path="/monitoring" element={<MonitoringSection />} />
                   
                   <Route path="*" element={<NotFound />} />
                 </Routes>
