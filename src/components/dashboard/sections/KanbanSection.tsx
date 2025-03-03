@@ -82,7 +82,7 @@ export function KanbanSection() {
       
       {/* Create Task Dialog */}
       <CreateTaskDialog 
-        isOpen={showCreateTask} 
+        open={showCreateTask} 
         onOpenChange={setShowCreateTask} 
         onTaskCreated={handleTaskCreated}
       />
