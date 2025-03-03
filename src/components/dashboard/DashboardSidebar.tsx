@@ -28,12 +28,19 @@ import {
   LogOut,
   Home,
   ChevronDown,
-  LayoutDashboard
+  LayoutDashboard,
+  MessageSquare
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  onToggleChat: () => void;
+  isChatOpen: boolean;
+}
+
+export function DashboardSidebar({ onToggleChat, isChatOpen }: DashboardSidebarProps) {
   const { currentUser, logout } = useAuth()
   const location = useLocation()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -210,16 +217,30 @@ export function DashboardSidebar() {
       </SidebarContent>
       
       <SidebarFooter>
-        {currentUser && (
+        <div className="flex flex-col space-y-2">
           <Button 
             variant="ghost" 
-            className="w-full justify-start" 
-            onClick={handleSignOut}
+            className={cn(
+              "w-full justify-start",
+              isChatOpen && "bg-accent"
+            )}
+            onClick={onToggleChat}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            <MessageSquare className="mr-2 h-4 w-4" />
+            CoS Chat
           </Button>
-        )}
+          
+          {currentUser && (
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start" 
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          )}
+        </div>
       </SidebarFooter>
     </Sidebar>
   )
