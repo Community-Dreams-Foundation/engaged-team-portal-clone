@@ -50,6 +50,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
   }, []);
 
+  useEffect(() => {
+    console.log('Auth state - currentUser:', currentUser?.uid);
+    console.log('Auth state - userRole:', userRole);
+    console.log('Auth state - loading:', loading);
+  }, [currentUser, userRole, loading]);
+
   useFirebaseToken(setCurrentUser, setUserRole);
   useFirebaseAuth(setCurrentUser, setUserRole, setLoading);
 
@@ -224,7 +230,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? (
+        <div className="flex items-center justify-center h-screen">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

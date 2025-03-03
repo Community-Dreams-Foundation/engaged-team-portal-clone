@@ -2,8 +2,9 @@
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { DashboardHeader } from "./DashboardHeader"
 import { DashboardSidebar } from "./DashboardSidebar"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PersistentCosChat } from "./PersistentCosChat"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -11,6 +12,11 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { currentUser } = useAuth();
+  
+  useEffect(() => {
+    console.log("DashboardLayout mounted with currentUser:", currentUser?.uid || "null");
+  }, [currentUser]);
 
   return (
     <SidebarProvider>
