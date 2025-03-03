@@ -1,334 +1,107 @@
 
-import { useState, useEffect } from "react"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Plus, Pencil, Trash, Timer, MoreVertical, Bot, CalendarIcon } from "lucide-react"
-import { Task, TaskStatus } from "@/types/task"
-import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  PopoverClose
-} from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { useTaskOperations } from "@/hooks/useTaskOperations"
-import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { useEffect, useState } from "react"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { CheckCircle2, Clock, AlertCircle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+
+type Task = {
+  id: string
+  title: string
+  status: "completed" | "in-progress" | "urgent"
+  dueDate: string
+}
 
 export function TaskList() {
+  const [isLoading, setIsLoading] = useState(true)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [newTask, setNewTask] = useState("")
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatus>("todo")
-  const [isDeleteOpen, setDeleteOpen] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
-  const { currentUser } = useAuth()
-  const { toast } = useToast()
-  const { createTask, fetchTasks, deleteTask, updateStatus } = useTaskOperations()
-  const { recommendations } = useCosRecommendations()
-  const taskRecommendations = recommendations.filter(rec => rec.type === "task")
 
   useEffect(() => {
-    if (currentUser) {
-      loadTasks(currentUser.uid)
-    }
-  }, [currentUser])
-
-  const loadTasks = async (userId: string) => {
-    try {
-      const fetchedTasks = await fetchTasks(userId)
-      setTasks(fetchedTasks)
-    } catch (error) {
-      console.error("Error fetching tasks:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load tasks. Please try again."
-      })
-    }
-  }
-
-  const handleAddTask = async () => {
-    if (!newTask.trim() || !currentUser) return
-
-    try {
-      const taskId = await createTask(currentUser.uid, {
-        title: newTask,
-        description: "",
-        status: "todo",
-        estimatedDuration: 60,
-        actualDuration: 0
-      })
-
-      setTasks(prevTasks => [...prevTasks, {
-        id: taskId,
-        title: newTask,
-        description: "",
-        status: "todo",
-        estimatedDuration: 60,
-        actualDuration: 0,
-        isTimerRunning: false,
-        totalElapsedTime: 0,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        completionPercentage: 0,
-        lastActivity: {
-          type: "status_change",
-          timestamp: Date.now(),
-          details: "Task created"
+    // Simulate loading tasks
+    const loadTasks = () => {
+      const demoTasks: Task[] = [
+        {
+          id: "1",
+          title: "Review quarterly objectives",
+          status: "urgent",
+          dueDate: "2024-03-20"
+        },
+        {
+          id: "2",
+          title: "Prepare morning briefing",
+          status: "in-progress",
+          dueDate: "2024-03-21"
+        },
+        {
+          id: "3",
+          title: "Update team calendar",
+          status: "completed",
+          dueDate: "2024-03-19"
         }
-      }])
+      ]
+      setTasks(demoTasks)
+      setIsLoading(false)
+    }
 
-      setNewTask("")
-      toast({
-        title: "Task added",
-        description: "Your task has been added successfully."
-      })
-    } catch (error) {
-      console.error("Error adding task:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add task. Please try again."
-      })
+    setTimeout(loadTasks, 1000) // Simulate network delay
+  }, [])
+
+  const getStatusIcon = (status: Task["status"]) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />
+      case "in-progress":
+        return <Clock className="h-4 w-4 text-blue-500" />
+      case "urgent":
+        return <AlertCircle className="h-4 w-4 text-red-500" />
     }
   }
 
-  const handleStatusChange = async (taskId: string, status: TaskStatus) => {
-    if (!currentUser) return
-
-    try {
-      await updateStatus(currentUser.uid, taskId, status)
-      setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, status } : task
-        )
-      )
-      toast({
-        title: "Status updated",
-        description: "Task status has been updated."
-      })
-    } catch (error) {
-      console.error("Error updating status:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update status. Please try again."
-      })
+  const getStatusColor = (status: Task["status"]) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800"
+      case "in-progress":
+        return "bg-blue-100 text-blue-800"
+      case "urgent":
+        return "bg-red-100 text-red-800"
     }
   }
 
-  const handleDeleteTask = async () => {
-    if (!currentUser || !taskToDelete) return
-
-    try {
-      await deleteTask(currentUser.uid, taskToDelete)
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskToDelete))
-      setTaskToDelete(null)
-      setDeleteOpen(false)
-      toast({
-        title: "Task deleted",
-        description: "Task has been deleted successfully."
-      })
-    } catch (error) {
-      console.error("Error deleting task:", error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete task. Please try again."
-      })
-    }
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-4 w-3/4" />
+            <div className="mt-2 flex items-center gap-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    )
   }
-
-  const handleOpenDelete = (taskId: string) => {
-    setTaskToDelete(taskId)
-    setDeleteOpen(true)
-  }
-
-  const filteredTasks = tasks.filter(task => task.status === selectedStatus)
 
   return (
-    <div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Task Management</CardTitle>
-          <CardDescription>Manage your tasks efficiently.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="Add a new task..."
-              value={newTask}
-              onChange={e => setNewTask(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") {
-                  handleAddTask()
-                }
-              }}
-            />
-            <Button type="button" onClick={handleAddTask}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Task
-            </Button>
-          </div>
-
-          <div className="flex space-x-4">
-            <Button
-              variant={selectedStatus === "todo" ? "secondary" : "outline"}
-              onClick={() => setSelectedStatus("todo")}
-            >
-              To Do
-            </Button>
-            <Button
-              variant={selectedStatus === "not-started" ? "secondary" : "outline"}
-              onClick={() => setSelectedStatus("not-started")}
-            >
-              Not Started
-            </Button>
-            <Button
-              variant={selectedStatus === "in-progress" ? "secondary" : "outline"}
-              onClick={() => setSelectedStatus("in-progress")}
-            >
-              In Progress
-            </Button>
-            <Button
-              variant={selectedStatus === "completed" ? "secondary" : "outline"}
-              onClick={() => setSelectedStatus("completed")}
-            >
-              Completed
-            </Button>
-            <Button
-              variant={selectedStatus === "blocked" ? "secondary" : "outline"}
-              onClick={() => setSelectedStatus("blocked")}
-            >
-              Blocked
-            </Button>
-          </div>
-
-          <ScrollArea className="h-[300px] w-full rounded-md border">
-            <div className="p-4 space-y-2">
-              {filteredTasks.map(task => (
-                <Card key={task.id} className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`task-${task.id}`}
-                        checked={task.status === "completed"}
-                        onCheckedChange={checked =>
-                          handleStatusChange(
-                            task.id,
-                            checked ? "completed" : "todo"
-                          )
-                        }
-                      />
-                      <Label htmlFor={`task-${task.id}`}>{task.title}</Label>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Timer className="w-4 h-4 mr-2" />
-                          Start Timer
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleOpenDelete(task.id)}
-                        >
-                          <Trash className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </Card>
-              ))}
-              {filteredTasks.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No tasks in this category.
-                </p>
-              )}
+    <div className="space-y-4">
+      {tasks.map((task) => (
+        <Card key={task.id} className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              {getStatusIcon(task.status)}
+              <span className="font-medium">{task.title}</span>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-
-      {taskRecommendations.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Bot className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-medium">CoS Task Recommendations</h3>
+            <Badge className={getStatusColor(task.status)}>
+              {task.status.replace("-", " ")}
+            </Badge>
           </div>
-          
-          <div className="space-y-2">
-            {taskRecommendations.map(recommendation => (
-              <div 
-                key={recommendation.id}
-                className="p-3 bg-muted/50 border rounded-md hover:bg-muted/70 transition-colors"
-              >
-                <div className="flex justify-between">
-                  <p className="text-sm">{recommendation.content}</p>
-                  <Button variant="ghost" size="sm">
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="mt-2 text-sm text-muted-foreground">
+            Due: {new Date(task.dueDate).toLocaleDateString()}
           </div>
-        </div>
-      )}
-
-      <AlertDialog open={isDeleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              task from our servers.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTaskToDelete(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTask}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </Card>
+      ))}
     </div>
   )
 }

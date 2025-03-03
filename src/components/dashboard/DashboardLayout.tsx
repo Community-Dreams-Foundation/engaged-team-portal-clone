@@ -1,21 +1,26 @@
-import React from "react"
-import { DashboardSidebar } from "./DashboardSidebar"
-import { DashboardHeader } from "./DashboardHeader"
-import { CosSidebarChat } from "./CosSidebarChat"
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { DashboardHeader } from "./DashboardHeader"
+import { DashboardSidebar } from "./DashboardSidebar"
+
+interface DashboardLayoutProps {
+  children: React.ReactNode
+}
+
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen bg-muted/40">
-      <DashboardSidebar />
-      <div className="flex-1">
-        <DashboardHeader />
-        <main className="p-6">
-          {children}
-        </main>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col">
+          <DashboardHeader />
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="max-w-7xl mx-auto w-full">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-      
-      {/* Add the CoS Sidebar Chat component */}
-      <CosSidebarChat />
-    </div>
+    </SidebarProvider>
   )
 }
