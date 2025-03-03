@@ -14,6 +14,9 @@ import { useTaskTimer } from "@/hooks/useTaskTimer"
 import { useTaskDragDrop } from "@/hooks/useTaskDragDrop"
 import { TaskFiltersState } from "@/components/tasks/TaskFilters"
 import { isAfter, isBefore, isWithinInterval, addDays, addWeeks, addMonths } from "date-fns"
+import { BatchActions } from "@/components/tasks/BatchActions"
+import { Button } from "@/components/ui/button"
+import { Check, Clipboard, CheckSquare } from "lucide-react"
 
 interface KanbanBoardProps {
   filters?: TaskFiltersState;
@@ -27,6 +30,8 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
     const [tasks, setTasks] = useState<Task[]>([])
     const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
     const [loading, setLoading] = useState(true)
+    const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+    const [selectMode, setSelectMode] = useState(false)
 
     const { toggleTimer } = useTaskTimer(filteredTasks, setFilteredTasks, currentUser?.uid)
     const { handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(filteredTasks, setFilteredTasks, currentUser?.uid)
@@ -226,6 +231,28 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       loadTasks()
     }, [loadTasks])
 
+    const handleSelectTask = useCallback((task: Task, selected: boolean) => {
+      setSelectedTaskIds(prev => {
+        if (selected) {
+          return [...prev, task.id];
+        } else {
+          return prev.filter(id => id !== task.id);
+        }
+      });
+    }, []);
+
+    const handleClearSelection = useCallback(() => {
+      setSelectedTaskIds([]);
+      setSelectMode(false);
+    }, []);
+
+    const toggleSelectMode = useCallback(() => {
+      setSelectMode(prev => !prev);
+      if (selectMode) {
+        setSelectedTaskIds([]);
+      }
+    }, [selectMode]);
+
     const columns: { title: string, status: TaskStatus }[] = [
       { title: "To Do", status: "todo" },
       { title: "In Progress", status: "in-progress" },
@@ -253,6 +280,27 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
         <TaskAnalytics tasks={filteredTasks} />
         <TaskMonitor tasks={filteredTasks} />
         
+        <div className="flex justify-end mb-2">
+          <Button
+            variant={selectMode ? "default" : "outline"}
+            size="sm"
+            onClick={toggleSelectMode}
+            className="flex items-center gap-1"
+          >
+            {selectMode ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>Done Selecting</span>
+              </>
+            ) : (
+              <>
+                <CheckSquare className="h-4 w-4" />
+                <span>Select Tasks</span>
+              </>
+            )}
+          </Button>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {columns.map(column => (
             <TaskColumn
@@ -267,9 +315,19 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
               formatDuration={formatDuration}
               canStartTask={canStartTask}
               onTaskUpdated={handleTaskUpdated}
+              selectedTasks={selectMode ? selectedTaskIds : []}
+              onTaskSelect={selectMode ? handleSelectTask : undefined}
             />
           ))}
         </div>
+        
+        {selectedTaskIds.length > 0 && (
+          <BatchActions
+            selectedTasks={filteredTasks.filter(task => selectedTaskIds.includes(task.id))}
+            onClearSelection={handleClearSelection}
+            onTasksUpdated={handleTaskUpdated}
+          />
+        )}
       </div>
     )
   }

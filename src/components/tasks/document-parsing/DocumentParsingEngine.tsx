@@ -6,11 +6,12 @@ import { toast } from "@/components/ui/use-toast";
 import { processDocumentForTaskCreation } from "@/services/recommendationService";
 import { CoSRecommendation, Task } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText, FileCode, FileSpreadsheet, FileImage } from "lucide-react";
 import { FileUploadSection } from "./FileUploadSection";
 import { ProgressIndicator } from "./ProgressIndicator";
 import { ErrorDisplay } from "./ErrorDisplay";
 import { ParsingResults } from "./ParsingResults";
+import { AiInsightPanel } from "./AiInsightPanel";
 
 interface DocumentParsingEngineProps {
   onTasksExtracted: (tasks: Partial<Task>[]) => void;
@@ -26,8 +27,11 @@ export function DocumentParsingEngine({
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [insights, setInsights] = useState<string[]>([]);
+  const [suggestedSkills, setSuggestedSkills] = useState<string[]>([]);
+  const [estimatedEffort, setEstimatedEffort] = useState(0);
   const [parsingComplete, setParsingComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extractedTaskCount, setExtractedTaskCount] = useState(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -35,6 +39,26 @@ export function DocumentParsingEngine({
       setError(null);
       setParsingComplete(false);
       setInsights([]);
+      setSuggestedSkills([]);
+      setEstimatedEffort(0);
+    }
+  };
+
+  const getFileIcon = () => {
+    if (!file) return null;
+    
+    const fileType = file.type.toLowerCase();
+    
+    if (fileType.includes('text') || fileType.includes('markdown') || fileType.includes('md')) {
+      return <FileText className="h-5 w-5 text-blue-500" />;
+    } else if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('csv')) {
+      return <FileSpreadsheet className="h-5 w-5 text-green-500" />;
+    } else if (fileType.includes('json') || fileType.includes('xml') || fileType.includes('html')) {
+      return <FileCode className="h-5 w-5 text-purple-500" />;
+    } else if (fileType.includes('image')) {
+      return <FileImage className="h-5 w-5 text-orange-500" />;
+    } else {
+      return <FileText className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -69,6 +93,21 @@ export function DocumentParsingEngine({
       if (result.success) {
         setParsingComplete(true);
         setInsights(result.insights);
+        setExtractedTaskCount(result.tasks.length);
+        
+        // Extract skills and effort from tasks
+        const allSkills = new Set<string>();
+        let totalEffort = 0;
+        
+        result.tasks.forEach(task => {
+          totalEffort += task.estimatedDuration || 0;
+          if (task.tags) {
+            task.tags.forEach(tag => allSkills.add(tag));
+          }
+        });
+        
+        setSuggestedSkills(Array.from(allSkills));
+        setEstimatedEffort(totalEffort);
         
         // Pass tasks and recommendations to parent components
         onTasksExtracted(result.tasks);
@@ -92,9 +131,9 @@ export function DocumentParsingEngine({
   return (
     <Card className="p-4 space-y-4">
       <div className="space-y-2">
-        <h3 className="text-lg font-medium">Document Parsing Engine</h3>
+        <h3 className="text-lg font-medium">Enhanced Document Parsing Engine</h3>
         <p className="text-sm text-muted-foreground">
-          Upload project documentation to automatically extract tasks and generate recommendations.
+          Upload project documentation to automatically extract tasks and generate intelligent recommendations.
         </p>
       </div>
 
@@ -102,14 +141,28 @@ export function DocumentParsingEngine({
         <FileUploadSection 
           file={file} 
           isLoading={isLoading} 
-          handleFileChange={handleFileChange} 
+          handleFileChange={handleFileChange}
+          fileIcon={getFileIcon()}  
         />
         
         <ProgressIndicator isLoading={isLoading} progress={progress} />
         
         <ErrorDisplay error={error} />
         
-        <ParsingResults parsingComplete={parsingComplete} insights={insights} />
+        {parsingComplete && (
+          <>
+            <ParsingResults 
+              parsingComplete={parsingComplete} 
+              insights={[`Successfully extracted ${extractedTaskCount} tasks from the document.`]} 
+            />
+            
+            <AiInsightPanel 
+              insights={insights}
+              suggestedSkills={suggestedSkills}
+              estimatedEffort={estimatedEffort}
+            />
+          </>
+        )}
 
         <Button
           onClick={handleProcess}
@@ -119,7 +172,7 @@ export function DocumentParsingEngine({
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
+              Processing with CoS AI...
             </>
           ) : (
             "Process Document"

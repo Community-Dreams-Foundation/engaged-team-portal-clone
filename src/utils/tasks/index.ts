@@ -1,7 +1,15 @@
 
-export { fetchTasks, createTask } from "./basicOperations"
-export { updateTaskStatus, updateTaskProgress, checkDependencies } from "./progressOperations"
-export { updateTaskTimer } from "./timerOperations"
-export { updateTaskMetadata, addTaskComment } from "./metadataOperations"
-export { autoSplitTask, checkTaskSplitNeeded } from "./taskSplitting"
-export { calculatePersonalizationScore, monitorTaskProgress, getRecommendedTasks } from "./personalizationOperations"
+// Re-export utility functions from different operation modules
+
+export * from './basicOperations';
+export * from './progressOperations';
+export * from './activityOperations';
+export * from './commentOperations';
+export * from './attachmentOperations';
+export * from './metadataOperations';
+export * from './timerOperations';
+export * from './taskSplitting';
+export * from './taskAnalysisOperations';
+export * from './personalizationOperations';
+export * from './templateOperations';
+export * from './batchOperations';

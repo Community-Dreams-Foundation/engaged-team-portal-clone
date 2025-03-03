@@ -1,4 +1,3 @@
-
 import { getDatabase, ref, update, push } from "firebase/database";
 import { CoSRecommendation, Task } from "@/types/task";
 import { toast } from "@/hooks/use-toast";
@@ -215,46 +214,100 @@ export const generateRecommendationsFromDocument = async (
 };
 
 /**
- * Processes a document and creates tasks and recommendations
+ * Process a document for task creation and generate recommendations
  */
 export const processDocumentForTaskCreation = async (
-  userId: string,
+  userId: string, 
   file: File
 ): Promise<{
   success: boolean;
-  recommendations: CoSRecommendation[];
   tasks: Partial<Task>[];
+  recommendations: CoSRecommendation[];
   insights: string[];
 }> => {
   try {
-    // Read file content
-    const content = await readFileContent(file);
-    if (!content) {
-      throw new Error("Failed to read file content");
+    // Read the file content
+    const content = await readFileAsText(file);
+    
+    // Analyze the document content using AI
+    const analysis = await analyzeDocumentWithAI(content, file.type);
+    
+    // Convert the tasks to the proper format
+    const formattedTasks = analysis.tasks.map(task => ({
+      ...task,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      status: "todo" as TaskStatus,
+      estimatedDuration: task.estimatedDuration || 60,
+      actualDuration: 0,
+      completionPercentage: 0,
+      activities: [{
+        type: "status_change" as "status_change",
+        timestamp: Date.now(),
+        details: "Task created from document import"
+      }],
+      totalElapsedTime: 0,
+      isTimerRunning: false,
+    }));
+    
+    // Create tasks in the database
+    let createdTasks: Partial<Task>[] = [];
+    for (const task of formattedTasks) {
+      try {
+        // In a real implementation, you'd save the task to your database here
+        // We're just passing back the formatted tasks for this example
+        createdTasks.push(task);
+      } catch (error) {
+        console.error("Error creating task:", error);
+      }
     }
     
-    // Generate recommendations and tasks
-    const result = await generateRecommendationsFromDocument(
-      userId,
-      content,
-      file.type
-    );
+    // Format recommendations
+    const formattedRecommendations: CoSRecommendation[] = analysis.recommendations.map(rec => ({
+      id: rec.id || `rec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      type: rec.type || "task",
+      content: rec.content || "",
+      timestamp: rec.timestamp || Date.now(),
+      priority: rec.priority || "medium",
+      impact: rec.impact || 50,
+      feedback: undefined,
+      actualDuration: undefined,
+      actedUpon: false,
+    }));
     
     return {
       success: true,
-      recommendations: result.recommendations,
-      tasks: result.tasks,
-      insights: result.keyInsights
+      tasks: createdTasks,
+      recommendations: formattedRecommendations,
+      insights: analysis.metadata.keyInsights
     };
   } catch (error) {
-    console.error("Error processing document for task creation:", error);
+    console.error("Error processing document:", error);
     return {
       success: false,
-      recommendations: [],
       tasks: [],
+      recommendations: [],
       insights: []
     };
   }
+};
+
+/**
+ * Helper function to read file content as text
+ */
+const readFileAsText = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        resolve(event.target.result as string);
+      } else {
+        reject(new Error("Failed to read file"));
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
 };
 
 /**

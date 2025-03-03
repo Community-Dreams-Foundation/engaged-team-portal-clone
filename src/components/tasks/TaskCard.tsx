@@ -1,26 +1,23 @@
-import { useState } from "react"
-import { Task } from "@/types/task"
-import { Clock, MoreVertical, Tag, ArrowRightCircle, CheckCircle, Rotate3D, GitBranch, GitMerge, Link } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { formatDistance } from "date-fns"
-import { TaskDetailDialog } from "./TaskDetailDialog"
+
+import { useState } from "react";
+import { Task } from "@/types/task";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { CheckCircle, Clock, AlertTriangle, CalendarClock, History, Tag } from "lucide-react";
+import { format } from "date-fns";
+import { TaskHistoryDialog } from "./TaskHistoryDialog";
 
 interface TaskCardProps {
-  task: Task
-  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void
-  onTimerToggle: (taskId: string) => void
-  formatDuration: (milliseconds: number) => string
-  canStartTask: (taskId: string) => Promise<boolean>
-  onTaskUpdated?: () => void
+  task: Task;
+  onDragStart: (e: React.DragEvent, taskId: string) => void;
+  onTimerToggle: (taskId: string) => void;
+  formatDuration: (milliseconds: number) => string;
+  canStartTask?: (taskId: string) => Promise<boolean>;
+  onEdit?: (task: Task) => void;
+  onTaskUpdated?: () => void;
+  isSelected?: boolean;
+  onSelectionToggle?: (task: Task, selected: boolean) => void;
 }
 
 export function TaskCard({
@@ -29,168 +26,149 @@ export function TaskCard({
   onTimerToggle,
   formatDuration,
   canStartTask,
-  onTaskUpdated
+  onEdit,
+  onTaskUpdated,
+  isSelected = false,
+  onSelectionToggle
 }: TaskCardProps) {
-  const [showDetails, setShowDetails] = useState(false)
-  const [canStart, setCanStart] = useState(true)
-
-  useState(() => {
-    if (task.status === "todo" || task.status === "not-started") {
-      canStartTask(task.id).then(result => setCanStart(result))
+  const [showHistory, setShowHistory] = useState(false);
+  const { id, title, status, priority, tags, dueDate, isTimerRunning, totalElapsedTime, dependencies, activities } = task;
+  
+  // Calculate if task is overdue
+  const isOverdue = dueDate && dueDate < Date.now() && status !== "completed";
+  
+  // Define priority colors
+  const priorityColors = {
+    high: "bg-red-100 text-red-800 border-red-200",
+    medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    low: "bg-green-100 text-green-800 border-green-200",
+  };
+  
+  const handleTaskClick = () => {
+    if (onEdit) {
+      onEdit(task);
     }
-  })
-
-  const getPriorityColor = () => {
-    switch (task.priority) {
-      case "high":
-        return "bg-red-500"
-      case "medium":
-        return "bg-yellow-500"
-      case "low":
-        return "bg-green-500"
-      default:
-        return "bg-gray-500"
+  };
+  
+  const handleSelectionToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSelectionToggle) {
+      onSelectionToggle(task, !isSelected);
     }
-  }
+  };
 
   return (
     <>
-      <div
-        className="bg-white rounded-md shadow-sm border p-3 mb-2 cursor-grab hover:shadow"
+      <Card 
         draggable
-        onDragStart={(e) => onDragStart(e, task.id)}
+        onDragStart={(e) => onDragStart(e, id)}
+        className={`cursor-grab relative mb-3 hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
+        onClick={handleTaskClick}
       >
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center">
-            <div className={`${getPriorityColor()} w-2 h-2 rounded-full mr-2`} />
-            <h3 className="font-medium text-sm truncate max-w-[180px]">{task.title}</h3>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowDetails(true)}>
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onTimerToggle(task.id)}>
-                {task.isTimerRunning ? "Stop Timer" : "Start Timer"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {task.dueDate && (
-          <div className="text-xs text-gray-500 mb-2">
-            Due {formatDistance(new Date(task.dueDate), new Date(), { addSuffix: true })}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 mb-2">
-          {task.isTimerRunning ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2 text-red-500 hover:text-red-600"
-              onClick={() => onTimerToggle(task.id)}
-            >
-              <Clock className="h-3 w-3 mr-1 animate-pulse" /> Stop
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2"
-              onClick={() => onTimerToggle(task.id)}
-              disabled={!canStart && task.status === "todo"}
-            >
-              <Clock className="h-3 w-3 mr-1" /> Start
-            </Button>
-          )}
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs px-2"
-            onClick={() => setShowDetails(true)}
+        {onSelectionToggle && (
+          <div 
+            className="absolute top-2 left-2 h-4 w-4 border rounded cursor-pointer z-10"
+            onClick={handleSelectionToggle}
           >
-            Details
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-1 mt-2">
-          {task.totalElapsedTime !== undefined && task.totalElapsedTime > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatDuration(task.totalElapsedTime)}
-            </Badge>
-          )}
-          
-          {task.completionPercentage !== undefined && task.completionPercentage > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              {task.completionPercentage}%
-            </Badge>
-          )}
-          
-          {task.recurringConfig?.isRecurring && (
-            <Badge variant="secondary" className="text-xs text-blue-500 bg-blue-50">
-              <Rotate3D className="h-3 w-3 mr-1" />
-              Recurring
-            </Badge>
-          )}
-          
-          {task.dependencies && task.dependencies.length > 0 && (
-            <Badge variant="secondary" className="text-xs text-gray-500 bg-gray-50">
-              <Link className="h-3 w-3 mr-1" />
-              {task.dependencies.length}
-            </Badge>
-          )}
-          
-          {task.metadata?.hasSubtasks && (
-            <Badge variant="secondary" className="text-xs text-purple-500 bg-purple-50">
-              <GitBranch className="h-3 w-3 mr-1" />
-              Subtasks
-            </Badge>
-          )}
-          
-          {task.metadata?.parentTaskId && (
-            <Badge variant="secondary" className="text-xs text-indigo-500 bg-indigo-50">
-              <GitMerge className="h-3 w-3 mr-1" />
-              Subtask
-            </Badge>
-          )}
-        </div>
-
-        {!canStart && task.status === "todo" && (
-          <div className="mt-2 text-xs text-red-500 flex items-center">
-            <ArrowRightCircle className="h-3 w-3 mr-1" />
-            Blocked by dependencies
+            {isSelected && <CheckCircle className="h-4 w-4 text-primary" />}
           </div>
         )}
         
-        {task.tags && task.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {task.tags.map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs px-1.5 py-0">
-                <Tag className="h-2 w-2 mr-1" />
-                {tag}
-              </Badge>
-            ))}
+        <CardContent className={`p-3 ${onSelectionToggle ? 'pl-8' : ''}`}>
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-medium text-sm truncate max-w-[70%]">{title}</h3>
+            <div className="flex items-center space-x-1">
+              {isTimerRunning && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  <Clock className="h-3 w-3 mr-1 animate-pulse" />
+                  Active
+                </Badge>
+              )}
+              {priority && (
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${priorityColors[priority]}`}
+                >
+                  {priority}
+                </Badge>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+          
+          {isOverdue && (
+            <div className="flex items-center text-xs text-red-600 my-1">
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              <span>Overdue</span>
+            </div>
+          )}
+          
+          {dueDate && (
+            <div className="flex items-center text-xs text-gray-500 my-1">
+              <CalendarClock className="h-3.5 w-3.5 mr-1" />
+              <span>{format(new Date(dueDate), "MMM d, yyyy")}</span>
+            </div>
+          )}
+          
+          {tags && tags.length > 0 && (
+            <div className="flex items-center mt-2 flex-wrap gap-1">
+              {tags.slice(0, 2).map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {tags.length > 2 && (
+                <Badge variant="outline" className="text-xs">
+                  +{tags.length - 2}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+        
+        <CardFooter className="px-3 py-2 border-t bg-muted/20 flex justify-between">
+          <div className="text-xs text-gray-500 flex items-center">
+            <Clock className="h-3.5 w-3.5 mr-1" />
+            {formatDuration(totalElapsedTime || 0)}
+          </div>
+          
+          <div className="flex items-center space-x-1">
+            {activities && activities.length > 0 && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowHistory(true);
+                }}
+              >
+                <History className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            
+            <Button
+              variant={isTimerRunning ? "destructive" : "default"}
+              size="sm"
+              className="text-xs px-2 py-0 h-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTimerToggle(id);
+              }}
+            >
+              {isTimerRunning ? "Stop" : "Start"}
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
       
-      <TaskDetailDialog
-        task={task}
-        open={showDetails}
-        onOpenChange={setShowDetails}
-        onTaskUpdated={onTaskUpdated}
-      />
+      {showHistory && (
+        <TaskHistoryDialog
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          activities={activities || []}
+          taskTitle={title}
+        />
+      )}
     </>
-  )
+  );
 }
