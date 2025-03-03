@@ -512,7 +512,7 @@ export const generatePersonalizedRecommendations = async (
       
       recommendations.push({
         id: `personalized-rec-${Date.now()}-3`,
-        type: preferredType,
+        type: (preferredType as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency"),
         content,
         timestamp: Date.now() - 3600000, // 1 hour ago
         priority: "medium",
