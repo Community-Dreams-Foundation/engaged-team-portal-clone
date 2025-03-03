@@ -1,23 +1,12 @@
-
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Bot, Brain, Users, Target, Mic, FileImage, FilePlus } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Agent } from "@/types/task"
 import { PerformanceMetrics } from "@/types/performance"
-import { AgentMetrics } from "./cos-agent/AgentMetrics"
-import { AgentPreferences } from "./cos-agent/AgentPreferences"
-import { AgentsList } from "./cos-agent/AgentsList"
-import { Recommendations } from "./cos-agent/Recommendations"
-import { CreateAgentDialog } from "./cos-agent/CreateAgentDialog"
-import { LeadershipSimulation } from "./cos-agent/LeadershipSimulation"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 import { useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { MultiModalInput } from "./cos-agent/MultiModalInput"
+import { AgentHeader } from "./cos-agent/AgentHeader"
+import { AgentTabs } from "./cos-agent/AgentTabs"
 
 export function CosAgent() {
   const [agents, setAgents] = useState<Agent[]>([])
@@ -122,13 +111,12 @@ export function CosAgent() {
         setIsRecording(false)
         const mockRecommendation = {
           id: `voice-rec-${Date.now()}`,
-          type: "task",
+          type: "task" as const,
           content: "I detected you mentioned creating a presentation. Would you like to create a task for this?",
           timestamp: Date.now(),
           priority: "medium" as const,
           impact: 70
         }
-        // Fix the type error by directly passing the new array instead of a function
         setRecommendations([mockRecommendation, ...recommendations])
       }, 3000)
     }
@@ -136,94 +124,25 @@ export function CosAgent() {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold">CoS Agent</h3>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className={isRecording ? "animate-pulse bg-red-100" : ""}
-            onClick={toggleVoiceRecording}
-          >
-            <Mic className={`h-4 w-4 ${isRecording ? "text-red-500" : ""} mr-2`} />
-            {isRecording ? "Listening..." : "Voice Input"}
-          </Button>
-          <Popover open={showMultiModal} onOpenChange={setShowMultiModal}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <FileImage className="h-4 w-4 mr-2" />
-                Upload
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <MultiModalInput onClose={() => setShowMultiModal(false)} />
-            </PopoverContent>
-          </Popover>
-          <Badge variant="secondary" className="animate-pulse">
-            Active
-          </Badge>
-        </div>
-      </div>
+      <AgentHeader 
+        isRecording={isRecording}
+        toggleVoiceRecording={toggleVoiceRecording}
+        showMultiModal={showMultiModal}
+        setShowMultiModal={setShowMultiModal}
+      />
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-4 gap-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="simulation" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Simulation
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="flex items-center gap-2">
-            <Bot className="h-4 w-4" />
-            Agents
-          </TabsTrigger>
-          <TabsTrigger value="team" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Team
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          {preferences && <AgentPreferences preferences={preferences} />}
-          <AgentMetrics metrics={metrics} />
-          <h4 className="text-sm font-medium mb-3">Personalized Recommendations</h4>
-          <Recommendations 
-            recommendations={recommendations}
-            onFeedback={handleFeedback}
-            onAction={handleRecommendationAction}
-          />
-        </TabsContent>
-
-        <TabsContent value="simulation" className="space-y-4">
-          <LeadershipSimulation />
-        </TabsContent>
-
-        <TabsContent value="agents" className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium">Active Agents</h4>
-            <CreateAgentDialog onAgentCreated={handleAgentCreated} />
-          </div>
-          <AgentsList 
-            agents={agents}
-            onDeploy={handleAgentDeployment}
-            deploymentTarget={deploymentTarget}
-            setDeploymentTarget={setDeploymentTarget}
-          />
-        </TabsContent>
-
-        <TabsContent value="team" className="space-y-4">
-          <div className="text-center p-8">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="mt-2 font-semibold">Team Management</h3>
-            <p className="text-muted-foreground">Coming soon</p>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <AgentTabs 
+        agents={agents}
+        preferences={preferences}
+        metrics={metrics}
+        recommendations={recommendations}
+        handleAgentCreated={handleAgentCreated}
+        handleAgentDeployment={handleAgentDeployment}
+        handleRecommendationAction={handleRecommendationAction}
+        handleFeedback={handleFeedback}
+        deploymentTarget={deploymentTarget}
+        setDeploymentTarget={setDeploymentTarget}
+      />
     </Card>
   )
 }

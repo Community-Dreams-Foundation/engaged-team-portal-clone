@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ export function ConversationContent({
   }, [activeThread, activeThread?.messages]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Fixed: Direct assignment instead of callback function
     setNewMessage(e.target.value);
   };
 
