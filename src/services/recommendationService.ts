@@ -371,7 +371,7 @@ export const processDocumentForTaskCreation = async (
     // Format recommendations
     const formattedRecommendations: CoSRecommendation[] = analysis.recommendations.map(rec => ({
       id: rec.id || `rec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-      type: rec.type || "task",
+      type: (rec.type as "agent" | "leadership" | "time" | "task" | "learning" | "efficiency") || "task",
       content: rec.content || "",
       timestamp: rec.timestamp || Date.now(),
       priority: rec.priority || "medium",
