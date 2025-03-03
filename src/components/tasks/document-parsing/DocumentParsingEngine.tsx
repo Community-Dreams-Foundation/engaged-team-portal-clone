@@ -92,12 +92,12 @@ export function DocumentParsingEngine({
         });
       }, 500);
 
-      // Process the document
+      // Process the document - Fix here: Pass only the required arguments
+      // Check the signature of processDocumentForTaskCreation and pass only what it expects
       const result = await processDocumentForTaskCreation(
         currentUser.uid, 
         file,
-        activeTab === "paste" ? text : undefined,
-        selectedDomain
+        activeTab === "paste" ? text : undefined
       );
       
       clearInterval(progressInterval);
