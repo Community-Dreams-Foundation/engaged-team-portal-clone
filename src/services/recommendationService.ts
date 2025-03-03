@@ -1,5 +1,4 @@
-
-import { getDatabase, ref, update, push } from "firebase/database";
+import { getDatabase, ref, update, push, get } from "firebase/database";
 import { CoSRecommendation, Task, TaskStatus } from "@/types/task";
 import { toast } from "@/hooks/use-toast";
 import { analyzeDocumentWithAI, parseDocumentContent } from "@/utils/documentParser";
@@ -18,6 +17,9 @@ export const recordRecommendationFeedback = async (
     
     await update(recommendationRef, { feedback });
     
+    // Update user's learning profile based on feedback
+    await updateUserLearningProfile(userId, recId, feedback);
+    
     toast({
       title: "Feedback Recorded",
       description: "Thank you for your feedback! This helps your CoS agent improve."
@@ -34,6 +36,89 @@ export const recordRecommendationFeedback = async (
 };
 
 /**
+ * Updates the user's learning profile based on recommendation feedback
+ */
+const updateUserLearningProfile = async (
+  userId: string,
+  recId: string,
+  feedback: "positive" | "negative"
+): Promise<void> => {
+  try {
+    const db = getDatabase();
+    const recRef = ref(db, `users/${userId}/recommendations/${recId}`);
+    const recSnapshot = await get(recRef);
+    
+    if (!recSnapshot.exists()) return;
+    
+    const recommendation = recSnapshot.val() as CoSRecommendation;
+    const learningProfileRef = ref(db, `users/${userId}/learningProfile`);
+    
+    // Get current learning profile or create default
+    const profileSnapshot = await get(learningProfileRef);
+    const learningProfile = profileSnapshot.exists() 
+      ? profileSnapshot.val() 
+      : {
+          preferredRecommendationTypes: {},
+          skillInterests: {},
+          feedbackHistory: [],
+          adaptiveScore: 50
+        };
+    
+    // Update recommendation type preferences
+    if (!learningProfile.preferredRecommendationTypes[recommendation.type]) {
+      learningProfile.preferredRecommendationTypes[recommendation.type] = {
+        positive: 0,
+        negative: 0,
+        total: 0
+      };
+    }
+    
+    learningProfile.preferredRecommendationTypes[recommendation.type][feedback]++;
+    learningProfile.preferredRecommendationTypes[recommendation.type].total++;
+    
+    // Update skills interests if present in recommendation
+    if (recommendation.metadata?.skills) {
+      for (const skill of recommendation.metadata.skills) {
+        if (!learningProfile.skillInterests[skill]) {
+          learningProfile.skillInterests[skill] = {
+            positive: 0,
+            negative: 0,
+            total: 0
+          };
+        }
+        
+        learningProfile.skillInterests[skill][feedback]++;
+        learningProfile.skillInterests[skill].total++;
+      }
+    }
+    
+    // Add to feedback history (last 20 items)
+    learningProfile.feedbackHistory.push({
+      recId: recommendation.id,
+      type: recommendation.type,
+      timestamp: Date.now(),
+      feedback
+    });
+    
+    // Keep only most recent 20 feedback items
+    if (learningProfile.feedbackHistory.length > 20) {
+      learningProfile.feedbackHistory = learningProfile.feedbackHistory.slice(-20);
+    }
+    
+    // Update adaptive score
+    const recentFeedback = learningProfile.feedbackHistory.slice(-10);
+    const positiveCount = recentFeedback.filter(f => f.feedback === "positive").length;
+    learningProfile.adaptiveScore = Math.round((positiveCount / recentFeedback.length) * 100) || 50;
+    
+    // Save updated learning profile
+    await update(learningProfileRef, learningProfile);
+    
+  } catch (error) {
+    console.error("Error updating user learning profile:", error);
+  }
+};
+
+/**
  * Creates a new task recommendation in Firebase
  */
 export const createRecommendation = async (
@@ -41,7 +126,8 @@ export const createRecommendation = async (
   taskId: string,
   title: string,
   content: string,
-  priority: "high" | "medium" | "low" = "medium"
+  priority: "high" | "medium" | "low" = "medium",
+  skills?: string[]
 ): Promise<string | undefined> => {
   try {
     const db = getDatabase();
@@ -59,7 +145,8 @@ export const createRecommendation = async (
       impact: priority === "high" ? 80 : priority === "medium" ? 60 : 40,
       metadata: {
         taskId,
-        taskTitle: title
+        taskTitle: title,
+        skills: skills || []
       }
     };
     
@@ -108,7 +195,10 @@ export const createDefaultRecommendations = async (
       content: "Set up your weekly priorities. Start each week by defining your top 3 priorities to stay focused and productive.",
       timestamp: Date.now(),
       priority: "high",
-      impact: 75
+      impact: 75,
+      metadata: {
+        skills: ["planning", "time-management"]
+      }
     },
     "rec-2": {
       id: "rec-2",
@@ -116,7 +206,10 @@ export const createDefaultRecommendations = async (
       content: "Complete your portfolio section. Adding your projects and skills to your portfolio will help you showcase your work.",
       timestamp: Date.now() - 86400000, // 1 day ago
       priority: "medium",
-      impact: 60
+      impact: 60,
+      metadata: {
+        skills: ["portfolio", "career-development"]
+      }
     },
     "rec-3": {
       id: "rec-3",
@@ -124,7 +217,10 @@ export const createDefaultRecommendations = async (
       content: "Take the leadership course. Based on your profile, the 'Effective Leadership' training module would be valuable for your growth.",
       timestamp: Date.now() - 172800000, // 2 days ago
       priority: "medium",
-      impact: 65
+      impact: 65,
+      metadata: {
+        skills: ["leadership", "communication"]
+      }
     },
     "rec-4": {
       id: "rec-4",
@@ -133,7 +229,10 @@ export const createDefaultRecommendations = async (
       timestamp: Date.now() - 259200000, // 3 days ago
       priority: "medium",
       impact: 70,
-      actualDuration: 15
+      actualDuration: 15,
+      metadata: {
+        skills: ["productivity", "time-management"]
+      }
     }
   };
   
@@ -280,6 +379,10 @@ export const processDocumentForTaskCreation = async (
       feedback: undefined,
       actualDuration: undefined,
       actedUpon: false,
+      metadata: {
+        ...(rec.metadata || {}),
+        skills: rec.metadata?.skills || []
+      }
     }));
     
     return {
@@ -315,6 +418,155 @@ const readFileAsText = (file: File): Promise<string> => {
     reader.onerror = () => reject(reader.error);
     reader.readAsText(file);
   });
+};
+
+/**
+ * Generates personalized recommendations based on user profile
+ */
+export const generatePersonalizedRecommendations = async (
+  userId: string
+): Promise<CoSRecommendation[]> => {
+  try {
+    const db = getDatabase();
+    
+    // Get user's learning profile
+    const learningProfileRef = ref(db, `users/${userId}/learningProfile`);
+    const profileSnapshot = await get(learningProfileRef);
+    
+    if (!profileSnapshot.exists()) {
+      // If no learning profile exists, return default recommendations
+      return createDefaultRecommendations(userId);
+    }
+    
+    const learningProfile = profileSnapshot.val();
+    
+    // Get user's task data for context
+    const tasksRef = ref(db, `users/${userId}/tasks`);
+    const tasksSnapshot = await get(tasksRef);
+    const tasks = tasksSnapshot.exists() ? Object.values(tasksSnapshot.val()) as Task[] : [];
+    
+    // Generate personalized recommendations
+    const recommendations: CoSRecommendation[] = [];
+    
+    // Add task prioritization recommendation if we have tasks
+    if (tasks.length > 0) {
+      const overdueTasks = tasks.filter(t => 
+        t.status !== "completed" && 
+        t.dueDate && 
+        t.dueDate < Date.now()
+      );
+      
+      if (overdueTasks.length > 0) {
+        recommendations.push({
+          id: `personalized-rec-${Date.now()}-1`,
+          type: "task",
+          content: `You have ${overdueTasks.length} overdue tasks. Would you like to create a plan to address them?`,
+          timestamp: Date.now(),
+          priority: "high",
+          impact: 80,
+          metadata: {
+            skills: ["time-management", "planning"],
+            adaptive: true,
+            source: "task-analysis"
+          }
+        });
+      }
+    }
+    
+    // Add skill-based recommendation
+    const topSkill = getTopSkill(learningProfile.skillInterests);
+    if (topSkill) {
+      recommendations.push({
+        id: `personalized-rec-${Date.now()}-2`,
+        type: "learning",
+        content: `Based on your interests, exploring more ${topSkill} content could be valuable for your growth.`,
+        timestamp: Date.now(),
+        priority: "medium",
+        impact: 65,
+        metadata: {
+          skills: [topSkill],
+          adaptive: true,
+          source: "skill-interest"
+        }
+      });
+    }
+    
+    // Add preferred recommendation type
+    const preferredType = getPreferredRecommendationType(learningProfile.preferredRecommendationTypes);
+    if (preferredType) {
+      let content = "";
+      
+      switch (preferredType) {
+        case "efficiency":
+          content = "Try the Pomodoro technique: 25 minutes of focused work followed by a 5-minute break. This could increase your productivity by 20%.";
+          break;
+        case "leadership":
+          content = "Schedule 15 minutes each day for reflection on your leadership decisions. This simple habit can significantly improve your decision-making.";
+          break;
+        case "time":
+          content = "Review your completed tasks from last week. Identifying patterns in your work can help optimize your schedule.";
+          break;
+        default:
+          content = "Based on your preferences, consider setting aside time each week for structured learning in your areas of interest.";
+      }
+      
+      recommendations.push({
+        id: `personalized-rec-${Date.now()}-3`,
+        type: preferredType,
+        content,
+        timestamp: Date.now() - 3600000, // 1 hour ago
+        priority: "medium",
+        impact: 70,
+        metadata: {
+          skills: ["self-improvement"],
+          adaptive: true,
+          source: "preference-analysis"
+        }
+      });
+    }
+    
+    // If we still have fewer than 3 recommendations, add some defaults
+    if (recommendations.length < 3) {
+      const defaultRecs = await createDefaultRecommendations(userId);
+      recommendations.push(...defaultRecs.slice(0, 3 - recommendations.length));
+    }
+    
+    return recommendations;
+    
+  } catch (error) {
+    console.error("Error generating personalized recommendations:", error);
+    return createDefaultRecommendations(userId);
+  }
+};
+
+/**
+ * Helper to get top skill from learning profile
+ */
+const getTopSkill = (skillInterests: Record<string, { positive: number, negative: number, total: number }>): string | null => {
+  if (!skillInterests || Object.keys(skillInterests).length === 0) return null;
+  
+  return Object.entries(skillInterests)
+    .sort((a, b) => {
+      const scoreA = a[1].positive / (a[1].total || 1);
+      const scoreB = b[1].positive / (b[1].total || 1);
+      return scoreB - scoreA;
+    })[0][0];
+};
+
+/**
+ * Helper to get preferred recommendation type
+ */
+const getPreferredRecommendationType = (
+  preferredTypes: Record<string, { positive: number, negative: number, total: number }>
+): string | null => {
+  if (!preferredTypes || Object.keys(preferredTypes).length === 0) return null;
+  
+  return Object.entries(preferredTypes)
+    .sort((a, b) => {
+      const scoreA = a[1].positive / (a[1].total || 1);
+      const scoreB = b[1].positive / (b[1].total || 1);
+      return scoreB - scoreA;
+    })[0][0];
 };
 
 /**

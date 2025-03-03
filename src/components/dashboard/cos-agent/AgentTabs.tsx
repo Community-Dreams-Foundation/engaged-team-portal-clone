@@ -1,5 +1,5 @@
 
-import { Brain, Bot, Target, Users } from "lucide-react"
+import { Brain, Bot, Target, Users, BarChart } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AgentPreferences } from "./AgentPreferences"
 import { AgentMetrics } from "./AgentMetrics"
@@ -7,6 +7,7 @@ import { Recommendations } from "./Recommendations"
 import { LeadershipSimulation } from "./LeadershipSimulation"
 import { AgentsList } from "./AgentsList"
 import { CreateAgentDialog } from "./CreateAgentDialog"
+import { LearningInsights } from "./LearningInsights"
 import { Agent } from "@/types/task"
 import { PerformanceMetrics } from "@/types/performance"
 import { CoSPreferences } from "@/types/agent"
@@ -17,6 +18,8 @@ interface AgentTabsProps {
   preferences: CoSPreferences | null;
   metrics: PerformanceMetrics;
   recommendations: CoSRecommendation[];
+  learningProfile: any;
+  adaptiveScore: number;
   handleAgentCreated: (newAgent: Agent) => void;
   handleAgentDeployment: (agentId: string, targetId: string) => void;
   handleRecommendationAction: (recId: string, actionType: string) => void;
@@ -30,6 +33,8 @@ export function AgentTabs({
   preferences,
   metrics,
   recommendations,
+  learningProfile,
+  adaptiveScore,
   handleAgentCreated,
   handleAgentDeployment,
   handleRecommendationAction,
@@ -39,10 +44,14 @@ export function AgentTabs({
 }: AgentTabsProps) {
   return (
     <Tabs defaultValue="overview" className="space-y-4">
-      <TabsList className="grid grid-cols-4 gap-4">
+      <TabsList className="grid grid-cols-5 gap-4">
         <TabsTrigger value="overview" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
           Overview
+        </TabsTrigger>
+        <TabsTrigger value="insights" className="flex items-center gap-2">
+          <BarChart className="h-4 w-4" />
+          Insights
         </TabsTrigger>
         <TabsTrigger value="simulation" className="flex items-center gap-2">
           <Brain className="h-4 w-4" />
@@ -66,6 +75,13 @@ export function AgentTabs({
           recommendations={recommendations}
           onFeedback={handleFeedback}
           onAction={handleRecommendationAction}
+        />
+      </TabsContent>
+      
+      <TabsContent value="insights" className="space-y-4">
+        <LearningInsights 
+          adaptiveScore={adaptiveScore}
+          learningProfile={learningProfile}
         />
       </TabsContent>
 

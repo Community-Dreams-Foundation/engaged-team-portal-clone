@@ -4,6 +4,7 @@ import type { Agent } from "@/types/task"
 import { PerformanceMetrics } from "@/types/performance"
 import { useCosData } from "@/hooks/useCosData"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
+import { usePersonalizedRecommendations } from "@/hooks/usePersonalizedRecommendations"
 import { useNavigate } from "react-router-dom"
 import { AgentHeader } from "./cos-agent/AgentHeader"
 import { AgentTabs } from "./cos-agent/AgentTabs"
@@ -17,6 +18,13 @@ export function CosAgent() {
     handleFeedback, 
     handleAction 
   } = useCosRecommendations()
+  
+  const {
+    learningProfile,
+    adaptiveScore,
+    refreshRecommendations
+  } = usePersonalizedRecommendations()
+  
   const navigate = useNavigate()
   const [deploymentTarget, setDeploymentTarget] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
@@ -80,6 +88,14 @@ export function CosAgent() {
     }
   }, [fetchedAgents])
 
+  useEffect(() => {
+    const refreshTimer = setTimeout(() => {
+      refreshRecommendations();
+    }, 2000);
+    
+    return () => clearTimeout(refreshTimer);
+  }, [refreshRecommendations]);
+
   const handleAgentCreated = (newAgent: Agent) => {
     setAgents(prev => [...prev, newAgent])
   }
@@ -136,6 +152,8 @@ export function CosAgent() {
         preferences={preferences}
         metrics={metrics}
         recommendations={recommendations}
+        learningProfile={learningProfile}
+        adaptiveScore={adaptiveScore}
         handleAgentCreated={handleAgentCreated}
         handleAgentDeployment={handleAgentDeployment}
         handleRecommendationAction={handleRecommendationAction}
