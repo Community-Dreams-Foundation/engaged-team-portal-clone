@@ -1,3 +1,3 @@
 
-import { DocumentParsingEngine } from "./document-parsing";
+import { DocumentParsingEngine } from "../document-parsing";
 export { DocumentParsingEngine };
