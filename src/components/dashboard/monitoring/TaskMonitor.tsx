@@ -1,105 +1,172 @@
 
-import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { AlertCircle, Clock, AlertTriangle, CheckCircle } from "lucide-react"
-import { Task } from "@/types/task"
-import { useToast } from "@/hooks/use-toast"
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
+import { Task } from '@/types/task';
+import { getDatabase, ref, onValue, off } from 'firebase/database';
+import { 
+  checkOverdueTasks, 
+  checkApproachingDeadlines, 
+  checkDurationExceeded, 
+  checkBlockedDependencies 
+} from '@/services/monitoringService';
 
-interface TaskMonitorProps {
-  tasks: Task[]
-}
-
-export function TaskMonitor({ tasks }: TaskMonitorProps) {
-  const { toast } = useToast()
-  const [activeTasks, setActiveTasks] = useState<Task[]>([])
+export function TaskMonitor() {
+  const { currentUser } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [overdueTasks, setOverdueTasks] = useState<Task[]>([]);
+  const [approachingDeadlines, setApproachingDeadlines] = useState<Task[]>([]);
+  const [durationExceeded, setDurationExceeded] = useState<Task[]>([]);
+  const [blockedTasks, setBlockedTasks] = useState<Task[]>([]);
 
   useEffect(() => {
-    setActiveTasks(tasks.filter(task => task.isTimerRunning))
-  }, [tasks])
+    if (!currentUser) return;
 
-  useEffect(() => {
-    // Check for tasks exceeding estimated duration
-    activeTasks.forEach(task => {
-      if (task.totalElapsedTime && task.estimatedDuration) {
-        const elapsedMinutes = task.totalElapsedTime / (1000 * 60)
-        const estimatedMinutes = task.estimatedDuration
+    setLoading(true);
+    const db = getDatabase();
+    const tasksRef = ref(db, `users/${currentUser.uid}/tasks`);
 
-        if (elapsedMinutes > estimatedMinutes * 0.8 && elapsedMinutes <= estimatedMinutes) {
-          toast({
-            title: "Task Time Alert",
-            description: `Task "${task.title}" is approaching its estimated duration`,
-            variant: "default",
-          })
-        } else if (elapsedMinutes > estimatedMinutes) {
-          toast({
-            title: "Task Time Warning",
-            description: `Task "${task.title}" has exceeded its estimated duration`,
-            variant: "destructive",
-          })
-        }
+    const unsubscribe = onValue(tasksRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const tasksData = snapshot.val();
+        const tasksList = Object.keys(tasksData).map(key => ({
+          id: key,
+          ...tasksData[key],
+        }));
+        
+        setTasks(tasksList);
+        
+        // Update all the task categories
+        setOverdueTasks(checkOverdueTasks(tasksList));
+        setApproachingDeadlines(checkApproachingDeadlines(tasksList));
+        setDurationExceeded(checkDurationExceeded(tasksList));
+        setBlockedTasks(checkBlockedDependencies(tasksList));
+      } else {
+        setTasks([]);
+        setOverdueTasks([]);
+        setApproachingDeadlines([]);
+        setDurationExceeded([]);
+        setBlockedTasks([]);
       }
-    })
-  }, [activeTasks, toast])
+      
+      setLoading(false);
+    });
 
-  const getTaskProgress = (task: Task) => {
-    const elapsed = task.totalElapsedTime || 0
-    const estimated = task.estimatedDuration * 60 * 1000
-    return Math.min((elapsed / estimated) * 100, 100)
-  }
+    return () => {
+      off(tasksRef);
+      unsubscribe();
+    };
+  }, [currentUser]);
 
-  const getStatusColor = (progress: number) => {
-    if (progress < 50) return "text-green-500"
-    if (progress < 80) return "text-yellow-500"
-    return "text-red-500"
-  }
+  const renderTaskList = (taskList: Task[]) => {
+    if (taskList.length === 0) {
+      return (
+        <div className="text-center py-6 text-muted-foreground">
+          No tasks to display
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {taskList.map(task => (
+          <div key={task.id} className="flex items-center border p-3 rounded-md">
+            <div className="flex-1">
+              <h4 className="font-medium text-sm">{task.title}</h4>
+              <div className="flex items-center space-x-3 mt-1">
+                <span className="text-xs bg-muted px-2 py-1 rounded">
+                  {task.status}
+                </span>
+                {task.dueDate && (
+                  <span className="text-xs text-muted-foreground">
+                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
+                )}
+                {task.estimatedDuration && (
+                  <span className="text-xs text-muted-foreground">
+                    Est: {task.estimatedDuration} min
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Clock className="h-5 w-5 text-primary animate-pulse" />
-          <h3 className="font-medium">Active Tasks Monitor</h3>
-        </div>
-        <Badge variant="secondary" className="animate-pulse">
-          {activeTasks.length} Active
-        </Badge>
-      </div>
-
-      <div className="space-y-4">
-        {activeTasks.length === 0 ? (
-          <div className="text-center text-muted-foreground py-4">
-            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-            <p>No active tasks at the moment</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Task Monitoring</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
           </div>
         ) : (
-          activeTasks.map(task => {
-            const progress = getTaskProgress(task)
-            const statusColor = getStatusColor(progress)
-            return (
-              <div key={task.id} className="border rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{task.title}</span>
-                    {progress > 80 && (
-                      <AlertTriangle className={`h-4 w-4 ${statusColor}`} />
-                    )}
-                  </div>
-                  <Badge variant="outline" className={statusColor}>
-                    {Math.floor(progress)}%
-                  </Badge>
-                </div>
-                <Progress value={progress} className="mb-2" />
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Elapsed: {Math.floor((task.totalElapsedTime || 0) / (1000 * 60))}min</span>
-                  <span>Estimated: {task.estimatedDuration}min</span>
-                </div>
-              </div>
-            )
-          })
+          <Tabs defaultValue="overdue">
+            <TabsList className="grid grid-cols-4 mb-4">
+              <TabsTrigger value="overdue" className="relative">
+                Overdue
+                {overdueTasks.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {overdueTasks.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="approaching" className="relative">
+                Approaching
+                {approachingDeadlines.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-warning text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {approachingDeadlines.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="duration" className="relative">
+                Duration
+                {durationExceeded.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-muted-foreground text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {durationExceeded.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="blocked" className="relative">
+                Blocked
+                {blockedTasks.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-muted-foreground text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {blockedTasks.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overdue" className="space-y-4">
+              <p className="text-sm text-muted-foreground">Tasks that have passed their due date</p>
+              {renderTaskList(overdueTasks)}
+            </TabsContent>
+            
+            <TabsContent value="approaching" className="space-y-4">
+              <p className="text-sm text-muted-foreground">Tasks due within the next 24 hours</p>
+              {renderTaskList(approachingDeadlines)}
+            </TabsContent>
+            
+            <TabsContent value="duration" className="space-y-4">
+              <p className="text-sm text-muted-foreground">Tasks that have exceeded their estimated duration</p>
+              {renderTaskList(durationExceeded)}
+            </TabsContent>
+            
+            <TabsContent value="blocked" className="space-y-4">
+              <p className="text-sm text-muted-foreground">Tasks blocked by dependencies</p>
+              {renderTaskList(blockedTasks)}
+            </TabsContent>
+          </Tabs>
         )}
-      </div>
+      </CardContent>
     </Card>
-  )
+  );
 }

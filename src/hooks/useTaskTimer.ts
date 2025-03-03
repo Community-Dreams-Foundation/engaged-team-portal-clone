@@ -4,9 +4,15 @@ import { Task } from "@/types/task"
 import { useToast } from "@/hooks/use-toast"
 import { updateTaskTimer } from "@/utils/tasks/timerOperations"
 import { recordTimerUpdate } from "@/utils/tasks/activityOperations"
+import { useTaskAlerts } from "@/services/monitoringService"
 
 export function useTaskTimer(tasks: Task[], setTasks: React.Dispatch<React.SetStateAction<Task[]>>, userId?: string) {
   const { toast } = useToast()
+
+  // Use the monitoring service to check for alerts
+  if (userId) {
+    useTaskAlerts(userId, tasks);
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
