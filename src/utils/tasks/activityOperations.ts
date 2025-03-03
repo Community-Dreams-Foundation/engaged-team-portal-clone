@@ -1,7 +1,6 @@
-
 import { db } from "@/lib/firebase"
 import { doc, updateDoc, arrayUnion, getDoc, setDoc, query, collection, where, orderBy, getDocs } from "firebase/firestore"
-import { Activity } from "@/types/task"
+import { Activity, Task } from "@/types/task"
 
 export async function logActivity(userId: string, taskId: string, activity: Activity) {
   try {
@@ -80,7 +79,7 @@ export async function fetchRecentActivities(userId: string, limit: number = 10):
     const tasks = taskSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    })) as Task[];
     
     // Collect recent activities from all tasks
     const allActivities: {
