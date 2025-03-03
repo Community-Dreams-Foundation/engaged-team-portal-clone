@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,28 +55,22 @@ export function ConversationContent({
 
   const handleTaskSelect = (task: Task) => {
     setSelectedTask(task);
-    setNewMessage(prev => 
-      prev + `\n\nI'd like to discuss task "${task.title}" (ID: ${task.id}). Can you help me with this?`
-    );
+    setNewMessage(newMessage + `\n\nI'd like to discuss task "${task.title}" (ID: ${task.id}). Can you help me with this?`);
   };
 
   const getTaskSuggestions = () => {
-    // Filter tasks that might need attention
     return tasks.filter(task => {
-      // Tasks that are taking longer than estimated
       if (task.status === 'in-progress' && task.totalElapsedTime && task.estimatedDuration) {
         return task.totalElapsedTime > task.estimatedDuration * 60 * 1000 * 0.8;
       }
-      // Complex tasks
       if (task.metadata?.complexity === 'high') {
         return true;
       }
-      // Tasks with many dependencies
       if (task.dependencies && task.dependencies.length > 2) {
         return true;
       }
       return false;
-    }).slice(0, 3); // Limit to 3 suggestions
+    }).slice(0, 3);
   };
 
   const taskSuggestions = getTaskSuggestions();

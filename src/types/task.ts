@@ -57,6 +57,9 @@ export interface Task {
     skillRequirements?: SkillLevel[]
     aiEligible?: boolean
     externalStakeholder?: boolean
+    hasSubtasks?: boolean // Added this property
+    subtaskIds?: string[] // Added this property
+    parentTaskId?: string // Added this property
     performanceHistory?: {
       averageCompletionTime: number
       accuracyRate: number

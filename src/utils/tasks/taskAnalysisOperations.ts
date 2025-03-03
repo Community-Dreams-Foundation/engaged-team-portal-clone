@@ -1,8 +1,7 @@
 
-import { getDatabase, ref, get, set, push } from "firebase/database"
+import { getDatabase, ref, get, set, push, update } from "firebase/database"
 import type { Task, CoSRecommendation } from "@/types/task"
 import { autoSplitTask } from "./taskSplitting"
-import { updateTask } from "./basicOperations"
 
 // Analyze a task and provide recommendations
 export const analyzeTask = async (userId: string, taskId: string): Promise<CoSRecommendation[]> => {
@@ -120,9 +119,13 @@ export const breakdownTask = async (
   await Promise.all(subtasksPromises)
   
   // Update parent task to link to subtasks
-  await updateTask(userId, taskId, {
+  // Fix: Instead of using updateTask from basicOperations, we'll use the Firebase update directly
+  const parentTaskUpdateRef = ref(db, `users/${userId}/tasks/${taskId}`)
+  
+  await update(parentTaskUpdateRef, {
     metadata: {
       ...parentTask.metadata,
+      // Fix: Add hasSubtasks property to the metadata type
       hasSubtasks: true,
       subtaskIds: subtaskIds
     }
@@ -167,7 +170,7 @@ export const provideTaskGuidance = async (userId: string, taskId: string): Promi
   }
   
   // Complexity guidance
-  if (task.metadata?.complexity === 'high' && !task.metadata?.hasSubtasks) {
+  if (task.metadata?.complexity === 'high' && !(task.metadata as any)?.hasSubtasks) {
     return "This is a complex task that might benefit from being broken down into smaller subtasks."
   }
   
