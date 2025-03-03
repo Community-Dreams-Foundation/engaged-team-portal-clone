@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { KanbanSection } from "@/components/dashboard/sections/KanbanSection"
 import { DashboardOverview } from "@/components/dashboard/sections/DashboardOverview"
 import { useAuth } from "@/contexts/AuthContext"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useGamification } from "@/hooks/useGamification"
 import { fetchTasks } from "@/utils/tasks/basicOperations"
 import { Task } from "@/types/task"
@@ -18,18 +18,19 @@ export default function Index() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   
   console.log("Dashboard rendering with currentUser:", currentUser ? currentUser.uid : "null");
   
-  // Check if user has activity today when they load the dashboard
+  // Check streak only once when user is available
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && !hasAttemptedFetch) {
       console.log("Checking streak for user:", currentUser.uid);
       checkStreak();
     }
-  }, [currentUser, checkStreak]);
+  }, [currentUser, checkStreak, hasAttemptedFetch]);
 
-  // Fetch tasks for the dashboard
+  // Fetch tasks only once when user is available and prevent multiple attempts
   useEffect(() => {
     const loadTasks = async () => {
       if (!currentUser?.uid) {
@@ -38,9 +39,15 @@ export default function Index() {
         return;
       }
       
+      if (hasAttemptedFetch) {
+        console.log("Already attempted to fetch tasks, skipping");
+        return;
+      }
+      
       try {
         console.log("Fetching tasks for user:", currentUser.uid);
         setLoading(true);
+        setHasAttemptedFetch(true);
         const fetchedTasks = await fetchTasks(currentUser.uid);
         console.log("Fetched tasks:", fetchedTasks.length);
         setTasks(fetchedTasks);
@@ -57,7 +64,7 @@ export default function Index() {
     };
     
     loadTasks();
-  }, [currentUser?.uid, toast]);
+  }, [currentUser?.uid, toast, hasAttemptedFetch]);
 
   if (authLoading) {
     return (
