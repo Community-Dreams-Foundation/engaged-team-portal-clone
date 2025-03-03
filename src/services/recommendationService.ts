@@ -495,24 +495,41 @@ export const generatePersonalizedRecommendations = async (
     const preferredType = getPreferredRecommendationType(learningProfile.preferredRecommendationTypes);
     if (preferredType) {
       let content = "";
+      let recommendationType: "task" | "time" | "leadership" | "agent" | "learning" | "efficiency" = "efficiency";
       
       switch (preferredType) {
         case "efficiency":
           content = "Try the Pomodoro technique: 25 minutes of focused work followed by a 5-minute break. This could increase your productivity by 20%.";
+          recommendationType = "efficiency";
           break;
         case "leadership":
           content = "Schedule 15 minutes each day for reflection on your leadership decisions. This simple habit can significantly improve your decision-making.";
+          recommendationType = "leadership";
           break;
         case "time":
           content = "Review your completed tasks from last week. Identifying patterns in your work can help optimize your schedule.";
+          recommendationType = "time";
+          break;
+        case "task":
+          content = "Consider grouping similar tasks together. Task batching can reduce context switching and improve focus.";
+          recommendationType = "task";
+          break;
+        case "learning":
+          content = "Based on your learning patterns, try setting aside 20 minutes daily for targeted skill development.";
+          recommendationType = "learning";
+          break;
+        case "agent":
+          content = "Your agent usage patterns suggest you might benefit from creating a specialized research agent.";
+          recommendationType = "agent";
           break;
         default:
           content = "Based on your preferences, consider setting aside time each week for structured learning in your areas of interest.";
+          recommendationType = "learning";
       }
       
       recommendations.push({
         id: `personalized-rec-${Date.now()}-3`,
-        type: preferredType,
+        type: recommendationType,
         content,
         timestamp: Date.now() - 3600000, // 1 hour ago
         priority: "medium",
