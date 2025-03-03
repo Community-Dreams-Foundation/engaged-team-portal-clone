@@ -7,11 +7,17 @@ import type { AuditLog, UserRole } from '@/types/auth';
 
 export const createUserDocument = async (uid: string, email: string | null) => {
   try {
-    await setDoc(doc(db, 'users', uid), {
+    console.log(`Creating user document for uid: ${uid}, email: ${email}`);
+    const userRef = doc(db, 'users', uid);
+    
+    await setDoc(userRef, {
       email,
       role: 'member',
-      createdAt: Date.now()
-    });
+      createdAt: Date.now(),
+      authProvider: 'email'
+    }, { merge: true }); // Use merge option to avoid overwriting existing data
+    
+    console.log('User document created successfully');
   } catch (error: any) {
     console.error('Error creating user document:', error);
     toast({ 
