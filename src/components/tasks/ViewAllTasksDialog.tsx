@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -23,7 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Search, Clock, AlertCircle, CheckCircle, Tag } from "lucide-react"
+import { Search, Clock, AlertCircle, CheckCircle, Tag, RotateCw } from "lucide-react"
+import { TaskFilters, TaskFiltersState } from "@/components/tasks/TaskFilters"
+import { format, isAfter, isBefore, isWithinInterval } from "date-fns"
 
 interface ViewAllTasksDialogProps {
   open: boolean
@@ -37,8 +38,31 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  
+  const [filters, setFilters] = useState<TaskFiltersState>({
+    searchQuery: "",
+    dateRange: {
+      from: undefined,
+      to: undefined,
+    },
+    priorities: [],
+    tags: [],
+  })
+
+  // Reset filters handler
+  const handleClearFilters = () => {
+    setFilters({
+      searchQuery: "",
+      dateRange: {
+        from: undefined,
+        to: undefined,
+      },
+      priorities: [],
+      tags: [],
+    });
+  }
   
   useEffect(() => {
     const loadTasks = async () => {
@@ -48,7 +72,17 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
         setLoading(true)
         const fetchedTasks = await fetchTasks(currentUser.uid)
         setTasks(fetchedTasks)
-        setFilteredTasks(fetchedTasks)
+        
+        // Extract all unique tags
+        const tags = new Set<string>();
+        fetchedTasks.forEach(task => {
+          if (task.tags && task.tags.length > 0) {
+            task.tags.forEach(tag => tags.add(tag));
+          }
+        });
+        
+        setAvailableTags(Array.from(tags).sort());
+        
       } catch (error) {
         console.error("Error fetching tasks:", error)
         toast({
@@ -64,30 +98,69 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
     loadTasks()
   }, [currentUser?.uid, open, toast])
   
+  // Apply filters to tasks
   useEffect(() => {
-    let result = [...tasks]
+    let result = [...tasks];
     
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+    // Filter by status (tab)
+    if (activeTab !== "all") {
+      result = result.filter(task => task.status === activeTab);
+    }
+    
+    // Apply search query filter
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
       result = result.filter(task => 
         task.title.toLowerCase().includes(query) || 
         task.description.toLowerCase().includes(query) ||
         (task.tags && task.tags.some(tag => tag.toLowerCase().includes(query)))
-      )
+      );
     }
     
-    // Filter by tab
-    if (activeTab !== "all") {
-      result = result.filter(task => task.status === activeTab)
+    // Apply date range filter
+    if (filters.dateRange.from || filters.dateRange.to) {
+      result = result.filter(task => {
+        if (!task.dueDate) return false;
+        
+        const taskDueDate = new Date(task.dueDate);
+        
+        if (filters.dateRange.from && filters.dateRange.to) {
+          return isWithinInterval(taskDueDate, {
+            start: filters.dateRange.from,
+            end: filters.dateRange.to
+          });
+        } else if (filters.dateRange.from) {
+          return isAfter(taskDueDate, filters.dateRange.from) || 
+                 taskDueDate.getTime() === filters.dateRange.from.getTime();
+        } else if (filters.dateRange.to) {
+          return isBefore(taskDueDate, filters.dateRange.to) || 
+                 taskDueDate.getTime() === filters.dateRange.to.getTime();
+        }
+        
+        return true;
+      });
     }
     
-    setFilteredTasks(result)
-  }, [searchQuery, activeTab, tasks])
+    // Apply priority filter
+    if (filters.priorities.length > 0) {
+      result = result.filter(task => 
+        task.priority && filters.priorities.includes(task.priority)
+      );
+    }
+    
+    // Apply tags filter
+    if (filters.tags.length > 0) {
+      result = result.filter(task => 
+        task.tags && filters.tags.some(tag => task.tags?.includes(tag))
+      );
+    }
+    
+    setFilteredTasks(result);
+  }, [tasks, filters, activeTab]);
   
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "N/A"
-    return new Date(timestamp).toLocaleDateString()
+    return format(new Date(timestamp), "MMM d, yyyy")
   }
   
   const getStatusBadge = (status: string) => {
@@ -117,7 +190,7 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>All Tasks</DialogTitle>
           <DialogDescription>
@@ -125,16 +198,13 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex items-center gap-4 py-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <div className="py-4">
+          <TaskFilters 
+            availableTags={availableTags}
+            filters={filters}
+            onFiltersChange={setFilters}
+            onClearFilters={handleClearFilters}
+          />
         </div>
         
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
@@ -166,14 +236,23 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
                       <TableHead>Priority</TableHead>
                       <TableHead>Estimated</TableHead>
                       <TableHead>Actual</TableHead>
+                      <TableHead>Due Date</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Tags</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredTasks.map(task => (
                       <TableRow key={task.id}>
-                        <TableCell className="font-medium">{task.title}</TableCell>
+                        <TableCell className="font-medium max-w-[200px] truncate">
+                          {task.title}
+                          {task.recurringConfig?.isRecurring && (
+                            <span className="ml-2 inline-flex items-center">
+                              <RotateCw className="h-3.5 w-3.5 text-blue-500" />
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(task.status)}</TableCell>
                         <TableCell>
                           {task.priority && (
@@ -203,6 +282,9 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
                             {formatDuration(task.actualDuration)}
                           </span>
                         </TableCell>
+                        <TableCell>
+                          {task.dueDate ? formatDate(task.dueDate) : "No due date"}
+                        </TableCell>
                         <TableCell>{formatDate(task.createdAt)}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -213,6 +295,14 @@ export function ViewAllTasksDialog({ open, onOpenChange }: ViewAllTasksDialogPro
                               </Badge>
                             ))}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {task.recurringConfig?.isRecurring && (
+                            <Badge variant="outline" className="text-blue-500 border-blue-500 whitespace-nowrap">
+                              <RotateCw className="h-3 w-3 mr-1" />
+                              {task.recurringConfig.pattern}
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

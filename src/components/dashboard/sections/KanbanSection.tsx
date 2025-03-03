@@ -1,19 +1,72 @@
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { KanbanBoard } from "@/components/dashboard/KanbanBoard"
-import { ChevronRight, Kanban, Filter, Plus } from "lucide-react"
+import { ChevronRight, Kanban, Filter, Plus, Search, RotateCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CreateTaskDialog from "@/components/tasks/CreateTaskDialog"
 import { ViewAllTasksDialog } from "@/components/tasks/ViewAllTasksDialog"
 import { useCosRecommendations } from "@/hooks/useCosRecommendations"
 import { Task } from "@/types/task"
+import { TaskFilters, TaskFiltersState } from "@/components/tasks/TaskFilters"
+import { useAuth } from "@/contexts/AuthContext"
+import { fetchTasks } from "@/utils/tasks/basicOperations"
 
 export function KanbanSection() {
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showAllTasks, setShowAllTasks] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [allTags, setAllTags] = useState<string[]>([])
   const kanbanBoardRef = useRef<any>(null)
   const { createTaskRecommendation } = useCosRecommendations()
+  const { currentUser } = useAuth()
+  
+  const [filters, setFilters] = useState<TaskFiltersState>({
+    searchQuery: "",
+    dateRange: {
+      from: undefined,
+      to: undefined,
+    },
+    priorities: [],
+    tags: [],
+  })
+  
+  // Load all tags for filter dropdown
+  useEffect(() => {
+    const loadTags = async () => {
+      if (!currentUser?.uid) return
+      
+      try {
+        const fetchedTasks = await fetchTasks(currentUser.uid)
+        
+        // Extract all unique tags
+        const tags = new Set<string>()
+        fetchedTasks.forEach(task => {
+          if (task.tags && task.tags.length > 0) {
+            task.tags.forEach(tag => tags.add(tag))
+          }
+        })
+        
+        setAllTags(Array.from(tags).sort())
+      } catch (error) {
+        console.error("Error fetching task tags:", error)
+      }
+    }
+    
+    loadTags()
+  }, [currentUser?.uid])
+  
+  const handleClearFilters = () => {
+    setFilters({
+      searchQuery: "",
+      dateRange: {
+        from: undefined,
+        to: undefined,
+      },
+      priorities: [],
+      tags: [],
+    })
+  }
   
   const handleTaskCreated = (task: Partial<Task>) => {
     // Force reload tasks in KanbanBoard
@@ -29,6 +82,16 @@ export function KanbanSection() {
         `Consider breaking down "${task.title}" into smaller subtasks for better management and tracking.`,
         "medium"
       )
+      
+      // If it's a recurring task, generate a specific recommendation
+      if (task.recurringConfig?.isRecurring) {
+        createTaskRecommendation(
+          task.id,
+          task.title,
+          `You've created "${task.title}" as a recurring ${task.recurringConfig.pattern} task. The CoS system will help you track completions and create new instances automatically.`,
+          "medium"
+        )
+      }
     }
     
     // Reopen if needed
@@ -48,9 +111,14 @@ export function KanbanSection() {
               Task Management Board
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="text-sm gap-1">
+              <Button 
+                variant={showFilters ? "default" : "outline"} 
+                size="sm" 
+                className="text-sm gap-1"
+                onClick={() => setShowFilters(!showFilters)}
+              >
                 <Filter className="h-4 w-4" />
-                Filter
+                {showFilters ? "Hide Filters" : "Show Filters"}
               </Button>
               <Button 
                 variant="default" 
@@ -74,9 +142,24 @@ export function KanbanSection() {
           <p className="text-sm text-muted-foreground mt-1">
             Manage and organize your tasks by dragging them across different stages
           </p>
+          
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t">
+              <TaskFilters
+                availableTags={allTags}
+                filters={filters}
+                onFiltersChange={setFilters}
+                onClearFilters={handleClearFilters}
+              />
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-4">
-          <KanbanBoard ref={kanbanBoardRef} />
+          <KanbanBoard 
+            ref={kanbanBoardRef} 
+            filters={filters}
+            showRecurring={true}
+          />
         </CardContent>
       </Card>
       

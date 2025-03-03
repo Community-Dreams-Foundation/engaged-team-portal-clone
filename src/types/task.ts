@@ -1,6 +1,8 @@
+
 export type TaskStatus = "todo" | "not-started" | "in-progress" | "completed" | "blocked"
 export type TaskPriority = "high" | "medium" | "low"
 export type SkillLevel = "beginner" | "intermediate" | "advanced"
+export type TaskRecurrencePattern = "daily" | "weekly" | "biweekly" | "monthly" | "custom"
 export type AgentType = "general" | "data-analysis" | "content-creation" | "project-management"
 
 export interface Activity {
@@ -29,6 +31,18 @@ export interface CoSRecommendation {
   }
 }
 
+export interface RecurringTaskConfig {
+  isRecurring: boolean
+  pattern: TaskRecurrencePattern
+  interval: number // 1 = every day/week/month, 2 = every other day/week/month
+  daysOfWeek?: number[] // 0-6 for Sunday-Saturday
+  endAfterOccurrences?: number
+  endDate?: number // timestamp
+  nextOccurrence?: number // timestamp for the next occurrence
+  occurrencesCompleted?: number
+  parentTaskId?: string // for tasks created from a recurring template
+}
+
 export interface Task {
   id: string
   title: string
@@ -41,6 +55,7 @@ export interface Task {
   tags?: string[]
   createdAt?: number
   updatedAt?: number
+  dueDate?: number // timestamp for task due date
   isTimerRunning?: boolean
   startTime?: number // timestamp when timer was last started
   totalElapsedTime?: number // total time spent on task in milliseconds
@@ -48,6 +63,7 @@ export interface Task {
   completionPercentage?: number // 0-100
   lastActivity?: Activity
   activities?: Activity[]
+  recurringConfig?: RecurringTaskConfig
   comments?: Array<{
     id: string
     text: string
