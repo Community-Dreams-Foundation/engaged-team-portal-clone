@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -114,38 +115,23 @@ export default function AuthForm({ isLogin, setIsLogin }: AuthFormProps) {
   }
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      console.log('Starting Google sign-in process');
-      await signInWithGoogle();
-      console.log('Google sign-in successful');
+      await signInWithGoogle()
       toast({
         title: "Welcome!",
         description: "Successfully signed in with Google"
-      });
-      navigate("/dashboard");
+      })
+      navigate("/dashboard")
     } catch (error: any) {
-      console.error('Google auth error:', error);
-      
-      let errorMessage = "Failed to sign in with Google";
-      
-      if (error.code === 'permission-denied') {
-        errorMessage = "Permission issue. Please try again or use email login.";
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Sign-in popup was closed. Please try again.";
-      } else if (error.code === 'auth/network-request-failed') {
-        errorMessage = "Network error. Please check your connection.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+      console.error('Google auth error:', error)
       toast({
         variant: "destructive",
         title: "Google Sign-in Error",
-        description: errorMessage
-      });
+        description: error.message || "Failed to sign in with Google"
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 

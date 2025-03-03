@@ -13,7 +13,7 @@ import {
   PhoneMultiFactorGenerator,
   RecaptchaVerifier
 } from 'firebase/auth';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db, checkFirebaseConnection } from '@/lib/firebase';
 import { toast } from '@/components/ui/use-toast';
 import { createUserDocument, logAuditEvent } from '@/utils/authUtils';
@@ -256,56 +256,27 @@ export const useAuthOperations = () => {
 
   const signInWithGoogle = async () => {
     try {
-      console.log('Starting Google authentication process...');
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
       console.log('Google login success:', result.user.email);
       
-      try {
-        // Check if user document exists
-        const userDocRef = doc(db, 'users', result.user.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (!userDoc.exists()) {
-          console.log('Creating new user document for Google auth user');
-          // Directly create user document with setDoc instead of using helper
-          await setDoc(userDocRef, {
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoURL: result.user.photoURL,
-            role: 'member',
-            createdAt: Date.now(),
-            authProvider: 'google'
-          });
-          return 'member' as UserRole;
-        } else {
-          console.log('Existing user document found');
-          const userData = userDoc.data();
-          const role = userData.role as UserRole;
-          
-          if (role === 'super_admin') {
-            await logAuditEvent(result.user.uid, 'super_admin_google_login', { email: result.user.email });
-          }
-          
-          return role;
-        }
-      } catch (firestoreError) {
-        console.error('Firestore operation failed:', firestoreError);
-        // Don't fail the login, use a default role
-        toast({
-          variant: "warning", 
-          title: "Limited functionality", 
-          description: "Using basic access due to database permission issues"
-        });
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      
+      if (!userDoc.exists()) {
+        await createUserDocument(result.user.uid, result.user.email);
         return 'member' as UserRole;
+      } else {
+        const userData = userDoc.data();
+        const role = userData.role as UserRole;
+        
+        if (role === 'super_admin') {
+          await logAuditEvent(result.user.uid, 'super_admin_google_login', { email: result.user.email });
+        }
+        
+        return role;
       }
     } catch (error: any) {
       console.error('Google login error:', error);
-      toast({ 
-        variant: "destructive", 
-        title: "Google login failed", 
-        description: error.message || "Authentication failed"
-      });
+      toast({ variant: "destructive", title: "Google login failed", description: error.message });
       throw error;
     }
   };
