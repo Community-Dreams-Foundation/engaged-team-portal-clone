@@ -11,24 +11,24 @@ export const useFirebaseToken = (
 ) => {
   const isMounted = useRef(true);
   
-  // Memoize the token handling logic to prevent unnecessary rerenders
+  // Memoize the token handling logic to prevent unnecessary work
   const handleTokenChange = useCallback(async (user: any) => {
     console.log('Token changed:', user?.email);
     try {
       if (user && isMounted.current) {
         try {
-          // Fetch token only when needed
-          const tokenResult = await getIdTokenResult(user);
+          // Batch token operations to reduce potential race conditions
+          const [token, tokenResult] = await Promise.all([
+            getIdToken(user, true),
+            getIdTokenResult(user)
+          ]);
+          
           const role = tokenResult.claims.role as UserRole;
           
-          // Only update token in localStorage when it's actually needed
-          const token = await getIdToken(user, true);
           localStorage.setItem('authToken', token);
-          
           if (isMounted.current) {
             // Create extended user object with role for consistent state
             const extendedUser: ExtendedUser = Object.assign({}, user, { role });
-            console.log('Setting user role from token:', role);
             setUserRole(role);
             setCurrentUser(extendedUser);
           }
@@ -43,7 +43,7 @@ export const useFirebaseToken = (
           }
         }
       } else if (isMounted.current) {
-        console.log('No authenticated user, clearing token state');
+        console.log('No authenticated user, clearing state');
         localStorage.removeItem('authToken');
         setCurrentUser(null);
         setUserRole(undefined);
@@ -61,7 +61,6 @@ export const useFirebaseToken = (
     console.log('Setting up Firebase token listener');
     isMounted.current = true;
 
-    // Limit token change events by using onIdTokenChanged instead of coupling with auth state
     const unsubscribe = auth.onIdTokenChanged(handleTokenChange);
 
     return () => {

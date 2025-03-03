@@ -38,7 +38,6 @@ import "./App.css"
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-primary"></div>
-    <p className="ml-4 text-lg">Loading application...</p>
   </div>
 );
 
@@ -61,18 +60,9 @@ function App() {
     if (isDark) {
       document.documentElement.classList.add("dark")
     }
-
-    console.log("App component mounted");
   }, [])
 
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: 1,
-        refetchOnWindowFocus: false,
-      },
-    },
-  })
+  const queryClient = new QueryClient()
 
   return (
     <QueryClientProvider client={queryClient}>

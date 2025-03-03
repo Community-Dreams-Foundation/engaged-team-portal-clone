@@ -7,9 +7,7 @@ import { useAuthOperations } from '@/hooks/useAuthOperations';
 import { checkRole, logAuditEvent } from '@/utils/authUtils';
 import { useFirebaseToken } from '@/hooks/useFirebaseToken';
 import { useFirebaseAuth } from '@/hooks/useFirebaseAuth';
-import { useSessionManagement } from '@/hooks/useSessionManagement';
-import { useAccountActivity } from '@/hooks/useAccountActivity';
-import { exportUserData } from '@/services/userDataService';
+import { AccountApi } from '@/api/gateway';
 import type { UserRole, ExtendedUser, Session, ActivityLogEntry } from '@/types/auth';
 import type { AuthContextType } from '@/types/authContext';
 
@@ -28,7 +26,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole>();
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
-  
   const { 
     signup, 
     login, 
@@ -39,10 +36,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setupMFA,
     completeMFASetup 
   } = useAuthOperations();
-
-  // Initialize session management hooks with current user ID
-  const { getActiveSessions, terminateSession, terminateAllSessions } = useSessionManagement(currentUser?.uid);
-  const { getAccountActivity } = useAccountActivity(currentUser?.uid);
 
   useEffect(() => {
     console.log('Setting up Firebase persistence...');
@@ -57,14 +50,122 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
   }, []);
 
-  useEffect(() => {
-    console.log('Auth state - currentUser:', currentUser?.uid);
-    console.log('Auth state - userRole:', userRole);
-    console.log('Auth state - loading:', loading);
-  }, [currentUser, userRole, loading]);
-
   useFirebaseToken(setCurrentUser, setUserRole);
   useFirebaseAuth(setCurrentUser, setUserRole, setLoading);
+
+  // Account session management functions
+  const getActiveSessions = async (): Promise<Session[]> => {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    try {
+      return await AccountApi.fetchSessions(currentUser.uid);
+    } catch (error) {
+      console.error('Error fetching active sessions:', error);
+      toast({
+        variant: "destructive",
+        title: "Error fetching sessions",
+        description: "Could not retrieve your active sessions"
+      });
+      return [];
+    }
+  };
+
+  const terminateSession = async (sessionId: string): Promise<void> => {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    try {
+      await AccountApi.terminateSession(sessionId);
+      toast({
+        title: "Session terminated",
+        description: "The selected session has been logged out"
+      });
+    } catch (error) {
+      console.error('Error terminating session:', error);
+      toast({
+        variant: "destructive",
+        title: "Error terminating session",
+        description: "Could not terminate the selected session"
+      });
+      throw error;
+    }
+  };
+
+  const terminateAllSessions = async (excludeCurrentSession: boolean = true): Promise<void> => {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    try {
+      await AccountApi.terminateAllSessions(excludeCurrentSession);
+      toast({
+        title: "All sessions terminated",
+        description: excludeCurrentSession 
+          ? "All other sessions have been logged out" 
+          : "All sessions including current have been logged out"
+      });
+      
+      // If current session is also terminated, logout the user
+      if (!excludeCurrentSession) {
+        await handleLogout(currentUser.uid, userRole);
+        setUserRole(undefined);
+      }
+    } catch (error) {
+      console.error('Error terminating all sessions:', error);
+      toast({
+        variant: "destructive",
+        title: "Error terminating sessions",
+        description: "Could not terminate all sessions"
+      });
+      throw error;
+    }
+  };
+
+  // Account activity log functions
+  const getAccountActivity = async (limit: number = 20): Promise<ActivityLogEntry[]> => {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    try {
+      return await AccountApi.fetchActivityLog(currentUser.uid, limit);
+    } catch (error) {
+      console.error('Error fetching account activity:', error);
+      toast({
+        variant: "destructive",
+        title: "Error fetching activity",
+        description: "Could not retrieve your account activity"
+      });
+      return [];
+    }
+  };
+
+  // Data export function
+  const exportUserData = async (): Promise<Blob> => {
+    if (!currentUser) {
+      throw new Error('User not authenticated');
+    }
+    try {
+      const userData = await AccountApi.exportUserData(currentUser.uid);
+      // Convert the data to a JSON blob
+      const jsonString = JSON.stringify(userData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      
+      toast({
+        title: "Data export ready",
+        description: "Your data has been prepared for download"
+      });
+      
+      return blob;
+    } catch (error) {
+      console.error('Error exporting user data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error exporting data",
+        description: "Could not export your personal data"
+      });
+      throw error;
+    }
+  };
 
   const value = {
     currentUser,
@@ -112,29 +213,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     resendVerificationEmail,
     setupMFA,
     completeMFASetup,
-    // Add the exported methods from our new hooks
+    // Add the new required methods
     getActiveSessions,
     terminateSession,
     terminateAllSessions,
     getAccountActivity,
-    exportUserData: async () => {
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-      return exportUserData(currentUser.uid);
-    },
+    exportUserData,
     ...checkRole(userRole)
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
-        <div className="flex items-center justify-center h-screen">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        children
-      )}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

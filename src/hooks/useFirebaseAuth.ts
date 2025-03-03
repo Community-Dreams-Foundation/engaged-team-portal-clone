@@ -58,7 +58,7 @@ export const useFirebaseAuth = (
           if (!userDoc.exists()) {
             console.warn('User document missing for uid:', user.uid);
             const role: UserRole = 'member';
-            const extendedUser = Object.assign({}, user, { role });
+            const extendedUser = Object.assign(user, { role });
             setCurrentUser(extendedUser);
             setUserRole(role);
           } else {
@@ -66,7 +66,7 @@ export const useFirebaseAuth = (
             console.log('User document data:', userData);
             const role = userData?.role as UserRole;
             console.log('User role from Firestore:', role);
-            const extendedUser = Object.assign({}, user, { role });
+            const extendedUser = Object.assign(user, { role });
             setCurrentUser(extendedUser);
             setUserRole(role);
           }
