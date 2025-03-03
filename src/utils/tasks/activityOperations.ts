@@ -90,11 +90,12 @@ export async function fetchRecentActivities(userId: string, limit: number = 10):
     }[] = [];
     
     tasks.forEach(task => {
-      if (task.activities && task.activities.length > 0) {
+      // Check if task has activities property before accessing it
+      if (task && task.activities && Array.isArray(task.activities) && task.activities.length > 0) {
         task.activities.forEach((activity: Activity) => {
           allActivities.push({
             taskId: task.id,
-            taskTitle: task.title,
+            taskTitle: task.title || "Untitled Task", // Provide fallback if title is missing
             activity: activity
           });
         });
