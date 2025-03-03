@@ -16,9 +16,11 @@ import { TaskFiltersState } from "@/components/tasks/TaskFilters"
 import { isAfter, isBefore, isWithinInterval, addDays, addWeeks, addMonths } from "date-fns"
 import { BatchActions } from "@/components/tasks/BatchActions"
 import { Button } from "@/components/ui/button"
-import { Check, Clipboard, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, Clipboard, CheckSquare, ChevronLeft, ChevronRight, BarChart } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TaskPrioritizationMatrix } from "@/components/tasks/prioritization/TaskPrioritizationMatrix"
+import { TaskReportingPanel } from "@/components/tasks/reporting/TaskReportingPanel"
 
 interface KanbanBoardProps {
   filters?: TaskFiltersState;
@@ -35,6 +37,7 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
     const [selectMode, setSelectMode] = useState(false)
     const [activeColumn, setActiveColumn] = useState<TaskStatus>("todo")
+    const [showReporting, setShowReporting] = useState(false)
     const isMobile = useIsMobile()
 
     const { toggleTimer } = useTaskTimer(filteredTasks, setFilteredTasks, currentUser?.uid)
@@ -297,7 +300,17 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
         <TaskAnalytics tasks={filteredTasks} />
         <TaskMonitor tasks={filteredTasks} />
         
-        <div className="flex justify-end mb-2">
+        <div className="flex justify-between mb-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReporting(!showReporting)}
+            className="flex items-center gap-1"
+          >
+            <BarChart className="h-4 w-4" />
+            {showReporting ? "Hide Reporting" : "Show Reporting & Export"}
+          </Button>
+          
           <Button
             variant={selectMode ? "default" : "outline"}
             size="sm"
@@ -317,6 +330,15 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
             )}
           </Button>
         </div>
+        
+        {showReporting && (
+          <TaskReportingPanel tasks={filteredTasks} />
+        )}
+        
+        <TaskPrioritizationMatrix 
+          tasks={filteredTasks}
+          onTaskUpdated={handleTaskUpdated}
+        />
         
         {isMobile ? (
           <div className="space-y-4">
