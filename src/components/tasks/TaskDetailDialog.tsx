@@ -12,25 +12,97 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { 
   Calendar, Clock, Tag, AlertCircle, CheckCircle, 
-  MessageSquare, RotateCw, Calendar as CalendarIcon
+  MessageSquare, RotateCw, Calendar as CalendarIcon,
+  GitBranch, GitMerge, Link, Plus
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskCommentSection } from "./TaskCommentSection"
 import { TaskActivity } from "./TaskActivity"
 import { format } from "date-fns"
+import { DependencyVisualization } from "./DependencyVisualization"
+import { useAuth } from "@/contexts/AuthContext"
+import { fetchTasks, createTask } from "@/utils/tasks/basicOperations"
+import { useToast } from "@/components/ui/use-toast"
 
 interface TaskDetailDialogProps {
   task: Task
   open: boolean
   onOpenChange: (open: boolean) => void
+  onTaskUpdated?: () => void
 }
 
 export function TaskDetailDialog({ 
   task, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  onTaskUpdated
 }: TaskDetailDialogProps) {
   const [activeTab, setActiveTab] = useState("details")
+  const [allTasks, setAllTasks] = useState<Task[]>([])
+  const { currentUser } = useAuth()
+  const { toast } = useToast()
+  
+  // Fetch all tasks when dependency tab is activated
+  const handleTabChange = async (value: string) => {
+    setActiveTab(value)
+    
+    if ((value === "dependencies" || value === "subtasks") && currentUser?.uid && allTasks.length === 0) {
+      try {
+        const tasks = await fetchTasks(currentUser.uid)
+        setAllTasks(tasks)
+      } catch (error) {
+        console.error("Error fetching tasks for dependencies:", error)
+        toast({
+          variant: "destructive",
+          title: "Error loading tasks",
+          description: "Could not load tasks for dependency visualization."
+        })
+      }
+    }
+  }
+  
+  const handleCreateSubtask = async () => {
+    if (!currentUser?.uid) return
+    
+    try {
+      const subtask: Partial<Task> = {
+        title: `Subtask of: ${task.title}`,
+        description: `This is a subtask of "${task.title}"`,
+        status: "todo",
+        estimatedDuration: 30,
+        actualDuration: 0,
+        priority: task.priority,
+        tags: task.tags,
+        metadata: {
+          ...task.metadata,
+          parentTaskId: task.id,
+          hasSubtasks: false,
+          subtaskIds: []
+        }
+      }
+      
+      // Create the subtask
+      const newSubtaskId = await createTask(currentUser.uid, subtask)
+      
+      // Update parent task's subtaskIds if needed
+      // Note: This would typically be handled by a backend function
+      toast({
+        title: "Subtask created",
+        description: "Subtask has been created successfully."
+      })
+      
+      if (onTaskUpdated) {
+        onTaskUpdated()
+      }
+    } catch (error) {
+      console.error("Error creating subtask:", error)
+      toast({
+        variant: "destructive",
+        title: "Error creating subtask",
+        description: "Could not create subtask. Please try again."
+      })
+    }
+  }
   
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -91,6 +163,12 @@ export function TaskDetailDialog({
             {task.recurringConfig?.isRecurring && (
               <RotateCw className="h-5 w-5 text-blue-500" />
             )}
+            {task.metadata?.hasSubtasks && (
+              <GitBranch className="h-5 w-5 text-purple-500" />
+            )}
+            {task.metadata?.parentTaskId && (
+              <GitMerge className="h-5 w-5 text-indigo-500" />
+            )}
           </DialogTitle>
           <div className="flex flex-wrap gap-2 mt-2">
             {getStatusBadge(task.status)}
@@ -102,17 +180,40 @@ export function TaskDetailDialog({
                 Recurring
               </Badge>
             )}
+            
+            {task.metadata?.hasSubtasks && (
+              <Badge className="bg-purple-500/10 text-purple-500">
+                <GitBranch className="h-3.5 w-3.5 mr-1" />
+                Has Subtasks
+              </Badge>
+            )}
+            
+            {task.metadata?.parentTaskId && (
+              <Badge className="bg-indigo-500/10 text-indigo-500">
+                <GitMerge className="h-3.5 w-3.5 mr-1" />
+                Subtask
+              </Badge>
+            )}
+            
+            {task.dependencies && task.dependencies.length > 0 && (
+              <Badge className="bg-gray-500/10 text-gray-500">
+                <Link className="h-3.5 w-3.5 mr-1" />
+                Has Dependencies
+              </Badge>
+            )}
           </div>
         </DialogHeader>
         
         <Tabs 
           defaultValue="details" 
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={handleTabChange}
           className="flex-1 overflow-hidden flex flex-col"
         >
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
             <TabsTrigger value="comments">
               Comments
               {task.comments && task.comments.length > 0 && (
@@ -258,12 +359,100 @@ export function TaskDetailDialog({
             </div>
           </TabsContent>
           
+          <TabsContent value="dependencies" className="flex-1 overflow-auto p-4">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="border rounded-lg p-4 bg-gray-50/50">
+                  {allTasks.length > 0 ? (
+                    <DependencyVisualization 
+                      tasks={allTasks} 
+                      taskId={task.id} 
+                      type="dependencies" 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-32">
+                      <p className="text-muted-foreground">Loading dependencies...</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="border rounded-lg p-4 bg-gray-50/50">
+                  {allTasks.length > 0 ? (
+                    <DependencyVisualization 
+                      tasks={allTasks} 
+                      taskId={task.id} 
+                      type="dependents" 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-32">
+                      <p className="text-muted-foreground">Loading dependent tasks...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                <p>Dependencies are tasks that must be completed before this task can be started.</p>
+                <p>Dependent tasks are tasks that depend on this task to be completed.</p>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="subtasks" className="flex-1 overflow-auto p-4">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Subtask Management</h3>
+                <Button size="sm" onClick={handleCreateSubtask}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create Subtask
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {task.metadata?.parentTaskId && (
+                  <div className="border rounded-lg p-4 bg-gray-50/50">
+                    {allTasks.length > 0 ? (
+                      <DependencyVisualization 
+                        tasks={allTasks} 
+                        taskId={task.id} 
+                        type="parent" 
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-32">
+                        <p className="text-muted-foreground">Loading parent task...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <div className="border rounded-lg p-4 bg-gray-50/50">
+                  {allTasks.length > 0 ? (
+                    <DependencyVisualization 
+                      tasks={allTasks} 
+                      taskId={task.id} 
+                      type="subtasks" 
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-32">
+                      <p className="text-muted-foreground">Loading subtasks...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                <p>Subtasks are smaller, more manageable pieces of this task.</p>
+                <p>Managing tasks in hierarchies helps with organization and tracking progress.</p>
+              </div>
+            </div>
+          </TabsContent>
+          
           <TabsContent value="comments" className="flex-1 overflow-auto p-1">
             <TaskCommentSection task={task} />
           </TabsContent>
           
           <TabsContent value="activity" className="flex-1 overflow-auto p-1">
-            <TaskActivity activities={task.activities} />
+            <TaskActivity activities={task.activities} task={task} />
           </TabsContent>
         </Tabs>
         

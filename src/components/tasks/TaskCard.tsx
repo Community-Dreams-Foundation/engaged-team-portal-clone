@@ -1,144 +1,204 @@
 
 import { useState } from "react"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Task } from "@/types/task"
+import { Clock, MoreVertical, Tag, ArrowRightCircle, CheckCircle, Rotate, GitBranch, GitMerge, Link } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Task } from "@/types/task"
-import { Clock, PlayCircle, StopCircle, AlertCircle, CheckCircle, Tag, RotateCw } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { formatDistance } from "date-fns"
 import { TaskDetailDialog } from "./TaskDetailDialog"
 
 interface TaskCardProps {
   task: Task
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, taskId: string) => void
   onTimerToggle: (taskId: string) => void
   formatDuration: (milliseconds: number) => string
   canStartTask: (taskId: string) => Promise<boolean>
+  onTaskUpdated?: () => void
 }
 
-export function TaskCard({ 
-  task, 
-  onTimerToggle, 
+export function TaskCard({
+  task,
+  onDragStart,
+  onTimerToggle,
   formatDuration,
-  canStartTask 
+  canStartTask,
+  onTaskUpdated
 }: TaskCardProps) {
-  const [showDetail, setShowDetail] = useState(false)
-  const [canStart, setCanStart] = useState<boolean | null>(null)
-  
-  const handleTimerClick = async () => {
-    // Only check dependencies if task is not already in progress
-    if (task.status !== "in-progress" && canStart === null) {
-      const check = await canStartTask(task.id)
-      setCanStart(check)
-      
-      if (!check) {
-        return // Don't start timer if dependencies aren't met
-      }
+  const [showDetails, setShowDetails] = useState(false)
+  const [canStart, setCanStart] = useState(true)
+
+  // Check if task can be started (dependencies completed)
+  useState(() => {
+    if (task.status === "todo" || task.status === "not-started") {
+      canStartTask(task.id).then(result => setCanStart(result))
     }
-    
-    onTimerToggle(task.id)
+  })
+
+  const getPriorityColor = () => {
+    switch (task.priority) {
+      case "high":
+        return "bg-red-500"
+      case "medium":
+        return "bg-yellow-500"
+      case "low":
+        return "bg-green-500"
+      default:
+        return "bg-gray-500"
+    }
   }
-  
+
   return (
     <>
-      <Card className="shadow-sm hover:shadow transition-shadow">
-        <CardContent className="p-3">
-          <div className="space-y-2">
-            <div 
-              className="font-medium line-clamp-2 cursor-pointer hover:text-primary"
-              onClick={() => setShowDetail(true)}
+      <div
+        className="bg-white rounded-md shadow-sm border p-3 mb-2 cursor-grab hover:shadow"
+        draggable
+        onDragStart={(e) => onDragStart(e, task.id)}
+      >
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center">
+            <div className={`${getPriorityColor()} w-2 h-2 rounded-full mr-2`} />
+            <h3 className="font-medium text-sm truncate max-w-[180px]">{task.title}</h3>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowDetails(true)}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onTimerToggle(task.id)}>
+                {task.isTimerRunning ? "Stop Timer" : "Start Timer"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {task.dueDate && (
+          <div className="text-xs text-gray-500 mb-2">
+            Due {formatDistance(new Date(task.dueDate), new Date(), { addSuffix: true })}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 mb-2">
+          {task.isTimerRunning ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2 text-red-500 hover:text-red-600"
+              onClick={() => onTimerToggle(task.id)}
             >
-              {task.title}
-              {task.recurringConfig?.isRecurring && (
-                <span className="ml-2 inline-flex items-center">
-                  <RotateCw className="h-3.5 w-3.5 text-blue-500" />
-                </span>
-              )}
-            </div>
-            
-            <div className="text-sm text-muted-foreground line-clamp-2">
-              {task.description || "No description"}
-            </div>
-            
-            <div className="flex flex-wrap gap-1 mt-2">
-              {task.priority && (
-                <Badge
-                  variant="outline"
-                  className={
-                    task.priority === 'high'
-                      ? 'text-red-500 border-red-500'
-                      : task.priority === 'medium'
-                      ? 'text-yellow-500 border-yellow-500'
-                      : 'text-green-500 border-green-500'
-                  }
-                >
-                  {task.priority}
-                </Badge>
-              )}
-              
-              {task.dueDate && (
-                <Badge variant="outline">
-                  Due: {new Date(task.dueDate).toLocaleDateString()}
-                </Badge>
-              )}
-              
-              {task.recurringConfig?.isRecurring && (
-                <Badge variant="outline" className="text-blue-500 border-blue-500">
-                  <RotateCw className="h-3 w-3 mr-1" />
-                  {task.recurringConfig.pattern}
-                </Badge>
-              )}
-              
-              {canStart === false && (
-                <Badge variant="outline" className="text-red-500 border-red-500">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Blocked
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex flex-wrap gap-1 mt-1">
-              {task.tags?.slice(0, 3).map(tag => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  <Tag className="h-3 w-3 mr-1" />
-                  {tag}
-                </Badge>
-              ))}
-              {task.tags && task.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{task.tags.length - 3} more
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="p-3 pt-0 flex justify-between items-center border-t mt-2">
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>
-              {formatDuration(task.totalElapsedTime || 0)} / {task.estimatedDuration}m
-            </span>
-          </div>
+              <Clock className="h-3 w-3 mr-1 animate-pulse" /> Stop
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              onClick={() => onTimerToggle(task.id)}
+              disabled={!canStart && task.status === "todo"}
+            >
+              <Clock className="h-3 w-3 mr-1" /> Start
+            </Button>
+          )}
           
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 w-8 p-0" 
-            onClick={handleTimerClick}
-            title={task.isTimerRunning ? "Pause Timer" : "Start Timer"}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs px-2"
+            onClick={() => setShowDetails(true)}
           >
-            {task.isTimerRunning ? (
-              <StopCircle className="h-5 w-5 text-red-500" />
-            ) : (
-              <PlayCircle className="h-5 w-5 text-green-500" />
-            )}
+            Details
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+
+        <div className="flex flex-wrap gap-1 mt-2">
+          {/* Timer info */}
+          {task.totalElapsedTime !== undefined && task.totalElapsedTime > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              <Clock className="h-3 w-3 mr-1" />
+              {formatDuration(task.totalElapsedTime)}
+            </Badge>
+          )}
+          
+          {/* Completion percentage */}
+          {task.completionPercentage !== undefined && task.completionPercentage > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              {task.completionPercentage}%
+            </Badge>
+          )}
+          
+          {/* Recurring indicator */}
+          {task.recurringConfig?.isRecurring && (
+            <Badge variant="secondary" className="text-xs text-blue-500 bg-blue-50">
+              <Rotate className="h-3 w-3 mr-1" />
+              Recurring
+            </Badge>
+          )}
+          
+          {/* Dependency indicator */}
+          {task.dependencies && task.dependencies.length > 0 && (
+            <Badge variant="secondary" className="text-xs text-gray-500 bg-gray-50">
+              <Link className="h-3 w-3 mr-1" />
+              {task.dependencies.length}
+            </Badge>
+          )}
+          
+          {/* Subtasks indicator */}
+          {task.metadata?.hasSubtasks && (
+            <Badge variant="secondary" className="text-xs text-purple-500 bg-purple-50">
+              <GitBranch className="h-3 w-3 mr-1" />
+              Subtasks
+            </Badge>
+          )}
+          
+          {/* Parent task indicator */}
+          {task.metadata?.parentTaskId && (
+            <Badge variant="secondary" className="text-xs text-indigo-500 bg-indigo-50">
+              <GitMerge className="h-3 w-3 mr-1" />
+              Subtask
+            </Badge>
+          )}
+        </div>
+
+        {!canStart && task.status === "todo" && (
+          <div className="mt-2 text-xs text-red-500 flex items-center">
+            <ArrowRightCircle className="h-3 w-3 mr-1" />
+            Blocked by dependencies
+          </div>
+        )}
+        
+        {/* Tags shown at the bottom */}
+        {task.tags && task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {task.tags.map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs px-1.5 py-0">
+                <Tag className="h-2 w-2 mr-1" />
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
       
       <TaskDetailDialog
         task={task}
-        open={showDetail}
-        onOpenChange={setShowDetail}
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        onTaskUpdated={onTaskUpdated}
       />
     </>
   )

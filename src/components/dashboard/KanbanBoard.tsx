@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, forwardRef, useImperativeHandle } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Task, TaskStatus, RecurringTaskConfig } from "@/types/task"
@@ -128,7 +129,7 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
             
             toast({
               title: "Recurring Tasks Created",
-              description: `${tasksToCreate.length} recurring task${tasksToCreate.length > 1 ? 's were' : ' was'} automatically created.`,
+              description: `${tasksToCreate.length} recurring task${tasksToCreate.length > 1 ? 's were' : ' was'} automatically created.`
             })
           }
         }
@@ -221,6 +222,10 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
       return checkDependencies(currentUser.uid, taskId)
     }, [currentUser?.uid])
 
+    const handleTaskUpdated = useCallback(() => {
+      loadTasks()
+    }, [loadTasks])
+
     const columns: { title: string, status: TaskStatus }[] = [
       { title: "To Do", status: "todo" },
       { title: "In Progress", status: "in-progress" },
@@ -261,6 +266,7 @@ export const KanbanBoard = forwardRef<{loadTasks: () => Promise<void>}, KanbanBo
               onTimerToggle={toggleTimer}
               formatDuration={formatDuration}
               canStartTask={canStartTask}
+              onTaskUpdated={handleTaskUpdated}
             />
           ))}
         </div>
