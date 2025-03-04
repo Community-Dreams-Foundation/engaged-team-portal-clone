@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client"
+import { toast } from "@/components/ui/use-toast"
 
 // Socket.IO singleton service
 class SocketService {
@@ -281,14 +282,6 @@ class SocketService {
   private dispatchEvent(type: string, data: any): void {
     const event = new CustomEvent('socket:event', { 
       detail: { type, data } 
-    })
-    window.dispatchEvent(event)
-  }
-  
-  // Helper function to create toast notifications
-  private toast(title: string, description: string): void {
-    const event = new CustomEvent('toast', {
-      detail: { title, description }
     })
     window.dispatchEvent(event)
   }
