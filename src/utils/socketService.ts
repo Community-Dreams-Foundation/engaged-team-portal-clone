@@ -1,6 +1,4 @@
-
 import { io, Socket } from "socket.io-client"
-import { toast } from "@/hooks/use-toast"
 
 // Socket.IO singleton service
 class SocketService {
@@ -9,6 +7,8 @@ class SocketService {
   private connected: boolean = false
   private userId: string | null = null
   private serverUrl: string = import.meta.env.VITE_SOCKET_SERVER_URL || "http://localhost:3001"
+  private reconnectionAttempts: number = 0
+  private maxReconnectionAttempts: number = 10
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -22,46 +22,68 @@ class SocketService {
   }
 
   public connect(userId: string): void {
-    if (this.connected) return
+    if (this.connected && this.userId === userId) return
 
     this.userId = userId
+    this.reconnectionAttempts = 0
     
-    this.socket = io(this.serverUrl, {
-      query: { userId },
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    })
+    try {
+      this.socket = io(this.serverUrl, {
+        query: { userId },
+        transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: this.maxReconnectionAttempts,
+        reconnectionDelay: 1000,
+        timeout: 10000
+      })
 
-    this.setupEventListeners()
-    this.connected = true
-    
-    console.log(`Socket connected for user: ${userId}`)
+      this.setupEventListeners()
+      this.connected = true
+      
+      console.log(`Socket connected for user: ${userId}`)
+      
+      // Dispatch connection event
+      this.dispatchEvent('connected', { userId })
+      
+      // Join user's private channel
+      this.socket.emit('join:user', { userId })
+    } catch (error) {
+      console.error('Failed to connect socket:', error)
+      this.dispatchEvent('error', { message: 'Failed to establish connection' })
+    }
   }
 
   public disconnect(): void {
     if (!this.socket || !this.connected) return
     
-    this.socket.disconnect()
-    this.connected = false
-    this.userId = null
-    
-    console.log("Socket disconnected")
+    try {
+      this.socket.disconnect()
+      this.connected = false
+      this.userId = null
+      
+      console.log("Socket disconnected")
+      this.dispatchEvent('disconnected', {})
+    } catch (error) {
+      console.error('Error disconnecting socket:', error)
+    }
   }
 
   public isConnected(): boolean {
     return this.connected && !!this.socket
   }
 
-  // Add a public emit method to allow access to the socket's emit function
   public emit(event: string, data: any): void {
     if (!this.socket || !this.connected) {
       console.error("Cannot emit event: Socket not connected");
       return;
     }
     
-    this.socket.emit(event, data);
+    try {
+      this.socket.emit(event, data);
+    } catch (error) {
+      console.error(`Error emitting event ${event}:`, error);
+      this.dispatchEvent('error', { message: `Failed to send ${event} event` });
+    }
   }
 
   public subscribeToMeetingUpdates(meetingId: string): void {
@@ -88,6 +110,40 @@ class SocketService {
       timestamp: new Date().toISOString()
     })
   }
+  
+  public subscribeToTaskUpdates(taskId: string): void {
+    if (!this.socket || !this.connected) return
+    
+    this.socket.emit("subscribe:task", { taskId })
+    console.log(`Subscribed to updates for task: ${taskId}`)
+  }
+  
+  public unsubscribeFromTaskUpdates(taskId: string): void {
+    if (!this.socket || !this.connected) return
+    
+    this.socket.emit("unsubscribe:task", { taskId })
+    console.log(`Unsubscribed from updates for task: ${taskId}`)
+  }
+  
+  public startEditingTask(taskId: string): void {
+    if (!this.socket || !this.connected || !this.userId) return
+    
+    this.socket.emit("task:editing", {
+      taskId,
+      userId: this.userId,
+      action: "start"
+    })
+  }
+  
+  public stopEditingTask(taskId: string): void {
+    if (!this.socket || !this.connected || !this.userId) return
+    
+    this.socket.emit("task:editing", {
+      taskId,
+      userId: this.userId,
+      action: "stop"
+    })
+  }
 
   private setupEventListeners(): void {
     if (!this.socket) return
@@ -96,16 +152,57 @@ class SocketService {
     this.socket.on("connect", () => {
       console.log("Socket connected successfully")
       this.connected = true
+      this.reconnectionAttempts = 0
+      this.dispatchEvent('connected', { userId: this.userId })
     })
 
     this.socket.on("disconnect", (reason) => {
       console.log(`Socket disconnected: ${reason}`)
       this.connected = false
+      this.dispatchEvent('disconnected', { reason })
     })
 
     this.socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error)
       this.connected = false
+      this.reconnectionAttempts++
+      
+      if (this.reconnectionAttempts >= this.maxReconnectionAttempts) {
+        this.dispatchEvent('error', { 
+          message: 'Connection failed after multiple attempts. Please refresh the page.' 
+        })
+      } else {
+        this.dispatchEvent('error', { 
+          message: `Connection attempt failed (${this.reconnectionAttempts}/${this.maxReconnectionAttempts})` 
+        })
+      }
+    })
+
+    this.socket.on("reconnect", (attemptNumber) => {
+      console.log(`Socket reconnected after ${attemptNumber} attempts`)
+      this.connected = true
+      this.dispatchEvent('connected', { userId: this.userId, reconnected: true })
+    })
+
+    // Task related events
+    this.socket.on("task:updated", (data) => {
+      console.log("Task updated:", data)
+      toast({
+        title: "Task Updated",
+        description: `Task "${data.title}" was updated by ${data.updatedBy}`,
+      })
+      
+      this.dispatchEvent('task:updated', data)
+    })
+
+    this.socket.on("task:editing", (data) => {
+      console.log("Task editing status:", data)
+      this.dispatchEvent('task:editing', data)
+    })
+
+    this.socket.on("task:comment", (data) => {
+      console.log("New task comment:", data)
+      this.dispatchEvent('task:comment', data)
     })
 
     // Meeting related events
@@ -116,7 +213,6 @@ class SocketService {
         description: `${data.title} has been updated by ${data.updatedBy}`,
       })
       
-      // We can dispatch an event to update the UI if needed
       window.dispatchEvent(new CustomEvent("meeting:updated", { detail: data }))
     })
 
@@ -174,6 +270,27 @@ class SocketService {
       console.log("New chat message:", data)
       window.dispatchEvent(new CustomEvent("meeting:chat", { detail: data }))
     })
+
+    // Presence related events
+    this.socket.on("presence:update", (data) => {
+      console.log("User presence updated:", data)
+      this.dispatchEvent('presence:update', data)
+    })
+  }
+  
+  private dispatchEvent(type: string, data: any): void {
+    const event = new CustomEvent('socket:event', { 
+      detail: { type, data } 
+    })
+    window.dispatchEvent(event)
+  }
+  
+  // Helper function to create toast notifications
+  private toast(title: string, description: string): void {
+    const event = new CustomEvent('toast', {
+      detail: { title, description }
+    })
+    window.dispatchEvent(event)
   }
 }
 

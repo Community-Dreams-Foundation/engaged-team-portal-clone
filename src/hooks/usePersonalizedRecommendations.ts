@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDatabase, ref, onValue, off } from "firebase/database";
 import { CoSRecommendation } from "@/types/task";
 import { generatePersonalizedRecommendations } from "@/services/recommendationService";
+import { subscribeToRealTimeDB } from "@/lib/firebase";
 
 export function usePersonalizedRecommendations() {
   const { currentUser } = useAuth();
@@ -15,27 +15,28 @@ export function usePersonalizedRecommendations() {
     if (!currentUser) return;
 
     setIsLoading(true);
-    const db = getDatabase();
     
-    // Listen for changes to the learning profile
-    const profileRef = ref(db, `users/${currentUser.uid}/learningProfile`);
-    const profileListener = onValue(profileRef, async (snapshot) => {
-      const profile = snapshot.exists() ? snapshot.val() : null;
-      setLearningProfile(profile);
-      
-      // Generate personalized recommendations
-      try {
-        const personalizedRecs = await generatePersonalizedRecommendations(currentUser.uid);
-        setRecommendations(personalizedRecs);
-      } catch (error) {
-        console.error("Error fetching personalized recommendations:", error);
-      } finally {
+    // Subscribe to real-time learning profile updates
+    const unsubscribe = subscribeToRealTimeDB(`users/${currentUser.uid}/learningProfile`, async (profile) => {
+      if (profile) {
+        setLearningProfile(profile);
+        
+        // Generate personalized recommendations
+        try {
+          const personalizedRecs = await generatePersonalizedRecommendations(currentUser.uid);
+          setRecommendations(personalizedRecs);
+        } catch (error) {
+          console.error("Error fetching personalized recommendations:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
         setIsLoading(false);
       }
     });
 
     return () => {
-      off(profileRef);
+      unsubscribe();
     };
   }, [currentUser]);
 

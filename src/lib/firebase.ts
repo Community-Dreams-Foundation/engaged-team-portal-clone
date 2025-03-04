@@ -1,8 +1,8 @@
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, enableIndexedDbPersistence } from 'firebase/firestore';
-import { getDatabase } from 'firebase/database';
+import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, enableIndexedDbPersistence, onSnapshot, doc } from 'firebase/firestore';
+import { getDatabase, ref as rtdbRef, onValue, off as rtdbOff } from 'firebase/database';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -60,4 +60,31 @@ export const checkFirebaseConnection = async () => {
     }
     return false;
   }
+};
+
+// Enhanced real-time subscription utilities
+export const subscribeToDocument = (collectionName, docId, callback) => {
+  const docRef = doc(db, collectionName, docId);
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback({ id: snapshot.id, ...snapshot.data() });
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    console.error(`Error subscribing to ${collectionName}/${docId}:`, error);
+  });
+};
+
+export const subscribeToRealTimeDB = (path, callback) => {
+  const reference = rtdbRef(rtdb, path);
+  onValue(reference, (snapshot) => {
+    const data = snapshot.val();
+    callback(data);
+  }, (error) => {
+    console.error(`Error subscribing to RTDB path ${path}:`, error);
+  });
+  
+  // Return unsubscribe function
+  return () => rtdbOff(reference);
 };
