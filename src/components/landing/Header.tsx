@@ -14,9 +14,10 @@ interface HeaderProps {
   isLogin: boolean;
   setIsLogin: (isLogin: boolean) => void;
   handleSwitchToSignup: () => void;
+  scrollToAuthForm: () => void;
 }
 
-export default function Header({ isLogin, setIsLogin, handleSwitchToSignup }: HeaderProps) {
+export default function Header({ isLogin, setIsLogin, handleSwitchToSignup, scrollToAuthForm }: HeaderProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-b landing-header">
       <nav className="container flex items-center justify-between h-16 px-4 md:px-6">
@@ -116,7 +117,7 @@ export default function Header({ isLogin, setIsLogin, handleSwitchToSignup }: He
             variant={isLogin ? "ghost" : "outline"}
             onClick={() => {
               setIsLogin(true)
-              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+              scrollToAuthForm()
             }}
             className="font-medium"
           >
