@@ -1,4 +1,3 @@
-
 export const positions = [
   // Strategy & Leadership
   "Chief Technology Officer",
@@ -58,7 +57,6 @@ export const availabilityOptions = [
 
 export const membershipStatusOptions = [
   "Current contributing member",
-  "Returning member",
   "New applicant", 
   "Partner organization",
   "Advisor",
