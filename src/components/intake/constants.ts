@@ -55,3 +55,13 @@ export const availabilityOptions = [
   { value: 40, label: "Full-time (40 hours)" },
   { value: -1, label: "Custom hours" },
 ] as const;
+
+export const membershipStatusOptions = [
+  "Current contributing member",
+  "Returning member",
+  "New applicant", 
+  "Partner organization",
+  "Advisor",
+  "Former member",
+  "Guest contributor"
+] as const;

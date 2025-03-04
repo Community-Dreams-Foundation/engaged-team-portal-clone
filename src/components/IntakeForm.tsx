@@ -21,6 +21,7 @@ export function IntakeForm() {
       fullName: "",
       email: "",
       position: "",
+      membershipStatus: "",
       availability: 40,
       dreamerStatement: "",
     },

@@ -2,7 +2,7 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { positions } from "./constants";
+import { positions, membershipStatusOptions } from "./constants";
 import { UseFormReturn } from "react-hook-form";
 import { IntakeFormData } from "./types";
 
@@ -36,6 +36,31 @@ export function PersonalInfoFields({ form }: PersonalInfoFieldsProps) {
             <FormControl>
               <Input type="email" placeholder="john@example.com" {...field} />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="membershipStatus"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Current Status with Community Dreams Foundation</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your current status" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {membershipStatusOptions.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
