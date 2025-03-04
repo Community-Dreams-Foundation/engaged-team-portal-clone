@@ -18,8 +18,7 @@ export enum ApiDomain {
   PERFORMANCE = 'performance',
   PAYMENTS = 'payments',
   ADMIN = 'admin',
-  ACCOUNT = 'account',
-  AI = 'ai'  // New domain for AI services
+  ACCOUNT = 'account'
 }
 
 // Cache for function instances to avoid recreating them
@@ -149,16 +148,4 @@ export const AccountApi = {
     callApi(ApiDomain.ACCOUNT, 'exportUserData', { userId }),
   updateSecuritySettings: (settings: any): Promise<void> => 
     callApi(ApiDomain.ACCOUNT, 'updateSecuritySettings', settings),
-};
-
-// New AI API interface for Gemini
-export const AIApi = {
-  generateContent: (prompt: string): Promise<string> => 
-    callApi(ApiDomain.AI, 'generateContent', { prompt }),
-  generateImage: (prompt: string): Promise<string> => 
-    callApi(ApiDomain.AI, 'generateImage', { prompt }),
-  chatWithGemini: (messages: Array<{role: string, content: string}>): Promise<{response: string, conversationId?: string}> => 
-    callApi(ApiDomain.AI, 'chatWithGemini', { messages }),
-  streamChatWithGemini: (messages: Array<{role: string, content: string}>, callback: (chunk: string) => void): Promise<void> => 
-    callApi(ApiDomain.AI, 'streamChatWithGemini', { messages, callback })
 };
