@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
@@ -38,7 +37,9 @@ export const useTrainingModules = () => {
     title: module.title,
     description: module.description,
     progress: module.progress,
-    duration: typeof module.duration === 'number' ? `${Math.floor(module.duration / 60)}h ${module.duration % 60}min` : module.duration.toString(),
+    duration: typeof module.duration === 'number' 
+      ? `${Math.floor(module.duration / 60)}h ${module.duration % 60}min` 
+      : String(module.duration),
     completed: module.completed
   }))
 

@@ -302,12 +302,14 @@ export interface WaiverData {
 }
 
 // Leadership related types
+import { LeadershipTier, LeadershipDomain } from "@/types/leadership";
+
 export interface LeadershipProfileData {
   userId: string;
-  currentTier: string;
+  currentTier: LeadershipTier;
   joinedAt: number;
-  assessments: any[]; // Simplified for now
-  trainingCompleted: any[]; // Simplified for now
+  assessments: any[];
+  trainingCompleted: any[];
   teamId?: string;
   metrics: {
     teamSize: number;
@@ -333,10 +335,10 @@ export interface LeadershipProfileData {
   achievements: string[];
   mentors?: string[];
   mentees?: string[];
-  specializations?: string[];
+  specializations: LeadershipDomain[];
   promotionHistory?: Array<{
-    fromTier: string;
-    toTier: string;
+    fromTier: LeadershipTier;
+    toTier: LeadershipTier;
     timestamp: number;
     approvedBy?: string;
   }>;

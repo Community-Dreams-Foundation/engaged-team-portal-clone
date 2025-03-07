@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Card } from "@/components/ui/card";
@@ -18,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadershipProfile, LeadershipDomain, LeadershipTier } from "@/types/leadership";
+import { LeadershipProfileData } from "@/types/api";  
 import { LeadershipApi } from "@/api/gateway";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -71,21 +71,47 @@ export function LeadershipSettings() {
       try {
         setIsLoading(true);
         const profileData = await LeadershipApi.fetchProfile(currentUser.uid);
-        setProfile(profileData);
+        
+        // Convert API profile data to LeadershipProfile
+        const convertedProfile: LeadershipProfile = {
+          userId: profileData.userId,
+          currentTier: profileData.currentTier as LeadershipTier,
+          joinedAt: profileData.joinedAt,
+          assessments: profileData.assessments || [],
+          trainingCompleted: profileData.trainingCompleted || [],
+          teamId: profileData.teamId,
+          metrics: profileData.metrics,
+          achievements: profileData.achievements || [],
+          mentors: profileData.mentors || [],
+          mentees: profileData.mentees || [],
+          specializations: profileData.specializations || [],
+          mentorshipPreferences: profileData.mentorshipPreferences || {
+            availableAsMentor: false,
+            seekingMentor: false,
+            preferredMentorshipAreas: [],
+          },
+          displaySettings: profileData.displaySettings || {
+            showAchievements: true,
+            showMetrics: true,
+          },
+          promotionHistory: profileData.promotionHistory || [],
+        };
+        
+        setProfile(convertedProfile);
         
         // Populate form with existing data if available
-        if (profileData) {
+        if (convertedProfile) {
           form.reset({
             mentorshipPreferences: {
-              availableAsMentor: profileData.mentorshipPreferences?.availableAsMentor || false,
-              seekingMentor: profileData.mentorshipPreferences?.seekingMentor || false,
-              preferredMentorshipAreas: profileData.mentorshipPreferences?.preferredMentorshipAreas || [],
+              availableAsMentor: convertedProfile.mentorshipPreferences?.availableAsMentor || false,
+              seekingMentor: convertedProfile.mentorshipPreferences?.seekingMentor || false,
+              preferredMentorshipAreas: convertedProfile.mentorshipPreferences?.preferredMentorshipAreas || [],
             },
             displaySettings: {
-              showAchievements: profileData.displaySettings?.showAchievements || true,
-              showMetrics: profileData.displaySettings?.showMetrics || true,
+              showAchievements: convertedProfile.displaySettings?.showAchievements || true,
+              showMetrics: convertedProfile.displaySettings?.showMetrics || true,
             },
-            specializations: profileData.specializations || [],
+            specializations: convertedProfile.specializations || [],
           });
         }
       } catch (error) {
@@ -99,35 +125,38 @@ export function LeadershipSettings() {
   }, [currentUser, form]);
 
   const onSubmit = async (data: LeadershipFormValues) => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid || !profile) return;
     
     try {
-      // If no profile exists, create a basic one with the form data
-      const profileToUpdate = profile || {
+      // Create a valid LeadershipProfileData object
+      const profileToUpdate: LeadershipProfileData = {
         userId: currentUser.uid,
-        currentTier: "emerging" as LeadershipTier,
-        joinedAt: Date.now(),
-        assessments: [],
-        trainingCompleted: [],
-        metrics: {
-          overallScore: 0,
-          leaderboardRank: 0,
-        },
-        achievements: [],
-        mentors: [],
-        mentees: [],
+        currentTier: profile.currentTier,
+        joinedAt: profile.joinedAt,
+        assessments: profile.assessments,
+        trainingCompleted: profile.trainingCompleted,
+        teamId: profile.teamId,
+        metrics: profile.metrics,
+        skills: profile.skills || [],
+        teams: profile.teams || [],
+        achievements: profile.achievements,
+        mentors: profile.mentors,
+        mentees: profile.mentees,
+        specializations: data.specializations,
+        mentorshipPreferences: data.mentorshipPreferences,
+        displaySettings: data.displaySettings,
+        promotionHistory: profile.promotionHistory,
       };
       
-      // Update with form data
-      const updatedProfile = {
-        ...profileToUpdate,
+      await LeadershipApi.updateProfile(profileToUpdate);
+      
+      // Update local state
+      setProfile({
+        ...profile,
         mentorshipPreferences: data.mentorshipPreferences,
         displaySettings: data.displaySettings,
         specializations: data.specializations,
-      };
-      
-      await LeadershipApi.updateProfile(updatedProfile);
-      setProfile(updatedProfile as LeadershipProfile);
+      });
       
       toast.success("Leadership settings saved successfully");
     } catch (error) {
