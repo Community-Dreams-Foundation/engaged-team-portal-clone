@@ -1,4 +1,3 @@
-
 /**
  * API Types
  * 
@@ -305,12 +304,25 @@ export interface WaiverData {
 // Leadership related types
 export interface LeadershipProfileData {
   userId: string;
+  currentTier: string;
+  joinedAt: number;
+  assessments: any[]; // Simplified for now
+  trainingCompleted: any[]; // Simplified for now
+  teamId?: string;
   metrics: {
     teamSize: number;
     projectsManaged: number;
     avgTeamEfficiency: number;
     taskCompletionRate: number;
     teamSatisfactionScore: number;
+    overallScore?: number;
+    leaderboardRank?: number;
+    mentorshipScore?: number;
+    innovationImpact?: number;
+    communicationScore?: number;
+    projectDeliveryRate?: number;
+    teamGrowthRate?: number;
+    teamEfficiency?: number;
   };
   skills: Array<{
     name: string;
@@ -319,6 +331,24 @@ export interface LeadershipProfileData {
   }>;
   teams: string[];
   achievements: string[];
+  mentors?: string[];
+  mentees?: string[];
+  specializations?: string[];
+  promotionHistory?: Array<{
+    fromTier: string;
+    toTier: string;
+    timestamp: number;
+    approvedBy?: string;
+  }>;
+  mentorshipPreferences?: {
+    availableAsMentor?: boolean;
+    seekingMentor?: boolean;
+    preferredMentorshipAreas?: string[];
+  };
+  displaySettings?: {
+    showAchievements?: boolean;
+    showMetrics?: boolean;
+  };
 }
 
 export interface PromotionRequirementsData {
@@ -402,4 +432,3 @@ export interface UserDataExportData {
   activityLog: ActivityLogData[];
   sessions: SessionData[];
 }
-

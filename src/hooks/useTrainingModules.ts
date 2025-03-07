@@ -5,14 +5,15 @@ import { useAuth } from "@/contexts/AuthContext"
 import { getDatabase, ref, onValue, off } from "firebase/database"
 import { useToast } from "@/hooks/use-toast"
 import { TrainingApi } from "@/api/gateway"
-import { TrainingModule, TrainingModuleProgress } from "@/types/api"
+import { TrainingModule as ApiTrainingModule, TrainingModuleProgress } from "@/types/api"
+import { TrainingModule as UtilTrainingModule } from "@/utils/trainingModules"
 
 export const useTrainingModules = () => {
   const { currentUser } = useAuth()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   
-  const { data: modules = [] } = useQuery<TrainingModule[], Error>({
+  const { data: apiModules = [] } = useQuery<ApiTrainingModule[], Error>({
     queryKey: ['trainingModules', currentUser?.uid],
     queryFn: async () => {
       if (!currentUser?.uid) return []
@@ -30,6 +31,16 @@ export const useTrainingModules = () => {
     },
     enabled: !!currentUser,
   })
+
+  // Convert API modules to utility module format
+  const modules: UtilTrainingModule[] = apiModules.map(module => ({
+    id: module.id,
+    title: module.title,
+    description: module.description,
+    progress: module.progress,
+    duration: typeof module.duration === 'number' ? `${Math.floor(module.duration / 60)}h ${module.duration % 60}min` : module.duration.toString(),
+    completed: module.completed
+  }))
 
   useEffect(() => {
     if (!currentUser) return
