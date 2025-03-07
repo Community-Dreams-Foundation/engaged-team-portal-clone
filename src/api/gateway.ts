@@ -1,3 +1,4 @@
+
 /**
  * API Gateway for Firebase Functions
  * 
@@ -7,6 +8,7 @@
 
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { auth } from '@/lib/firebase';
+import * as ApiTypes from '@/types/api';
 
 // Define API domains and their functions
 export enum ApiDomain {
@@ -75,77 +77,104 @@ export const callApi = async <TData, TResult>(
 
 // Domain-specific API interfaces
 export const TasksApi = {
-  createTask: (data: any) => callApi(ApiDomain.TASKS, 'createTask', data),
-  updateTask: (data: any) => callApi(ApiDomain.TASKS, 'updateTask', data),
-  deleteTask: (taskId: string) => callApi(ApiDomain.TASKS, 'deleteTask', { taskId }),
-  fetchTasks: (userId: string) => callApi(ApiDomain.TASKS, 'fetchTasks', { userId }),
-  updateStatus: (data: any) => callApi(ApiDomain.TASKS, 'updateStatus', data),
-  updateTimer: (data: any) => callApi(ApiDomain.TASKS, 'updateTimer', data),
+  createTask: (data: ApiTypes.TaskCreateData): Promise<ApiTypes.Task> => 
+    callApi(ApiDomain.TASKS, 'createTask', data),
+  updateTask: (data: ApiTypes.TaskUpdateData): Promise<ApiTypes.Task> => 
+    callApi(ApiDomain.TASKS, 'updateTask', data),
+  deleteTask: (taskId: string): Promise<void> => 
+    callApi(ApiDomain.TASKS, 'deleteTask', { taskId }),
+  fetchTasks: (userId: string): Promise<ApiTypes.Task[]> => 
+    callApi(ApiDomain.TASKS, 'fetchTasks', { userId }),
+  updateStatus: (data: ApiTypes.TaskStatusUpdateData): Promise<ApiTypes.Task> => 
+    callApi(ApiDomain.TASKS, 'updateStatus', data),
+  updateTimer: (data: ApiTypes.TaskTimerUpdateData): Promise<ApiTypes.Task> => 
+    callApi(ApiDomain.TASKS, 'updateTimer', data),
 };
 
 export const TrainingApi = {
-  fetchModules: (userId: string): Promise<any[]> => callApi(ApiDomain.TRAINING, 'fetchModules', { userId }),
-  updateProgress: (data: any) => callApi(ApiDomain.TRAINING, 'updateProgress', data),
-  completeModule: (data: any) => callApi(ApiDomain.TRAINING, 'completeModule', data),
+  fetchModules: (userId: string): Promise<ApiTypes.TrainingModule[]> => 
+    callApi(ApiDomain.TRAINING, 'fetchModules', { userId }),
+  updateProgress: (data: ApiTypes.TrainingModuleProgress): Promise<void> => 
+    callApi(ApiDomain.TRAINING, 'updateProgress', data),
+  completeModule: (data: ApiTypes.TrainingModuleProgress): Promise<void> => 
+    callApi(ApiDomain.TRAINING, 'completeModule', data),
 };
 
 export const PortfolioApi = {
-  fetchPortfolio: (userId: string) => callApi(ApiDomain.PORTFOLIO, 'fetchPortfolio', { userId }),
-  updatePortfolio: (data: any) => callApi(ApiDomain.PORTFOLIO, 'updatePortfolio', data),
-  sharePortfolio: (data: any) => callApi(ApiDomain.PORTFOLIO, 'sharePortfolio', data),
+  fetchPortfolio: (userId: string): Promise<ApiTypes.PortfolioData> => 
+    callApi(ApiDomain.PORTFOLIO, 'fetchPortfolio', { userId }),
+  updatePortfolio: (data: ApiTypes.PortfolioData): Promise<ApiTypes.PortfolioData> => 
+    callApi(ApiDomain.PORTFOLIO, 'updatePortfolio', data),
+  sharePortfolio: (data: ApiTypes.PortfolioShareData): Promise<void> => 
+    callApi(ApiDomain.PORTFOLIO, 'sharePortfolio', data),
 };
 
 export const CommunicationApi = {
-  sendMessage: (data: any) => callApi(ApiDomain.COMMUNICATION, 'sendMessage', data),
-  fetchMessages: (data: any) => callApi(ApiDomain.COMMUNICATION, 'fetchMessages', data),
-  createConnection: (data: any) => callApi(ApiDomain.COMMUNICATION, 'createConnection', data),
-  updateConnection: (data: any) => callApi(ApiDomain.COMMUNICATION, 'updateConnection', data),
+  sendMessage: (data: ApiTypes.MessageData): Promise<string> => 
+    callApi(ApiDomain.COMMUNICATION, 'sendMessage', data),
+  fetchMessages: (data: ApiTypes.MessageQueryParams): Promise<any[]> => 
+    callApi(ApiDomain.COMMUNICATION, 'fetchMessages', data),
+  createConnection: (data: ApiTypes.ConnectionData): Promise<void> => 
+    callApi(ApiDomain.COMMUNICATION, 'createConnection', data),
+  updateConnection: (data: ApiTypes.ConnectionData): Promise<void> => 
+    callApi(ApiDomain.COMMUNICATION, 'updateConnection', data),
 };
 
 export const PerformanceApi = {
-  fetchMetrics: (userId: string) => callApi(ApiDomain.PERFORMANCE, 'fetchMetrics', { userId }),
-  updateGoals: (data: any) => callApi(ApiDomain.PERFORMANCE, 'updateGoals', data),
-  fetchFeedback: (userId: string) => callApi(ApiDomain.PERFORMANCE, 'fetchFeedback', { userId }),
+  fetchMetrics: (userId: string): Promise<ApiTypes.PerformanceMetricsData> => 
+    callApi(ApiDomain.PERFORMANCE, 'fetchMetrics', { userId }),
+  updateGoals: (data: ApiTypes.PerformanceGoalsData): Promise<void> => 
+    callApi(ApiDomain.PERFORMANCE, 'updateGoals', data),
+  fetchFeedback: (userId: string): Promise<ApiTypes.PerformanceMetricsData['feedback']> => 
+    callApi(ApiDomain.PERFORMANCE, 'fetchFeedback', { userId }),
 };
 
 export const PaymentsApi = {
-  processPayment: (data: any) => callApi(ApiDomain.PAYMENTS, 'processPayment', data),
-  fetchInvoices: (userId: string) => callApi(ApiDomain.PAYMENTS, 'fetchInvoices', { userId }),
-  updatePaymentMethod: (data: any) => callApi(ApiDomain.PAYMENTS, 'updatePaymentMethod', data),
+  processPayment: (data: ApiTypes.PaymentData): Promise<string> => 
+    callApi(ApiDomain.PAYMENTS, 'processPayment', data),
+  fetchInvoices: (userId: string): Promise<ApiTypes.InvoiceData[]> => 
+    callApi(ApiDomain.PAYMENTS, 'fetchInvoices', { userId }),
+  updatePaymentMethod: (data: ApiTypes.PaymentMethodData): Promise<void> => 
+    callApi(ApiDomain.PAYMENTS, 'updatePaymentMethod', data),
 };
 
 export const AdminApi = {
-  fetchUsers: () => callApi(ApiDomain.ADMIN, 'fetchUsers', {}),
-  updateUserRole: (data: any) => callApi(ApiDomain.ADMIN, 'updateUserRole', data),
-  fetchWaivers: () => callApi(ApiDomain.ADMIN, 'fetchWaivers', {}),
-  approveWaiver: (waiverId: string) => callApi(ApiDomain.ADMIN, 'approveWaiver', { waiverId }),
-  rejectWaiver: (data: any) => callApi(ApiDomain.ADMIN, 'rejectWaiver', data),
+  fetchUsers: (): Promise<any[]> => 
+    callApi(ApiDomain.ADMIN, 'fetchUsers', {}),
+  updateUserRole: (data: ApiTypes.UserRoleData): Promise<void> => 
+    callApi(ApiDomain.ADMIN, 'updateUserRole', data),
+  fetchWaivers: (): Promise<ApiTypes.WaiverData[]> => 
+    callApi(ApiDomain.ADMIN, 'fetchWaivers', {}),
+  approveWaiver: (waiverId: string): Promise<void> => 
+    callApi(ApiDomain.ADMIN, 'approveWaiver', { waiverId }),
+  rejectWaiver: (data: { waiverId: string, comments?: string }): Promise<void> => 
+    callApi(ApiDomain.ADMIN, 'rejectWaiver', data),
 };
 
 // Update LeadershipApi with proper TypeScript types
 export const LeadershipApi = {
-  fetchProfile: (userId: string): Promise<any> => 
+  fetchProfile: (userId: string): Promise<ApiTypes.LeadershipProfileData> => 
     callApi(ApiDomain.PERFORMANCE, 'fetchLeadershipProfile', { userId }),
-  updateProfile: (data: any) => 
+  updateProfile: (data: ApiTypes.LeadershipProfileData): Promise<void> => 
     callApi(ApiDomain.PERFORMANCE, 'updateLeadershipProfile', data),
-  fetchPromotionRequirements: (userId: string, targetTier: string) => 
+  fetchPromotionRequirements: (userId: string, targetTier: string): Promise<ApiTypes.PromotionRequirementsData> => 
     callApi(ApiDomain.PERFORMANCE, 'fetchPromotionRequirements', { userId, targetTier }),
-  submitPromotionRequest: (data: any) => 
+  submitPromotionRequest: (data: ApiTypes.PromotionRequestData): Promise<void> => 
     callApi(ApiDomain.PERFORMANCE, 'submitPromotionRequest', data),
 };
 
 // New AccountApi for managing account-related operations
 export const AccountApi = {
-  fetchSessions: (userId: string): Promise<any[]> => 
+  fetchSessions: (userId: string): Promise<ApiTypes.SessionData[]> => 
     callApi(ApiDomain.ACCOUNT, 'fetchSessions', { userId }),
   terminateSession: (sessionId: string): Promise<void> => 
     callApi(ApiDomain.ACCOUNT, 'terminateSession', { sessionId }),
   terminateAllSessions: (excludeCurrentSession: boolean = true): Promise<void> => 
     callApi(ApiDomain.ACCOUNT, 'terminateAllSessions', { excludeCurrentSession }),
-  fetchActivityLog: (userId: string, limit: number = 20): Promise<any[]> => 
+  fetchActivityLog: (userId: string, limit: number = 20): Promise<ApiTypes.ActivityLogData[]> => 
     callApi(ApiDomain.ACCOUNT, 'fetchActivityLog', { userId, limit }),
-  exportUserData: (userId: string): Promise<any> => 
+  exportUserData: (userId: string): Promise<ApiTypes.UserDataExportData> => 
     callApi(ApiDomain.ACCOUNT, 'exportUserData', { userId }),
-  updateSecuritySettings: (settings: any): Promise<void> => 
+  updateSecuritySettings: (settings: ApiTypes.SecuritySettingsData): Promise<void> => 
     callApi(ApiDomain.ACCOUNT, 'updateSecuritySettings', settings),
 };

@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { getDatabase, ref, onValue, off } from "firebase/database"
 import { useToast } from "@/hooks/use-toast"
 import { TrainingApi } from "@/api/gateway"
-import { TrainingModule } from "@/utils/trainingModules"
+import { TrainingModule, TrainingModuleProgress } from "@/types/api"
 
 export const useTrainingModules = () => {
   const { currentUser } = useAuth()
