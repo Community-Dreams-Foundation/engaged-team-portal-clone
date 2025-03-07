@@ -1,4 +1,3 @@
-
 export type LeadershipTier = "emerging" | "captain" | "team-lead" | "product-owner" | "executive";
 
 export type LeadershipDomain = "strategy" | "product-design" | "data-engineering" | "software-development" | "engagement";
@@ -119,6 +118,11 @@ export interface LeadershipProfile {
   trainingCompleted: LeadershipTraining[];
   teamId?: string;
   metrics: {
+    teamSize: number;
+    projectsManaged: number;
+    avgTeamEfficiency: number;
+    taskCompletionRate: number;
+    teamSatisfactionScore: number;
     overallScore: number;
     leaderboardRank: number;
     mentorshipScore?: number;
