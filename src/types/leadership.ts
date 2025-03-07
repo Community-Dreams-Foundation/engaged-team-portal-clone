@@ -114,7 +114,6 @@ export interface LeadershipTraining {
 export interface LeadershipProfile {
   userId: string;
   currentTier: LeadershipTier;
-  domain?: LeadershipDomain;
   joinedAt: number;
   assessments: LeadershipAssessment[];
   trainingCompleted: LeadershipTraining[];
@@ -129,6 +128,12 @@ export interface LeadershipProfile {
     teamGrowthRate?: number;
     teamEfficiency?: number;
   };
+  skills: Array<{
+    name: string;
+    level: number;
+    endorsed: number;
+  }>;
+  teams: string[];
   achievements: Array<{
     id: string;
     name: string;
@@ -145,7 +150,6 @@ export interface LeadershipProfile {
     timestamp: number;
     approvedBy?: string;
   }>;
-  // Fix: Make all properties inside mentorshipPreferences and displaySettings optional
   mentorshipPreferences?: {
     availableAsMentor?: boolean;
     seekingMentor?: boolean;

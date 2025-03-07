@@ -1,3 +1,4 @@
+
 /**
  * API Types
  * 
@@ -317,8 +318,8 @@ export interface LeadershipProfileData {
     avgTeamEfficiency: number;
     taskCompletionRate: number;
     teamSatisfactionScore: number;
-    overallScore?: number;
-    leaderboardRank?: number;
+    overallScore: number; // Required field
+    leaderboardRank: number; // Required field
     mentorshipScore?: number;
     innovationImpact?: number;
     communicationScore?: number;
@@ -332,7 +333,13 @@ export interface LeadershipProfileData {
     endorsed: number;
   }>;
   teams: string[];
-  achievements: string[];
+  achievements: Array<{
+    id: string;
+    name: string;
+    description: string;
+    earnedAt: number;
+    category?: "leadership" | "technical" | "innovation" | "mentorship";
+  }>;
   mentors?: string[];
   mentees?: string[];
   specializations: LeadershipDomain[];
